@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PTN KHSK</title>
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#1F3E8C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="PTN KHSK">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="../icon-192.png">
+<style>
+:root{--b:#1F3E8C;--g:#2E7D32;--bg:#F3F5FA;--c:#fff;--t:#1d2433;--m:#5b6475;--l:#dde2ec;--r:#C00000}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--t);font-size:16px}
+header{background:#fff;color:var(--b);padding:calc(8px + env(safe-area-inset-top)) 16px 8px;position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;border-bottom:3px solid var(--b)}header img{height:46px;width:auto;display:block;flex:none}.brand{display:flex;flex-direction:column;line-height:1.2;min-width:0}.brand span{font-size:10.5px;border-bottom:1.5px solid var(--b);padding-bottom:2px;margin-bottom:2px;white-space:nowrap}.brand b{font-size:15px;font-weight:800;letter-spacing:.2px;white-space:nowrap}.sub{background:var(--b);color:#fff;font-size:13px;padding:7px 16px;text-align:center}
+header h1{font-size:17px;margin:0;line-height:1.25;flex:1}header small{display:block;font-weight:400;opacity:.85;font-size:12.5px}
+header button{margin-left:auto;background:var(--b);color:#fff;border:0;border-radius:8px;padding:7px 10px;font-size:14px}
+main{max-width:640px;margin:0 auto;padding:14px 16px 40px}
+.card{background:var(--c);border:1px solid var(--l);border-radius:12px;padding:14px;margin-bottom:12px}
+.prof{display:flex;align-items:center;gap:12px}.prof .av{width:42px;height:42px;border-radius:50%;background:var(--g);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex:none}
+.prof .i{flex:1;min-width:0}.prof b{display:block}.prof span{color:var(--m);font-size:13.5px}
+.lnk{background:none;border:0;color:var(--b);font-size:14px;text-decoration:underline;padding:4px;cursor:pointer}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:var(--c);border:1px solid var(--l);border-radius:12px;padding:14px 12px;text-align:left;cursor:pointer;font-size:14.5px;color:var(--t);min-height:92px}
+.tile .q{display:inline-block;background:var(--b);color:#fff;font-weight:700;border-radius:6px;padding:2px 8px;font-size:13px;margin-bottom:6px}
+.tile:active{background:#e9eef9}
+h2{font-size:18px;margin:4px 0 8px;color:var(--b)}
+.desc{white-space:pre-line;color:var(--m);font-size:13.5px;max-height:4.6em;overflow:hidden}.desc.open{max-height:none}
+.sec{font-weight:700;color:var(--g);margin:18px 0 8px;font-size:15px}
+.f{margin-bottom:14px}.f label.t{display:block;font-weight:600;margin-bottom:4px;font-size:15px}.f .h{color:var(--m);font-size:12.5px;margin-bottom:6px;white-space:pre-line}
+.req{color:var(--r)}
+input[type=text],input[type=tel],input[type=date],input[type=time],input[type=number],textarea,select{width:100%;padding:11px 12px;border:1px solid #c6cdda;border-radius:9px;font-size:16px;background:#fff;color:var(--t);font-family:inherit}
+textarea{min-height:76px;resize:vertical}
+.opt{display:flex;align-items:flex-start;gap:10px;padding:9px 10px;border:1px solid var(--l);border-radius:9px;margin-bottom:6px;background:#fff;cursor:pointer;font-size:15px}
+.opt input{margin-top:3px;width:18px;height:18px;flex:none}.opt.on{border-color:var(--b);background:#eef2fb}
+.btn{display:block;width:100%;padding:14px;border:0;border-radius:10px;background:var(--b);color:#fff;font-size:16px;font-weight:700;cursor:pointer}
+.btn.g{background:var(--g)}.btn.o{background:#fff;color:var(--b);border:1px solid var(--b);margin-top:10px}
+.btn:disabled{opacity:.6}
+.pre{background:#eef6ee;border:1px solid #cfe5cf;border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:12px}
+.pre b{color:var(--g)}
+.err{color:var(--r);font-size:13px;margin-top:4px}
+.msg{text-align:center;padding:26px 10px}.msg .ok{font-size:46px;color:var(--g)}
+.note{font-size:13px;color:var(--m);line-height:1.5}
+.warn{background:#fff4f4;border:1px solid #f1c6c6;color:#8a1010;border-radius:10px;padding:10px 12px;font-size:13.5px;margin-bottom:12px;white-space:pre-line}
+.spin{width:30px;height:30px;border:3px solid #cfd6e6;border-top-color:var(--b);border-radius:50%;animation:s 1s linear infinite;margin:30px auto}@keyframes s{to{transform:rotate(360deg)}}
+.hide{display:none}.opt>span{flex:1;min-width:0}.opt input[type=text]{width:100%;height:auto;margin-top:6px;flex:none}
+</style></head><body>
+<header><img src="../logo-mark.png" alt="Logo"><div class="brand"><span>ĐẠI HỌC CÔNG NGHIỆP TP. HỒ CHÍ MINH</span><b>KHOA KHOA HỌC SỨC KHỎE</b></div><button id="hb" class="hide" onclick="home()" aria-label="Trang chủ" style="font-size:20px;padding:4px 10px">⌂</button></header><div class="sub" id="ht">Phòng thí nghiệm · Đăng ký nhanh QR1 – QR7</div>
+<main id="m"><div class="spin"></div><p class="note" style="text-align:center">Đang tải…</p></main>
+<script>
+var STANDALONE=!!(navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches));
+var API='https://script.google.com/macros/s/AKfycbxY0hFjlBxzTmd-C8hDVGYqddBDriTHmIcPlVlW4ve7LiNG8s5PdpAdIniqii8WeU2K/exec';
+function apiPost(d){return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(d),redirect:'follow'}).then(function(r){return r.json()}).then(function(j){if(!j.ok)throw new Error(j.err||'Lỗi máy chủ');return j.r})}
+function apiRun(){var s=null,f=null,o={withSuccessHandler:function(x){s=x;return o},withFailureHandler:function(x){f=x;return o},
+appMetaQR:function(q){fetch(API+'?api=meta&qr='+encodeURIComponent(q),{redirect:'follow'}).then(function(r){return r.text()}).then(function(t){if(t.charAt(0)!='{')throw new Error('Không tải được biểu mẫu');s&&s(t)}).catch(function(e){f&&f(e)})},
+appGui:function(q,a){apiPost({act:'gui',qr:q,ans:a}).then(function(r){s&&s(r)}).catch(function(e){f&&f(navigator.onLine===false?new Error('Không có kết nối mạng'):e)})},
+appGhiTB:function(q,rid,d){apiPost({act:'tb',qr:q,rid:rid,dev:d}).then(function(r){s&&s(r)}).catch(function(e){f&&f(e)})}};return o}
+var google={script:{}};Object.defineProperty(google.script,'run',{get:apiRun});
+if('serviceWorker' in navigator)window.addEventListener('load',function(){void 0.catch(function(){})});
+</script>
+<script>
+var QR0=((location.search.match(/[?&]qr=(QR[1-7])/i)||[])[1]||'').toUpperCase(),META=null,CUR=null,SHOWALL=false;
+var NAMES={QR1:'Mượn phòng, thiết bị – dụng cụ trong ngày',QR2:'Mượn thiết bị từ 02 ngày trở lên',QR3:'Cấp hóa chất – vật tư bổ sung',QR4:'Mượn chìa khóa tại phòng Bảo vệ',QR5:'Nhật ký sử dụng phòng, thiết bị',QR6:'Đăng ký sử dụng tủ',QR7:'Đăng ký KLTN, NCKH'};
+var PF=[['hoTen','Họ và tên','text'],['doiTuong','Đối tượng','sel',['Sinh viên','Học viên cao học / Nghiên cứu sinh','Giảng viên']],['ma','MSSV / Mã viên chức','text'],['lop','Lớp (sinh viên, học viên)','text'],['boMon','Bộ môn / Ngành','sel',['Dược học','Dinh dưỡng','Khác']],['sdt','Số điện thoại','tel']];
+function ld(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}}
+function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function $(id){return document.getElementById(id)}
+function M(h){$('m').innerHTML=h;window.scrollTo(0,0)}
+function today(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
+function nowT(){var d=new Date();return('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}
+function dev(){var d=ld('khsk_dev');if(!d){d='TB-'+Math.random().toString(36).slice(2,8).toUpperCase();sv('khsk_dev',d)}return d}
+function prof(){return ld('khsk_profile')}
+function init(){if(!prof())editProf(true);else if(QR0&&NAMES[QR0])openQR(QR0);else home()}
+function home(){CUR=null;$('hb').className='hide';var p=prof();var h='<div class="card prof"><div class="av">'+esc((p.hoTen||'?').trim().split(' ').pop().charAt(0))+'</div><div class="i"><b>'+esc(p.hoTen)+'</b><span>'+esc(p.ma)+(p.lop?' · '+esc(p.lop):'')+' · '+esc(p.boMon)+'</span></div><button class="lnk" onclick="editProf()">Sửa</button></div><div class="grid">';
+Object.keys(NAMES).forEach(function(q){h+='<button class="tile" onclick="openQR(\''+q+'\')"><span class="q">'+q+'</span><br>'+NAMES[q]+'</button>'});
+h+='</div><div class="card note" style="margin-top:14px">'+(STANDALONE?'':'<b>Cài như ứng dụng:</b> iPhone (Safari): bấm Chia sẻ → <i>Thêm vào MH chính</i>. Android (Chrome): bấm ⋮ → <i>Thêm vào màn hình chính</i>.<br>')+'Mã máy của bạn: <b>'+dev()+'</b> (được ghi kèm mỗi lần đăng ký).<br>Thông tin cá nhân chỉ lưu trên máy này; đổi máy hoặc xóa dữ liệu trình duyệt thì nhập lại một lần.</div>';M(h)}
+function editProf(first){var p=prof()||{};var h='<div class="card"><h2>'+(first?'Thông tin cá nhân (nhập một lần)':'Sửa thông tin cá nhân')+'</h2><p class="note">Thông tin này được điền sẵn vào các biểu mẫu QR, không cần nhập lại mỗi lần.</p>';
+PF.forEach(function(f){h+='<div class="f"><label class="t">'+f[1]+(f[0]=='lop'?'':' <span class="req">*</span>')+'</label>';if(f[2]=='sel'){f[3].forEach(function(o){var on=p[f[0]]==o;h+='<label class="opt'+(on?' on':'')+'"><input type="radio" name="p_'+f[0]+'" value="'+o+'"'+(on?' checked':'')+' onchange="mark(this)"><span>'+o+'</span></label>'})}else h+='<input type="'+f[2]+'" id="p_'+f[0]+'" value="'+esc(p[f[0]])+'">';h+='</div>'});
+h+='<div id="perr" class="err"></div><button class="btn g" onclick="saveProf()">Lưu thông tin</button>'+(first?'':'<button class="btn o" onclick="home()">Hủy</button>')+'</div>';M(h)}
+function saveProf(){var p={},bad='';PF.forEach(function(f){p[f[0]]=f[2]=='sel'?((document.querySelector('input[name=p_'+f[0]+']:checked')||{}).value||''):$('p_'+f[0]).value.trim();if(!p[f[0]]&&f[0]!='lop')bad=f[1]});if(bad){$('perr').textContent='Vui lòng nhập: '+bad;return}if(!/^0\d{9}$/.test(p.sdt)){$('perr').textContent='Số điện thoại gồm 10 chữ số, bắt đầu bằng 0';return}sv('khsk_profile',p);if(QR0&&NAMES[QR0]&&!CUR){var q=QR0;QR0='';openQR(q)}else home()}
+function pkey(t){t=t.toLowerCase();if(t.indexOf('họ và tên')==0)return'hoTen';if(t.indexOf('mssv')==0||t.indexOf('mã viên chức')==0||t.indexOf('mã học viên')==0)return'ma';if(t.indexOf('lớp học phần')==0)return null;if(t.indexOf('lớp')==0)return'lop';if(t.indexOf('bộ môn')==0)return'boMon';if(t.indexOf('số điện thoại')==0)return'sdt';if(t=='đối tượng')return'doiTuong';return null}
+function match(ch,v){if(!v)return[];var x=v.toLowerCase();return ch.filter(function(c){c=c.toLowerCase();return c.indexOf(x)==0||x.indexOf(c)==0})}
+function openQR(q){CUR=q;$('hb').className='';var F=ld('khsk_meta_'+q);if(F)render(q,F);else M('<div class="spin"></div><p class="note" style="text-align:center">Đang tải biểu mẫu '+q+'… (lần đầu hơi lâu)</p>');
+google.script.run.withSuccessHandler(function(s){var N=JSON.parse(s);sv('khsk_meta_'+q,N);if(CUR==q&&(!F||JSON.stringify(N)!=JSON.stringify(F)))render(q,N)}).withFailureHandler(function(e){if(!F)M('<div class="card">Không tải được biểu mẫu: '+esc(e.message||e)+'<br><br><button class="btn" onclick="openQR(CUR)">Thử lại</button></div>')}).appMetaQR(q)}
+function render(q,F){var p=prof(),last=ld('khsk_last_'+q)||{},pre=[],h='<h2>'+q+' – '+esc(NAMES[q])+'</h2>';
+if(F.desc)h+='<div class="card"><div class="desc" id="dsc">'+esc(F.desc)+'</div><button class="lnk" onclick="$(\'dsc\').classList.toggle(\'open\')">Xem đầy đủ / thu gọn</button></div>';
+if(q=='QR5')h+='<div class="warn">⚠ BẮT BUỘC quét mã QR5 TRƯỚC KHI sử dụng thiết bị. Tự ý sử dụng thiết bị mà không quét mã, nếu bị phát hiện sẽ bị buộc ngừng sử dụng và lập biên bản xử lý.</div>';
+var body='',ps='';F.items.forEach(function(it){if(it.type=='SECTION'){ps='<div class="sec">'+esc(it.title)+'</div>';return}
+var k=pkey(it.title),val=null,hid=false;
+if(k&&p[k]){if(it.choices){var mm=match(it.choices,p[k]);if(mm.length){val=mm[0];hid=mm.length==1}else if(it.other&&k=='boMon'){val='__other__:'+p[k];hid=true}}else{val=p[k];hid=true}}
+if(val==null&&last[it.id]!=null)val=last[it.id];
+if(val==null&&it.type=='DATE'&&/mượn|bắt đầu|cần nhận/i.test(it.title))val=today();
+if(val==null&&it.type=='TIME'&&/bắt đầu/i.test(it.title))val=nowT();
+if(hid&&!SHOWALL){pre.push([it.title,String(val).replace('__other__:','')])}
+if(!(hid&&!SHOWALL)){body+=ps;ps=''}body+=field(it,val,hid&&!SHOWALL)});
+if(pre.length)h+='<div class="pre"><b>✓ Đã điền sẵn:</b> '+pre.map(function(x){return esc(x[1])}).join(' · ')+' <button class="lnk" onclick="SHOWALL=true;render(CUR,ld(\'khsk_meta_\'+CUR))">Sửa</button></div>';
+h+='<div class="card">'+body+'<div id="ferr" class="err"></div><button class="btn" id="sb" onclick="send()">Gửi đăng ký</button></div>';M(h);SHOWALL=false}
+function field(it,val,hid){var n='i_'+it.id,h='<div class="f'+(hid?' hide':'')+'" data-id="'+it.id+'" data-type="'+it.type+'" data-req="'+(it.req?1:0)+'" data-title="'+esc(it.title)+'"><label class="t">'+esc(it.title)+(it.req?' <span class="req">*</span>':'')+'</label>'+(it.help?'<div class="h">'+esc(it.help)+'</div>':'');
+var t=it.type;if(t=='TEXT'){var tel=/điện thoại/i.test(it.title),num=/số người/i.test(it.title);h+='<input type="'+(tel?'tel':num?'number':'text')+'" id="'+n+'" value="'+esc(val)+'">'}
+else if(t=='PARAGRAPH_TEXT')h+='<textarea id="'+n+'">'+esc(val)+'</textarea>';
+else if(t=='DATE')h+='<input type="date" id="'+n+'" value="'+esc(val)+'">';
+else if(t=='TIME')h+='<input type="time" id="'+n+'" value="'+esc(val)+'">';
+else if(t=='LIST'){h+='<select id="'+n+'"><option value="">– Chọn –</option>';it.choices.forEach(function(c){h+='<option'+(c==val?' selected':'')+'>'+esc(c)+'</option>'});h+='</select>'}
+else if(t=='MULTIPLE_CHOICE'||t=='CHECKBOX'){var ty=t=='CHECKBOX'?'checkbox':'radio',vals=Array.isArray(val)?val:[val],oth=null;if(typeof val=='string'&&val.indexOf('__other__:')==0){oth=val.slice(10)}else if(val&&t=='MULTIPLE_CHOICE'&&it.choices.indexOf(val)<0&&it.other){oth=val}
+it.choices.forEach(function(c,i){var on=vals.indexOf(c)>=0;h+='<label class="opt'+(on?' on':'')+'"><input type="'+ty+'" name="'+n+'" value="'+esc(c)+'"'+(on?' checked':'')+' onchange="mark(this)"><span>'+esc(c)+'</span></label>'});
+if(it.other)h+='<label class="opt'+(oth?' on':'')+'"><input type="'+ty+'" name="'+n+'" value="__other__"'+(oth?' checked':'')+' onchange="mark(this)"><span style="flex:1">Khác: <input type="text" id="'+n+'_o" value="'+esc(oth||'')+'" style="margin-top:6px" oninput="pick(\''+n+'\')"></span></label>'}
+return h+'</div>'}
+function mark(el){var g=document.getElementsByName(el.name);for(var i=0;i<g.length;i++)g[i].parentNode.className='opt'+(g[i].checked?' on':'')}
+function pick(n){var g=document.getElementsByName(n);for(var i=0;i<g.length;i++)if(g[i].value=='__other__'){g[i].checked=true;mark(g[i])}}
+function send(){var ans={},keep={},miss=[],bad='';var fs=document.querySelectorAll('.f[data-id]');
+for(var i=0;i<fs.length;i++){var f=fs[i],id=f.getAttribute('data-id'),t=f.getAttribute('data-type'),n='i_'+id,v=null;
+if(t=='MULTIPLE_CHOICE'||t=='CHECKBOX'){var arr=[];var g=document.getElementsByName(n);for(var j=0;j<g.length;j++)if(g[j].checked)arr.push(g[j].value=='__other__'?($(n+'_o').value.trim()):g[j].value);arr=arr.filter(function(x){return x});v=t=='CHECKBOX'?arr:(arr[0]||'')}
+else v=$(n).value.trim();
+var empty=Array.isArray(v)?!v.length:!v;if(empty){if(f.getAttribute('data-req')=='1')miss.push(f.getAttribute('data-title'));continue}
+if(/điện thoại/i.test(f.getAttribute('data-title'))&&!/^0\d{9}$/.test(v))bad='Số điện thoại gồm 10 chữ số, bắt đầu bằng 0';
+ans[id]=v;if((t=='TEXT'||t=='PARAGRAPH_TEXT'||t=='MULTIPLE_CHOICE'||t=='LIST')&&!pkey(f.getAttribute('data-title'))&&!/ghi chú|bất thường/i.test(f.getAttribute('data-title')))keep[id]=v}
+if(miss.length){$('ferr').textContent='Vui lòng điền: '+miss.join('; ');var x=document.querySelector('.f[data-title="'+miss[0].replace(/"/g,'')+'"]');if(x){x.classList.remove('hide');x.scrollIntoView({block:'center'})}return}
+if(bad){$('ferr').textContent=bad;return}
+$('sb').disabled=true;$('sb').textContent='Đang gửi…';var q=CUR;
+google.script.run.withSuccessHandler(function(r){sv('khsk_last_'+q,keep);if(r.rid)google.script.run.withFailureHandler(function(){}).appGhiTB(q,r.rid,dev());M('<div class="card msg"><div class="ok">✓</div><h2>Đã gửi '+q+'</h2><p>'+esc(NAMES[q])+'<br><span class="note">Lúc '+esc(r.time)+'</span></p>'+(r.msg?'<p class="note">'+esc(r.msg)+'</p>':'')+(r.edit?'<p><a href="'+esc(r.edit)+'" target="_blank" class="lnk">Chỉnh sửa đăng ký vừa gửi</a></p>':'')+'<p class="note">Mã máy: '+dev()+'</p><button class="btn" onclick="home()">Về trang chủ</button></div>')})
+.withFailureHandler(function(e){$('sb').disabled=false;$('sb').textContent='Gửi đăng ký';$('ferr').textContent='Gửi không thành công: '+(e.message||e)+'. Vui lòng thử lại.'}).appGui(q,ans)}
+init();
+</script></body></html>

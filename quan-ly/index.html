@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quản lý PTN – Khoa KHSK</title>
+<meta name="theme-color" content="#1E4FC2">
+<meta name="robots" content="noindex, nofollow"><!-- trang quản lý: không cho Google lập chỉ mục -->
+<link rel="icon" type="image/png" href="../icon-192.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div id="app"><div class="loading"><div class="spin"></div></div></div>
+<div id="modal" class="modal hide" role="dialog" aria-modal="true"><div class="modal-box"><div id="modal-body"></div></div></div>
+<div id="toast" class="toast hide"></div>
+<script src="config.js"></script>
+<script>
+  // Chế độ chạy thử trên máy: index.html?demo=1 → dùng máy chủ giả lập (không cần mạng)
+  if (location.protocol === 'file:' && !/[?&]demo=1/.test(location.search) && !/^https?:/.test(window.PTN_API || '')) location.replace('chay-thu.html' + location.hash); // mở tệp trên máy → bản chạy thử
+  if (/[?&]demo=1/.test(location.search)) document.write('<script src="demo/may-chu-gia-lap.js"><\/script>');
+</script>
+<script src="../don-phu-luc.js"></script>
+<script src="../don-qr.js"></script>
+<script src="xuat-file.js"></script>
+<script src="mau-in.js"></script>
+<script src="doc-scan.js"></script>
+<script src="app.js"></script>
+<script src="app-mo-rong.js"></script>
+</body>
+</html>
