@@ -15,7 +15,7 @@
 *{box-sizing:border-box}body{margin:0;font:400 17.5px/1.5 var(--f);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased}
 a{color:var(--b)}
 header{background:rgba(255,255,255,.92);backdrop-filter:blur(8px);color:var(--b);padding:calc(10px + env(safe-area-inset-top)) 16px 10px;position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;border-bottom:3px solid transparent;border-image:var(--vang) 1}
-header img{height:42px;width:auto;display:block;flex:none}.brand{display:flex;flex-direction:column;line-height:1.25;flex:1;min-width:0}.brand span{font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--m)}.brand b{font-size:17px;color:var(--ink)}
+header img{height:42px;width:auto;display:block;flex:none}header img.logo-ngang{width:316px;max-width:100%;height:auto;flex:0 1 auto;min-width:0}.brand{display:flex;flex-direction:column;line-height:1.25;flex:1;min-width:0}.brand span{font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--m)}.brand b{font-size:17px;color:var(--ink)}
 header .lui{background:#fff;border:1px solid #D5DCEA;border-radius:10px;color:var(--b);font-size:26px;font-weight:700;line-height:1;width:36px;height:36px;padding:0 0 3px;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center}header .lui.tiep{margin-left:-4px}
 header a.home{margin-left:auto;background:linear-gradient(160deg,#3A78F2,#1C47B4);color:#fff;border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;text-decoration:none}
 main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
@@ -65,7 +65,7 @@ textarea{min-height:80px;resize:vertical}
 .hide{display:none!important}
 @media (max-width:360px){.hai{grid-template-columns:1fr}.tu{grid-template-columns:repeat(4,1fr)}}
 </style></head><body>
-<header><button id="hl" class="lui hide" aria-label="Quay lại" title="Quay lại">‹</button><button id="hn" class="lui tiep hide" aria-label="Tiếp" title="Tiếp">›</button><img src="logo-mark.png" alt="Logo"><div class="brand"><span>ĐẠI HỌC CÔNG NGHIỆP TP. HỒ CHÍ MINH</span><b>KHOA KHOA HỌC SỨC KHỎE</b></div><a id="hb" class="home hide" href="#/" aria-label="Trang chủ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/></svg></a></header>
+<header><button id="hl" class="lui hide" aria-label="Quay lại" title="Quay lại">‹</button><button id="hn" class="lui tiep hide" aria-label="Tiếp" title="Tiếp">›</button><img class="logo-ngang" src="logo-ngang-xanh.png" alt="Đại học Công nghiệp TP. Hồ Chí Minh – Khoa Khoa học Sức khỏe"><a id="hb" class="home hide" href="#/" aria-label="Trang chủ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/></svg></a></header>
 <main id="m"><div class="spin"></div><p class="note" style="text-align:center">Đang tải…</p></main>
 <div id="toast" class="toast hide"></div>
 <script src="quan-ly/config.js?v=64cf48cd"></script>

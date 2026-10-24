@@ -133,11 +133,11 @@
   const icon = (k, cls) => '<svg class="i' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[k] || '') + '</svg>';
 
   // ---------------- Đăng nhập ----------------
-  function logo() { return '<img src="../icon-192.png" alt="">'; }
+  function logo() { return '<img class="logo-ngang" src="../logo-ngang-am.png" alt="Đại học Công nghiệp TP. Hồ Chí Minh – Khoa Khoa học Sức khỏe">'; }
   function manDangNhap(thongBao) {
     document.body.classList.remove('in');
     $('app').innerHTML = (DEMO ? '<div class="demo-bar">' + thanhDemo() + ' Admin: <b>nguyen.phu789@gmail.com</b> / <b>123456</b> · Thử phân quyền: <b>canbo.hoachat@gmail.com</b> / <b>HoaChat2026</b>, <b>canbo.xem@gmail.com</b> / <b>ChiXem2026</b>, <b>canbo.ptn@gmail.com</b> / <b>CanBo2026</b></div>' : '') +
-      thanhDiChuyen() + '<div class="login"><section class="login-hero"><div class="brand">' + logo() + '<div><small>Đại học Công nghiệp TP. Hồ Chí Minh</small><b>Khoa Khoa học Sức khỏe</b></div></div>' +
+      thanhDiChuyen() + '<div class="login"><section class="login-hero"><div class="brand">' + logo() + '</div>' +
       '<div style="position:relative;z-index:1"><div class="vach"></div><h1>Hệ thống quản lý<br><span>Phòng thí nghiệm</span></h1><p>Tài sản – thiết bị, đơn đăng ký QR1 – QR8, hồ sơ đề tài, hóa chất – vật tư, biên bản bàn giao và báo cáo trên một nền tảng.</p>' +
       '<ul><li>' + icon('kiem') + 'Đơn đăng ký qua một mã QR tổng</li><li>' + icon('kiem') + 'Dự trù, biên bản bàn giao tự động theo thời khóa biểu</li><li>' + icon('kiem') + 'Theo dõi thiết bị, kho hóa chất – dược liệu theo thời gian thực</li></ul></div>' +
       '<small class="chan">© Khoa Khoa học Sức khỏe – IUH</small></section><div class="login-form"><form class="login-box" id="f-login" autocomplete="on">' +
@@ -217,7 +217,7 @@
     document.body.classList.add('in');
     const n = S.toi.nguoi;
     $('app').innerHTML = (DEMO ? '<div class="demo-bar">' + thanhDemo() + '</div>' : '') +
-      '<div class="layout"><aside class="side" id="side"><div class="brand">' + logo() + '<div><small>KHOA KHOA HỌC SỨC KHỎE</small><b>Quản lý PTN</b></div></div>' +
+      '<div class="layout"><aside class="side" id="side"><div class="brand co-logo">' + logo() + '<b>Quản lý PTN</b></div>' +
       '<nav class="nav" id="nav">' + MENU.filter(m => m[3] ? laAdmin() : coQuyen(m[0], 'xem')).map(m => (NHOM_MENU[m[0]] ? '<div class="nav-nhom"><span>' + NHOM_MENU[m[0]] + '</span></div>' : '') +
         '<a href="#/' + m[0] + '" data-m="' + m[0] + '" title="' + esc(m[2]) + '"><span class="ico">' + icon(m[0]) + '</span>' + m[2] + '</a>').join('') + '</nav>' +
       (coQuyen('don', 'xem') && 'Notification' in window && Notification.permission === 'default' ? '<button class="bat-tb" id="b-bat-tb">🔔 Bật thông báo đơn mới trên máy này</button>' : '') +

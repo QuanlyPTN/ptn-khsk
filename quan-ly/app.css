@@ -56,6 +56,9 @@ svg.i { width: 18px; height: 18px; flex: none; }
 .side .brand { color: #fff; padding: 20px 18px 18px; border-bottom: 1px solid rgba(242, 199, 102, .28); margin-bottom: 4px; }
 .side .brand img { background: #fff; border-radius: 10px; padding: 3px; width: 40px; height: 40px; }
 .side .brand small { color: #fff; font-weight: 700; }
+.brand img.logo-ngang { background: none; border-radius: 0; padding: 0; width: 100%; max-width: 420px; height: auto; }
+.side .brand.co-logo { flex-direction: column; align-items: flex-start; gap: 10px; }
+.side .brand.co-logo b { font-size: 15px; color: var(--gold-2); letter-spacing: .3px; }
 .nav { padding: 6px 12px 12px; flex: 1; overflow: auto; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .2) transparent; }
 .nav-nhom { padding: 20px 12px 8px; }
 /* tên nhóm menu: chữ vàng ánh kim (dải sáng – tối như kim loại), bóng nhẹ để nổi trên nền xanh, vạch vàng mảnh bên dưới */
