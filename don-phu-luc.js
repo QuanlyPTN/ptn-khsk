@@ -30,7 +30,7 @@
     'Vệ sinh phòng; đóng cửa sổ và khóa cửa cẩn thận trước khi ra về.'];
   const CAM_KET_SAU = ['Trả đúng và đầy đủ những dụng cụ, thiết bị mà PTN đã cho mượn.', 'Tổng vệ sinh phòng thực hành, vệ sinh bên trong và bên ngoài máy, thiết bị đã sử dụng.',
     'Bồi thường những hư hỏng trong quá trình sử dụng máy, thiết bị và dụng cụ.', 'Trả chìa khóa tủ cho giảng viên quản lý phòng.'];
-  const GHI_CHU_BT = ' Việc bồi thường (nếu có) được xử lý theo Điều 24 Quy định quản lý, sử dụng tài sản nội bộ tại Khoa, độc lập với việc công nhận kết quả học tập. Chúng tôi chân thành cảm ơn.';
+  const GHI_CHU_BT = ' Việc bồi thường (nếu có) được xử lý theo Điều 18 Quy định quản lý, sử dụng phòng TN – TH của Khoa, độc lập với việc công nhận kết quả học tập. Chúng tôi chân thành cảm ơn.';
   const dsSo = (ds) => ds.map((x, i) => P((i + 1) + '. ' + x, { al: 'both', ind: { firstLine: 567 } }));
   // bảng có viền: grid (twip), dau = tiêu đề cột, dong = các dòng (thêm dòng trống cho đủ toiThieu, cột 1 là STT)
   const bang = (grid, dau, dong, toiThieu) => {
@@ -74,7 +74,7 @@
       bang([700, 3000, 1600, 1600, 2171], ['STT', 'Họ và tên', 'MSSV', 'Điện thoại', 'Email'], (hs.nhom || []).map((m, i) => [i + 1, m.ho_ten, m.ma_so, m.sdt, m.email]), 3), TRONG);
     const deTai = [P(['Đề tài: ', GT(hs.ten, 30)]), P(['GVHD: ', GT(hs.gvhd, 31)])];
     const loiMo = 'Chúng tôi rất mong được sự đồng ý của thầy/cô để có thể tiến hành thực hiện đề tài trong thời gian sớm nhất và ';
-    const camOn = kltn ? P([R('Ghi chú:', { i: 1 }), GHI_CHU_BT], { al: 'both' }) : P('Chúng tôi chân thành cảm ơn.', { al: 'both' });
+    const camOn = P([R('Ghi chú:', { i: 1 }), GHI_CHU_BT], { al: 'both' }); // theo Phụ lục 1A–2C của Quy định (Điều 18)
     if (ma[1] === 'A') {
       k.push(P('Tôi làm đơn này kính đề nghị BLĐ Khoa và bộ phận quản lý PTN cho phép mượn các dụng cụ sau để thực hiện ' + (kltn ? viec : 'đề tài nghiên cứu khoa học') + ':', { al: 'both' }), ...deTai,
         bang([700, 2700, 2771, 1000, 1000, 900], ['STT', 'Tên dụng cụ', 'Quy cách (đặc điểm, thông số chính, nhà sản xuất)', 'SL mượn', 'SL trả', 'Ghi chú'],

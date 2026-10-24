@@ -65,7 +65,7 @@
       ['Sử dụng thiết bị đúng mục đích, đúng nơi đã đăng ký; không cho người khác mượn lại.', 'Bảo quản, vận hành theo hướng dẫn sử dụng; báo ngay cho PTN khi có sự cố (theo Biểu mẫu báo hỏng thiết bị).',
         'Trả đúng hạn, đầy đủ phụ kiện và đúng tình trạng như khi nhận; muốn gia hạn phải đăng ký lại.', 'Bồi thường những hư hỏng, mất mát do lỗi chủ quan gây ra.']
         .map((x, i) => P((i + 1) + '. ' + x, { al: 'both', ind: { left: 567 } })),
-      [P([R('Ghi chú: ', { i: 1 }), 'Giảng viên đăng ký trực tuyến qua mã QR2 trước khi nộp đơn. Việc bồi thường (nếu có) được xử lý theo Điều 24 Quy định quản lý, sử dụng tài sản nội bộ tại Khoa. Đơn lập thành 02 bản: PTN giữ 01 bản, giảng viên giữ 01 bản.'], { al: 'both' })],
+      [P([R('Ghi chú: ', { i: 1 }), 'Giảng viên đăng ký trực tuyến qua mã QR2 trước khi nộp đơn. Việc bồi thường (nếu có) được xử lý theo Điều 18 Quy định quản lý, sử dụng phòng TN – TH của Khoa. Đơn lập thành 02 bản: PTN giữ 01 bản, giảng viên giữ 01 bản.'], { al: 'both' })],
       ghiChuTra(d), cuoi(d, [['GIẢNG VIÊN MƯỢN', d.ho_ten], 'QUẢN LÝ PTN', 'BAN LÃNH ĐẠO KHOA'])),
 
     QR3: (d) => { const cap = d.trang_thai === 'Đã cấp phát';
