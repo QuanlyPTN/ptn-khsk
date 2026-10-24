@@ -207,7 +207,7 @@
           const tb = dsTB(PHONG_TB_QR2), mon = dsMonGV('');
           f = truong('Thiết bị cần mượn (phòng ' + PHONG_TB_QR2 + ')', tb.length ? '<input type="search" id="tim-tb" placeholder="Tìm tên thiết bị…">' : '<div class="h">Phòng ' + PHONG_TB_QR2 + ' chưa có thiết bị trong danh mục – nhập ở ô dưới.</div>', { req: 1 }) +
             '<div id="o-tb2">' + (tb.length ? chon('thiet_bi', '', tb, { nhieu: 1 }) : '') + '</div>' +
-            nhap('tb_khac', 'Thiết bị khác (ngoài danh sách)', { area: 1, ph: 'Mỗi dòng một thiết bị: tên, model, số lượng', h: 'Không có trong danh sách trên thì ghi vào đây' }) +
+            truong('Thiết bị khác (ngoài danh sách)', '<div class="h">Không có trong danh sách trên thì ghi vào đây. Có tên thiết bị thì phải nhập số lượng.</div><div id="tb-khac"></div><button type="button" class="lnk" id="them-tb-khac">+ Thêm thiết bị</button>') +
             '<div class="hai">' + nhap('tu_ngay', 'Ngày mượn', { type: 'date', v: homNay(), req: 1 }) + nhap('den_ngay', 'Ngày dự kiến trả', { type: 'date', req: 1 }) + '</div>' +
             chon('dung_cho', 'Dùng cho', [['lop', 'Lớp thực hành'], ['hs', 'Đồ án / đề tài của sinh viên (hồ sơ QR7)'], ['ca_nhan', 'Đề tài cá nhân']], { v: 'lop', req: 1 }) +
             '<div id="o-lop">' + (mon.length ? chonO('lop_hp', 'Môn thực hành – giảng viên', mon, { h: 'Mỗi môn – giảng viên một dòng (GV dạy nhiều nhóm chỉ chọn một lần)' })
@@ -302,6 +302,13 @@
       if (e.target.name === 'lop_hp' || e.target.name === 'nhanh' || e.target.name === 'hs_chon' || e.target.name === 'hs_ma') veDong();
       if (e.target.name === 'dung_cho') { $('o-lop').classList.toggle('hide', e.target.value !== 'lop'); $('o-hs').classList.toggle('hide', e.target.value !== 'hs'); if ($('o-ca-nhan')) $('o-ca-nhan').classList.toggle('hide', e.target.value !== 'ca_nhan'); }
     });
+    // QR2: dòng thiết bị ngoài danh sách – tên, số lượng (bắt buộc), tình trạng, ghi chú
+    const themTBKhac = () => { const r = document.createElement('div'); r.className = 'tb-khac';
+      r.innerHTML = '<input type="text" data-k="ten" placeholder="Tên thiết bị (model, hãng)"><div class="hai"><input type="number" min="1" step="1" inputmode="numeric" data-k="sl" placeholder="Số lượng *">' +
+        '<input type="text" data-k="tinh_trang" placeholder="Tình trạng thiết bị"></div><input type="text" data-k="ghi_chu" placeholder="Ghi chú">';
+      $('tb-khac').appendChild(r); };
+    if ($('tb-khac')) { themTBKhac(); $('them-tb-khac').onclick = themTBKhac; }
+    const docTBKhac = () => [...document.querySelectorAll('#tb-khac .tb-khac')].map(r => { const o = {}; r.querySelectorAll('[data-k]').forEach(i => { o[i.dataset.k] = i.value.trim(); }); return o; }).filter(x => x.ten);
     if ($('tim-tb')) $('tim-tb').oninput = (e) => { const q = boDau(e.target.value); $('o-tb2').querySelectorAll('.opt').forEach(o => { o.style.display = !q || boDau(o.textContent).indexOf(q) >= 0 ? '' : 'none'; }); };
     if (qr === 'QR8') {
       veDong();
@@ -316,7 +323,9 @@
       if (qr === 'QR8') { if (v.nhanh === 'hs') { d.hs = form.dataset.hs || (v.hs_ma || v.hs_chon || '').toUpperCase(); delete d.lop_hp; if (!d.hs) { $('err').textContent = 'Chọn hoặc nhập mã hồ sơ đề tài'; return; } } else delete d.hs; delete d.hs_chon; delete d.hs_ma; d.nhanh = v.nhanh; }
       if (qr === 'QR2') {
         if (v.dung_cho !== 'lop') { delete d.lop_hp; delete d.mon_tu_nhap; } if (v.dung_cho !== 'hs') delete d.hs; if (v.dung_cho !== 'ca_nhan') delete d.de_tai;
-        if (!(v.thiet_bi || []).length && !v.tb_khac) { $('err').textContent = 'Chọn thiết bị cần mượn hoặc nhập thiết bị ngoài danh sách'; return; }
+        d.tb_khac = docTBKhac(); const thieuSL = d.tb_khac.find(x => !(+x.sl > 0));
+        if (thieuSL) { $('err').textContent = 'Nhập số lượng cho thiết bị "' + thieuSL.ten + '"'; return; }
+        if (!(v.thiet_bi || []).length && !d.tb_khac.length) { $('err').textContent = 'Chọn thiết bị cần mượn hoặc nhập thiết bị ngoài danh sách'; return; }
         if (v.dung_cho === 'hs' && !v.hs) { $('err').textContent = 'Nhập mã hồ sơ đề tài'; return; }
         if (v.dung_cho === 'lop' && !v.lop_hp && !v.mon_tu_nhap) { $('err').textContent = 'Chọn (hoặc gõ) môn thực hành – giảng viên'; return; }
       }

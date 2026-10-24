@@ -26,7 +26,11 @@
   // tủ của đơn QR6: "tủ số 05 (phòng D11.02), tủ số 07 (phòng D11.03)"
   const tuDon = (d) => { const ps = String(d.phong || '').split(/\s*,\s*/); return String(d.tu || '').split(/\s*,\s*/).filter(Boolean).map((so, i) => 'tủ số ' + so + ' (phòng ' + (ps[i] || ps[0]) + ')').join(', ') || 'tủ số ……… tại phòng ………'; };
   // thiết bị gõ tay ngoài danh sách (QR2) đã nằm cuối ten_tb; tb_ct chỉ có thiết bị trong danh mục
-  const dsTB = (d) => (d.tb_ct && d.tb_ct.length ? d.tb_ct.concat((d.ten_tb || []).slice(d.tb_ct.length).map(t => ({ ten: t }))) : (d.ten_tb || []).map(t => ({ ten: t })));
+  const dsTB = (d) => {
+    const nd = d.nd || {}, khac = (nd.tb_khac_ds || []).map(x => ({ ten: x.ten + (x.ghi_chu ? ' (' + x.ghi_chu + ')' : ''), sl: x.sl, tinh_trang: x.tinh_trang, ngoai: 1 }));
+    if (khac.length) return (d.tb_ct && d.tb_ct.length ? d.tb_ct : (d.ten_tb || []).slice(0, (d.ten_tb || []).length - khac.length).map(t => ({ ten: t }))).concat(khac);
+    return d.tb_ct && d.tb_ct.length ? d.tb_ct.concat((d.ten_tb || []).slice(d.tb_ct.length).map(t => ({ ten: t }))) : (d.ten_tb || []).map(t => ({ ten: t }));
+  };
 
   const MAU = {
     QR1: (d) => dau('QR1', 'ĐƠN ĐỀ NGHỊ MƯỢN PHÒNG, THIẾT BỊ – DỤNG CỤ', '(SỬ DỤNG TRONG NGÀY)').concat(
@@ -53,7 +57,7 @@
       [P(['Thời gian mượn: từ ngày ', R(ngay(d.tu_ngay), { b: 1 }), ' đến ngày ', R(ngay(d.den_ngay), { b: 1 })]),
         P(['Nơi sử dụng (phòng): ', GT(d.nd.noi_su_dung || d.phong, 22)]),
         bang([594, 1294, 2686, 559, 1197, 1395, 1345], ['STT', 'Mã tài sản', 'Tên thiết bị (model, số serial)', 'SL', 'Phòng hiện tại', 'Tình trạng khi nhận', 'Tình trạng khi trả'],
-          dsTB(d).map((t, i) => [i + 1, t.ma_ts || '', [t.ten, t.model, t.serial && 'S/N ' + t.serial].filter(Boolean).join(' – '), 1, t.phong || '', '', '']), 3),
+          dsTB(d).map((t, i) => [i + 1, t.ma_ts || (t.ngoai ? 'Ngoài DS' : ''), [t.ten, t.model, t.serial && 'S/N ' + t.serial].filter(Boolean).join(' – '), t.sl || 1, t.phong || '', t.tinh_trang || '', '']), 3),
         P(R('Tôi cam kết:', { b: 1 }))],
       ['Sử dụng thiết bị đúng mục đích, đúng nơi đã đăng ký; không cho người khác mượn lại.', 'Bảo quản, vận hành theo hướng dẫn sử dụng; báo ngay cho PTN khi có sự cố (theo Biểu mẫu báo hỏng thiết bị).',
         'Trả đúng hạn, đầy đủ phụ kiện và đúng tình trạng như khi nhận; muốn gia hạn phải đăng ký lại.', 'Bồi thường những hư hỏng, mất mát do lỗi chủ quan gây ra.']
