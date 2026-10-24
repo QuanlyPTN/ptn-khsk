@@ -107,6 +107,7 @@
   const camKet = (qr) => '<div class="warn">' + (qr === 'QR5' ? '⚠ BẮT BUỘC quét mã QR5 TRƯỚC KHI sử dụng thiết bị. Tự ý sử dụng thiết bị mà không quét mã, nếu bị phát hiện sẽ bị buộc ngừng sử dụng và lập biên bản.\n' : '') +
     'Đăng ký thay / mạo danh người khác bị xử lý như vi phạm nội quy.</div>' +
     '<label class="opt"><input type="checkbox" name="cam_ket"><span>Tôi cam kết thông tin trên là đúng; thực hiện đúng nội quy, quy định của PTN Khoa KHSK và chịu trách nhiệm bồi thường nếu làm hư hỏng, mất mát tài sản.</span></label>';
+  const PHONG_TB_QR2 = 'D11.01'; // QR2: chỉ cho mượn thiết bị đặt tại phòng này
   const dsPhong = () => S.dm.phong.map(p => [p.ma, '<b>' + esc(p.ma) + '</b> – ' + esc(p.ten)]);
   const dsTB = (phong) => S.dm.thiet_bi.filter(t => !phong || t.phong === phong).map(t => [t.id, esc(t.ten) + (t.ma_ts ? ' <span class="note">' + esc(t.ma_ts) + '</span>' : '') + (phong ? '' : ' <span class="note">· ' + esc(t.phong || '—') + '</span>') + (t.ban ? ' <span class="note">(đang bận / hỏng)</span>' : ''), t.ban]);
   // QR2, QR3: môn thực hành – giảng viên (gộp các lớp / nhóm cùng môn, cùng GV; giá trị = một lớp học phần đại diện)
@@ -202,11 +203,19 @@
           nhap('gvhd', 'Giảng viên hướng dẫn / giảng viên dạy thực hành');
         break;
       case 'QR2':
-        f = truong('Thiết bị cần mượn', '<input type="search" id="tim-tb" placeholder="Tìm tên thiết bị…">', { req: 1 }) + '<div id="o-tb2">' + chon('thiet_bi', '', dsTB(''), { nhieu: 1 }) + '</div>' +
-          '<div class="hai">' + nhap('tu_ngay', 'Ngày mượn', { type: 'date', v: homNay(), req: 1 }) + nhap('den_ngay', 'Ngày dự kiến trả', { type: 'date', req: 1 }) + '</div>' +
-          chon('dung_cho', 'Dùng cho', [['lop', 'Lớp thực hành'], ['hs', 'Đồ án / đề tài của sinh viên (hồ sơ QR7)']], { v: 'lop', req: 1 }) +
-          '<div id="o-lop">' + chonO('lop_hp', 'Môn thực hành – giảng viên', dsMonGV(''), { h: 'Mỗi môn – giảng viên một dòng (GV dạy nhiều nhóm chỉ chọn một lần)' }) + '</div><div id="o-hs" class="hide">' + nhap('hs', 'Mã hồ sơ đề tài', { ph: 'VD: KL-2627-015' }) + '</div>' +
-          nhap('noi_su_dung', 'Nơi sử dụng thiết bị', { ph: 'Phòng / địa điểm' }) + nhap('muc_dich', 'Mục đích sử dụng', { req: 1 });
+        { // thiết bị phòng D11.01 (kho thiết bị cho mượn) + gõ tay thiết bị ngoài danh sách; Dùng cho thay cho "Mục đích sử dụng"
+          const tb = dsTB(PHONG_TB_QR2), mon = dsMonGV('');
+          f = truong('Thiết bị cần mượn (phòng ' + PHONG_TB_QR2 + ')', tb.length ? '<input type="search" id="tim-tb" placeholder="Tìm tên thiết bị…">' : '<div class="h">Phòng ' + PHONG_TB_QR2 + ' chưa có thiết bị trong danh mục – nhập ở ô dưới.</div>', { req: 1 }) +
+            '<div id="o-tb2">' + (tb.length ? chon('thiet_bi', '', tb, { nhieu: 1 }) : '') + '</div>' +
+            nhap('tb_khac', 'Thiết bị khác (ngoài danh sách)', { area: 1, ph: 'Mỗi dòng một thiết bị: tên, model, số lượng', h: 'Không có trong danh sách trên thì ghi vào đây' }) +
+            '<div class="hai">' + nhap('tu_ngay', 'Ngày mượn', { type: 'date', v: homNay(), req: 1 }) + nhap('den_ngay', 'Ngày dự kiến trả', { type: 'date', req: 1 }) + '</div>' +
+            chon('dung_cho', 'Dùng cho', [['lop', 'Lớp thực hành'], ['hs', 'Đồ án / đề tài của sinh viên (hồ sơ QR7)'], ['ca_nhan', 'Đề tài cá nhân']], { v: 'lop', req: 1 }) +
+            '<div id="o-lop">' + (mon.length ? chonO('lop_hp', 'Môn thực hành – giảng viên', mon, { h: 'Mỗi môn – giảng viên một dòng (GV dạy nhiều nhóm chỉ chọn một lần)' })
+              : nhap('mon_tu_nhap', 'Môn thực hành – giảng viên', { ph: 'VD: TH Bào chế 1 – ThS. Nguyễn Văn A', h: 'Chưa có thời khóa biểu học kỳ trên hệ thống – gõ tên môn và giảng viên' })) + '</div>' +
+            '<div id="o-hs" class="hide">' + nhap('hs', 'Mã hồ sơ đề tài', { ph: 'VD: KL-2627-015' }) + '</div>' +
+            '<div id="o-ca-nhan" class="hide">' + nhap('de_tai', 'Tên đề tài (không bắt buộc)') + '</div>' +
+            nhap('noi_su_dung', 'Nơi sử dụng thiết bị', { ph: 'Phòng / địa điểm' });
+        }
         break;
       case 'QR3':
         f = chonO('lop_hp', 'Môn thực hành – giảng viên', dsMonGV('hc'), { req: 1, h: 'Mỗi môn – giảng viên một dòng (GV dạy nhiều nhóm chỉ chọn một lần); số liệu ghi vào biên bản bàn giao hóa chất của môn, học kỳ ' + esc(S.dm.hk) }) + '<div id="o-dong"></div>' +
@@ -291,7 +300,7 @@
     form.addEventListener('change', (e) => {
       if (e.target.name === 'phong') { if (qr === 'QR6') veTu(); else veTB(); }
       if (e.target.name === 'lop_hp' || e.target.name === 'nhanh' || e.target.name === 'hs_chon' || e.target.name === 'hs_ma') veDong();
-      if (e.target.name === 'dung_cho') { $('o-lop').classList.toggle('hide', e.target.value !== 'lop'); $('o-hs').classList.toggle('hide', e.target.value !== 'hs'); }
+      if (e.target.name === 'dung_cho') { $('o-lop').classList.toggle('hide', e.target.value !== 'lop'); $('o-hs').classList.toggle('hide', e.target.value !== 'hs'); if ($('o-ca-nhan')) $('o-ca-nhan').classList.toggle('hide', e.target.value !== 'ca_nhan'); }
     });
     if ($('tim-tb')) $('tim-tb').oninput = (e) => { const q = boDau(e.target.value); $('o-tb2').querySelectorAll('.opt').forEach(o => { o.style.display = !q || boDau(o.textContent).indexOf(q) >= 0 ? '' : 'none'; }); };
     if (qr === 'QR8') {
@@ -305,13 +314,18 @@
       const v = giaTri(form), d = Object.assign({}, v);
       if (qr === 'QR3' || qr === 'QR8') d.dong = docBangDong('bang-dong');
       if (qr === 'QR8') { if (v.nhanh === 'hs') { d.hs = form.dataset.hs || (v.hs_ma || v.hs_chon || '').toUpperCase(); delete d.lop_hp; if (!d.hs) { $('err').textContent = 'Chọn hoặc nhập mã hồ sơ đề tài'; return; } } else delete d.hs; delete d.hs_chon; delete d.hs_ma; d.nhanh = v.nhanh; }
-      if (qr === 'QR2' && v.dung_cho === 'hs') delete d.lop_hp; else if (qr === 'QR2') delete d.hs;
+      if (qr === 'QR2') {
+        if (v.dung_cho !== 'lop') { delete d.lop_hp; delete d.mon_tu_nhap; } if (v.dung_cho !== 'hs') delete d.hs; if (v.dung_cho !== 'ca_nhan') delete d.de_tai;
+        if (!(v.thiet_bi || []).length && !v.tb_khac) { $('err').textContent = 'Chọn thiết bị cần mượn hoặc nhập thiết bị ngoài danh sách'; return; }
+        if (v.dung_cho === 'hs' && !v.hs) { $('err').textContent = 'Nhập mã hồ sơ đề tài'; return; }
+        if (v.dung_cho === 'lop' && !v.lop_hp && !v.mon_tu_nhap) { $('err').textContent = 'Chọn (hoặc gõ) môn thực hành – giảng viên'; return; }
+      }
       if (['QR1', 'QR4', 'QR5', 'QR6'].indexOf(qr) >= 0 && !(v.phong || []).length) { $('err').textContent = 'Chọn ít nhất một phòng'; return; }
       if (qr === 'QR6') { // mỗi phòng một tủ
         d.tu_ds = v.phong.map(p => ({ phong: p, so: v['tu_' + p] || '' })); Object.keys(d).filter(k => /^tu_[A-Z]/.test(k)).forEach(k => delete d[k]);
         const thieuTu = d.tu_ds.find(x => !x.so); if (thieuTu) { $('err').textContent = 'Chọn tủ cho phòng ' + thieuTu.phong; return; }
       }
-      if (qr !== 'QR8') delete d.nhanh; delete d.dung_cho;
+      if (qr !== 'QR8') delete d.nhanh; if (qr !== 'QR2') delete d.dung_cho;
       const thieu = !v.cam_ket ? 'Đánh dấu ô cam kết' : (qr === 'QR3' || qr === 'QR8') && !d.dong.length ? 'Nhập số lượng ít nhất một dòng' : '';
       if (thieu) { $('err').textContent = thieu; return; }
       $('sb').disabled = true; $('sb').textContent = 'Đang gửi…'; $('err').textContent = '';

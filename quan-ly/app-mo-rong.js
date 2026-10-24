@@ -22,7 +22,7 @@
     return new Promise((ok, loi) => { const s = document.createElement('script'); s.src = url; s.onload = () => ok(window[ten]); s.onerror = () => loi(new Error('Không tải được thư viện (cần mạng)')); document.head.appendChild(s); });
   }
   function tomTat(d) {
-    return [d.nd.nhanh && d.qr === 'QR8' && '[' + d.nd.nhanh + ']', d.phong && 'Phòng ' + d.phong, d.tu && 'Tủ ' + d.tu, d.ten_tb && d.ten_tb.length && d.ten_tb.join(', '), d.lop_hp && 'LHP ' + d.lop_hp, d.hs && 'Đề tài ' + d.hs,
+    return [d.nd.nhanh && d.qr === 'QR8' && '[' + d.nd.nhanh + ']', d.phong && 'Phòng ' + d.phong, d.tu && 'Tủ ' + d.tu, d.ten_tb && d.ten_tb.length && d.ten_tb.join(', '), d.lop_hp && 'LHP ' + d.lop_hp, !d.lop_hp && d.nd.ten_mon, d.hs && 'Đề tài ' + d.hs,
       (d.nd.dong || []).length && d.nd.dong.map(x => x.ten + ' ' + fmt(x.sl) + (x.dvt ? ' ' + x.dvt : '')).join('; '), d.nd.noi_dung, d.nd.muc_dich].filter(Boolean).join(' · ');
   }
   const thoiGian = (d) => d.qr === 'QR5' ? ngayVN(d.tu_ngay) + (d.den_ngay ? ' → ' + d.den_ngay.slice(11) : ' → đang dùng') : [d.tu_ngay && ngayVN(d.tu_ngay), d.den_ngay && 'hạn ' + ngayVN(d.den_ngay)].filter(Boolean).join(' · ');
@@ -113,13 +113,15 @@
   }
   const TINH_TRANG_TRA = { QR1: ['Bình thường', 'Hư hỏng', 'Thiếu'], QR2: ['Bình thường', 'Hỏng – chờ sửa', 'Thiếu phụ kiện'], QR4: ['Bình thường', 'Chưa vệ sinh', 'Hư hỏng'], QR5: ['Bình thường', 'Bất thường – hư hỏng'] };
   const ND_TEN = { noi_dung: 'Nội dung', muc_dich: 'Mục đích', gvhd: 'GVHD / GV dạy', dung_cu: 'Dụng cụ cần mượn', so_nguoi: 'Số người', tinh_trang_truoc: 'Tình trạng trước', tinh_trang_sau: 'Tình trạng sau',
+    ten_mon: 'Môn thực hành', de_tai: 'Đề tài', dung_cho: 'Dùng cho',
     ghi_chu_sau: 'Mô tả sau sử dụng', do_dung: 'Đồ dùng trong tủ', bai: 'Bài thực hành', ly_do: 'Lý do cấp bổ sung', noi_su_dung: 'Nơi sử dụng', hoc_phan: 'Học phần / lớp', ghi_chu: 'Ghi chú', dang_ky_thay: 'Lưu ý', so_lan_doi: 'Số lần đã đòi trả', nhanh: 'Mượn cho', ten_mon: 'Môn thực hành', ten_hs: 'Đề tài' };
+  const DUNG_CHO = { lop: 'Lớp thực hành', hs: 'Đồ án / đề tài của sinh viên', ca_nhan: 'Đề tài cá nhân' }; // QR2
   async function hopDon(id) {
     const d = await api('don_ct', { id }), dsId = S.cache.donIds || [], vt = dsId.indexOf(id);
     const tt = d.trang_thai, dangMo = tt === 'Đang mượn' || tt === 'Đang dùng', coBang = d.qr === 'QR3' || d.qr === 'QR8', choGiao = tt === 'Chờ duyệt' || tt === 'Đã duyệt';
     const kv = [['Người đăng ký', d.ho_ten + ' – ' + d.ma_so + ' (' + d.doi_tuong + ')'], ['Lớp / bộ môn', [d.lop, d.bo_mon].filter(Boolean).join(' · ')], ['Liên hệ', [d.sdt, d.email].filter(Boolean).join(' · ')],
       ['Phòng', d.phong], ['Tủ', d.tu], ['Thiết bị', d.ten_tb.join('; ')], ['Lớp học phần', d.lop_hp], ['Từ', ngayVN(d.tu_ngay)], ['Đến / hạn', ngayVN(d.den_ngay)]]
-      .concat(Object.keys(ND_TEN).filter(k => d.nd[k]).map(k => [ND_TEN[k], String(d.nd[k])])).filter(x => x[1]);
+      .concat(Object.keys(ND_TEN).filter(k => d.nd[k]).map(k => [ND_TEN[k], k === 'dung_cho' ? DUNG_CHO[d.nd[k]] || d.nd[k] : String(d.nd[k])])).filter(x => x[1]);
     let h = (vt >= 0 ? '<div class="nav-ds" style="float:right"><button class="btn o sm" data-nav="' + esc(dsId[vt - 1] || '') + '"' + (vt ? '' : ' disabled') + '>‹ Trước</button><span class="note">' + (vt + 1) + ' / ' + dsId.length + '</span><button class="btn o sm" data-nav="' + esc(dsId[vt + 1] || '') + '"' + (vt < dsId.length - 1 ? '' : ' disabled') + '>Tiếp ›</button></div>' : '') +
       '<h2>' + d.qr + ' · ' + esc(d.id) + ' ' + tagTT(tt, d.qua_han) + '</h2><p class="note">' + esc(QR_TEN[d.qr]) + ' · gửi ' + ngayVN(d.tg) + ' · mã máy ' + esc(d.ma_may) + '</p>' +
       (window.PTN_DON_QR && window.PTN_DON_QR.coMau(d.qr) ? '<div class="btns" style="margin-bottom:8px"><button class="btn o sm" id="b-in-don">🖨 ' + esc(window.PTN_DON_QR.TEN[d.qr]) + ' – xem trước, in / Word</button></div>' : '') +

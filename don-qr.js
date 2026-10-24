@@ -25,7 +25,8 @@
   // bảng thiết bị của đơn: tb_ct (chi tiết) hoặc ten_tb
   // tủ của đơn QR6: "tủ số 05 (phòng D11.02), tủ số 07 (phòng D11.03)"
   const tuDon = (d) => { const ps = String(d.phong || '').split(/\s*,\s*/); return String(d.tu || '').split(/\s*,\s*/).filter(Boolean).map((so, i) => 'tủ số ' + so + ' (phòng ' + (ps[i] || ps[0]) + ')').join(', ') || 'tủ số ……… tại phòng ………'; };
-  const dsTB = (d) => (d.tb_ct && d.tb_ct.length ? d.tb_ct : (d.ten_tb || []).map(t => ({ ten: t })));
+  // thiết bị gõ tay ngoài danh sách (QR2) đã nằm cuối ten_tb; tb_ct chỉ có thiết bị trong danh mục
+  const dsTB = (d) => (d.tb_ct && d.tb_ct.length ? d.tb_ct.concat((d.ten_tb || []).slice(d.tb_ct.length).map(t => ({ ten: t }))) : (d.ten_tb || []).map(t => ({ ten: t })));
 
   const MAU = {
     QR1: (d) => dau('QR1', 'ĐƠN ĐỀ NGHỊ MƯỢN PHÒNG, THIẾT BỊ – DỤNG CỤ', '(SỬ DỤNG TRONG NGÀY)').concat(
@@ -45,9 +46,9 @@
       kinhGui(['- Ban lãnh đạo Khoa Khoa học Sức khỏe;', '- Bộ phận quản lý Phòng thí nghiệm Khoa.']),
       [P(['Tôi tên: ', GT(d.ho_ten, 22), '  Mã viên chức: ', GT(d.ma_so, 8)]), P(['Bộ môn: ', GT(d.bo_mon, 22), '  Điện thoại: ', GT(d.sdt, 8)]), P(['Email: ', GT(d.email, 34)]),
         P('Tôi làm đơn này kính đề nghị BLĐ Khoa và bộ phận quản lý PTN cho phép mượn các thiết bị dưới đây.', { al: 'both' }), P(R('Mục đích mượn:', { b: 1 })),
-        P([(d.lop_hp ? '☒' : '☐') + '  Phục vụ lớp thực hành – Học phần / mã LHP: ', GT(d.lop_hp ? (d.nd.ten_mon ? d.nd.ten_mon + ' / ' : '') + String(d.lop_hp).slice(0, 10) : '', 16)], { ind: { left: 360 } }),
+        P([(d.lop_hp || d.nd.dung_cho === 'lop' ? '☒' : '☐') + '  Phục vụ lớp thực hành – Học phần / mã LHP: ', GT(d.lop_hp ? (d.nd.ten_mon ? d.nd.ten_mon + ' / ' : '') + String(d.lop_hp).slice(0, 10) : d.nd.dung_cho === 'lop' ? d.nd.ten_mon || '' : '', 16)], { ind: { left: 360 } }),
         P([(d.hs ? '☒' : '☐') + '  Phục vụ đồ án, KLTN, NCKH của SV – Đề tài / nhóm SV: ', GT(d.hs ? d.hs + (d.nd.ten_hs ? ' – ' + d.nd.ten_hs : '') : '', 10)], { ind: { left: 360 } }),
-        P([(!d.lop_hp && !d.hs ? '☒' : '☐') + '  Khác: ', GT(!d.lop_hp && !d.hs ? d.nd.muc_dich : '', 30)], { ind: { left: 360 } })]
+        P([(!d.lop_hp && !d.hs && d.nd.dung_cho !== 'lop' ? '☒' : '☐') + '  Khác: ', GT(!d.lop_hp && !d.hs && d.nd.dung_cho !== 'lop' ? d.nd.muc_dich : '', 30)], { ind: { left: 360 } })]
         .concat(d.nd.muc_dich && (d.lop_hp || d.hs) ? [P(['Nội dung sử dụng: ', R(d.nd.muc_dich, { b: 1 })], { ind: { left: 360 } })] : []),
       [P(['Thời gian mượn: từ ngày ', R(ngay(d.tu_ngay), { b: 1 }), ' đến ngày ', R(ngay(d.den_ngay), { b: 1 })]),
         P(['Nơi sử dụng (phòng): ', GT(d.nd.noi_su_dung || d.phong, 22)]),
