@@ -199,7 +199,7 @@
         f = chon('noi_dung', 'Nội dung đăng ký', ['Mượn phòng', 'Mượn thiết bị – dụng cụ', 'Mượn phòng + thiết bị – dụng cụ'], { v: 'Mượn phòng', req: 1 }) +
           chon('phong', 'Phòng (chọn được nhiều phòng)', dsPhong(), { nhieu: 1, req: 1 }) + nhap('ngay', 'Ngày sử dụng', { type: 'date', v: homNay(), req: 1 }) +
           '<div class="hai">' + nhap('gio_bd', 'Giờ bắt đầu', { type: 'time', v: gioNay(), req: 1 }) + nhap('gio_kt', 'Giờ trả', { type: 'time', v: gioNay(180), req: 1 }) + '</div>' +
-          '<div id="o-tb"></div>' + nhap('dung_cu', 'Dụng cụ cần mượn (tên, số lượng)', { area: 1 }) + nhap('muc_dich', 'Mục đích sử dụng', { req: 1 }) +
+          '<div id="o-tb"></div>' + truong('Thiết bị, dụng cụ cần mượn thêm', '<div class="h">Tên, số lượng (bắt buộc), ghi chú – mỗi thứ một khung.</div><div id="dc-them"></div><button type="button" class="lnk" id="them-dc">+ Thêm thiết bị, dụng cụ</button>') + nhap('muc_dich', 'Mục đích sử dụng', { req: 1 }) +
           nhap('gvhd', 'Giảng viên hướng dẫn / giảng viên dạy thực hành');
         break;
       case 'QR2':
@@ -302,13 +302,18 @@
       if (e.target.name === 'lop_hp' || e.target.name === 'nhanh' || e.target.name === 'hs_chon' || e.target.name === 'hs_ma') veDong();
       if (e.target.name === 'dung_cho') { $('o-lop').classList.toggle('hide', e.target.value !== 'lop'); $('o-hs').classList.toggle('hide', e.target.value !== 'hs'); if ($('o-ca-nhan')) $('o-ca-nhan').classList.toggle('hide', e.target.value !== 'ca_nhan'); }
     });
-    // QR2: dòng thiết bị ngoài danh sách – tên, số lượng (bắt buộc), tình trạng, ghi chú
-    const themTBKhac = () => { const r = document.createElement('div'); r.className = 'tb-khac';
-      r.innerHTML = '<input type="text" data-k="ten" placeholder="Tên thiết bị (model, hãng)"><div class="hai"><input type="number" min="1" step="1" inputmode="numeric" data-k="sl" placeholder="Số lượng *">' +
-        '<input type="text" data-k="tinh_trang" placeholder="Tình trạng thiết bị"></div><input type="text" data-k="ghi_chu" placeholder="Ghi chú">';
-      $('tb-khac').appendChild(r); };
-    if ($('tb-khac')) { themTBKhac(); $('them-tb-khac').onclick = themTBKhac; }
-    const docTBKhac = () => [...document.querySelectorAll('#tb-khac .tb-khac')].map(r => { const o = {}; r.querySelectorAll('[data-k]').forEach(i => { o[i.dataset.k] = i.value.trim(); }); return o; }).filter(x => x.ten);
+    // khung nhập từng thiết bị / dụng cụ: tên, số lượng (bắt buộc), [tình trạng], ghi chú – QR1 "mượn thêm", QR2 "ngoài danh sách"
+    const khungDong = (hop, nut, tenGoiY, coTinhTrang) => {
+      if (!$(hop)) return;
+      const them = () => { const r = document.createElement('div'); r.className = 'tb-khac';
+        r.innerHTML = '<input type="text" data-k="ten" placeholder="' + tenGoiY + '"><div class="hai"><input type="number" min="0" step="any" inputmode="decimal" data-k="sl" placeholder="Số lượng *">' +
+          (coTinhTrang ? '<input type="text" data-k="tinh_trang" placeholder="Tình trạng thiết bị"></div><input type="text" data-k="ghi_chu" placeholder="Ghi chú">' : '<input type="text" data-k="ghi_chu" placeholder="Ghi chú"></div>');
+        $(hop).appendChild(r); };
+      them(); $(nut).onclick = them;
+    };
+    const docDong = (hop) => [...document.querySelectorAll('#' + hop + ' .tb-khac')].map(r => { const o = {}; r.querySelectorAll('[data-k]').forEach(i => { o[i.dataset.k] = i.value.trim(); }); return o; }).filter(x => x.ten);
+    khungDong('tb-khac', 'them-tb-khac', 'Tên thiết bị (model, hãng)', true);
+    khungDong('dc-them', 'them-dc', 'Tên thiết bị / dụng cụ');
     if ($('tim-tb')) $('tim-tb').oninput = (e) => { const q = boDau(e.target.value); $('o-tb2').querySelectorAll('.opt').forEach(o => { o.style.display = !q || boDau(o.textContent).indexOf(q) >= 0 ? '' : 'none'; }); };
     if (qr === 'QR8') {
       veDong();
@@ -323,12 +328,13 @@
       if (qr === 'QR8') { if (v.nhanh === 'hs') { d.hs = form.dataset.hs || (v.hs_ma || v.hs_chon || '').toUpperCase(); delete d.lop_hp; if (!d.hs) { $('err').textContent = 'Chọn hoặc nhập mã hồ sơ đề tài'; return; } } else delete d.hs; delete d.hs_chon; delete d.hs_ma; d.nhanh = v.nhanh; }
       if (qr === 'QR2') {
         if (v.dung_cho !== 'lop') { delete d.lop_hp; delete d.mon_tu_nhap; } if (v.dung_cho !== 'hs') delete d.hs; if (v.dung_cho !== 'ca_nhan') delete d.de_tai;
-        d.tb_khac = docTBKhac(); const thieuSL = d.tb_khac.find(x => !(+x.sl > 0));
+        d.tb_khac = docDong('tb-khac'); const thieuSL = d.tb_khac.find(x => !(+x.sl > 0));
         if (thieuSL) { $('err').textContent = 'Nhập số lượng cho thiết bị "' + thieuSL.ten + '"'; return; }
         if (!(v.thiet_bi || []).length && !d.tb_khac.length) { $('err').textContent = 'Chọn thiết bị cần mượn hoặc nhập thiết bị ngoài danh sách'; return; }
         if (v.dung_cho === 'hs' && !v.hs) { $('err').textContent = 'Nhập mã hồ sơ đề tài'; return; }
         if (v.dung_cho === 'lop' && !v.lop_hp && !v.mon_tu_nhap) { $('err').textContent = 'Chọn (hoặc gõ) môn thực hành – giảng viên'; return; }
       }
+      if (qr === 'QR1') { d.dung_cu = docDong('dc-them'); const thieu = d.dung_cu.find(x => !(+x.sl > 0)); if (thieu) { $('err').textContent = 'Nhập số lượng cho "' + thieu.ten + '"'; return; } }
       if (['QR1', 'QR4', 'QR5', 'QR6'].indexOf(qr) >= 0 && !(v.phong || []).length) { $('err').textContent = 'Chọn ít nhất một phòng'; return; }
       if (qr === 'QR6') { // mỗi phòng một tủ
         d.tu_ds = v.phong.map(p => ({ phong: p, so: v['tu_' + p] || '' })); Object.keys(d).filter(k => /^tu_[A-Z]/.test(k)).forEach(k => delete d[k]);

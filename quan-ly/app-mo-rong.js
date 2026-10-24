@@ -112,7 +112,7 @@
     return '';
   }
   const TINH_TRANG_TRA = { QR1: ['Bình thường', 'Hư hỏng', 'Thiếu'], QR2: ['Bình thường', 'Hỏng – chờ sửa', 'Thiếu phụ kiện'], QR4: ['Bình thường', 'Chưa vệ sinh', 'Hư hỏng'], QR5: ['Bình thường', 'Bất thường – hư hỏng'] };
-  const ND_TEN = { noi_dung: 'Nội dung', muc_dich: 'Mục đích', gvhd: 'GVHD / GV dạy', dung_cu: 'Dụng cụ cần mượn', so_nguoi: 'Số người', tinh_trang_truoc: 'Tình trạng trước', tinh_trang_sau: 'Tình trạng sau',
+  const ND_TEN = { noi_dung: 'Nội dung', muc_dich: 'Mục đích', gvhd: 'GVHD / GV dạy', dung_cu: 'Thiết bị, dụng cụ mượn thêm', so_nguoi: 'Số người', tinh_trang_truoc: 'Tình trạng trước', tinh_trang_sau: 'Tình trạng sau',
     ten_mon: 'Môn thực hành', de_tai: 'Đề tài', dung_cho: 'Dùng cho',
     ghi_chu_sau: 'Mô tả sau sử dụng', do_dung: 'Đồ dùng trong tủ', bai: 'Bài thực hành', ly_do: 'Lý do cấp bổ sung', noi_su_dung: 'Nơi sử dụng', hoc_phan: 'Học phần / lớp', ghi_chu: 'Ghi chú', dang_ky_thay: 'Lưu ý', so_lan_doi: 'Số lần đã đòi trả', nhanh: 'Mượn cho', ten_mon: 'Môn thực hành', ten_hs: 'Đề tài' };
   const DUNG_CHO = { lop: 'Lớp thực hành', hs: 'Đồ án / đề tài của sinh viên', ca_nhan: 'Đề tài cá nhân' }; // QR2
