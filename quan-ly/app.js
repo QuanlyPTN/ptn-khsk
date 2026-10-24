@@ -217,7 +217,7 @@
     document.body.classList.add('in');
     const n = S.toi.nguoi;
     $('app').innerHTML = (DEMO ? '<div class="demo-bar">' + thanhDemo() + '</div>' : '') +
-      '<div class="layout"><aside class="side" id="side"><div class="brand co-logo">' + logo('xanh') + '<b>Quản lý PTN</b></div>' +
+      '<div class="layout"><aside class="side" id="side"><div class="brand co-logo">' + logo() + '<b>Quản lý PTN</b></div>' +
       '<nav class="nav" id="nav">' + MENU.filter(m => m[3] ? laAdmin() : coQuyen(m[0], 'xem')).map(m => (NHOM_MENU[m[0]] ? '<div class="nav-nhom"><span>' + NHOM_MENU[m[0]] + '</span></div>' : '') +
         '<a href="#/' + m[0] + '" data-m="' + m[0] + '" title="' + esc(m[2]) + '"><span class="ico">' + icon(m[0]) + '</span>' + m[2] + '</a>').join('') + '</nav>' +
       (coQuyen('don', 'xem') && 'Notification' in window && Notification.permission === 'default' ? '<button class="bat-tb" id="b-bat-tb">🔔 Bật thông báo đơn mới trên máy này</button>' : '') +
