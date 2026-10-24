@@ -38,7 +38,7 @@
       [P(['Tôi làm đơn này kính đề nghị bộ phận quản lý PTN cho phép mượn phòng ', GT(d.phong, 6), ' và các thiết bị, dụng cụ dưới đây.'], { al: 'both' }),
         P(['Mục đích: ', GT(d.nd.muc_dich || d.nd.noi_dung, 34)], { al: 'both' }),
         P(['Thời gian sử dụng: ngày ', R(ngay(d.tu_ngay), { b: 1 }), ', từ ', R(gio(d.tu_ngay) || '……', { b: 1 }), ' đến ', R(gio(d.den_ngay) || '……', { b: 1 })]),
-        bang([700, 3600, 1500, 1636, 1635], ['STT', 'Tên thiết bị', 'Mã tài sản', 'Tình trạng khi nhận', 'Tình trạng khi trả'], dsTB(d).map((t, i) => [i + 1, t.ten + (t.model ? ' – ' + t.model : ''), t.ma_ts || '', '', '']), 3),
+        bang([600, 3000, 1300, 1100, 1536, 1535], ['STT', 'Tên thiết bị', 'Mã tài sản', 'Phòng', 'Tình trạng khi nhận', 'Tình trạng khi trả'], dsTB(d).map((t, i) => [i + 1, t.ten + (t.model ? ' – ' + t.model : ''), t.ma_ts || '', t.phong || '', '', '']), 3),
         ...(d.nd.dung_cu && !d.nd.dung_cu_ds ? [P(['Thiết bị, dụng cụ mượn thêm: ', GT(d.nd.dung_cu, 30)], { al: 'both' })]
           : [P(R('Thiết bị, dụng cụ mượn thêm:', { b: 1 })), bang([700, 4300, 1000, 3071], ['STT', 'Tên thiết bị, dụng cụ', 'SL', 'Ghi chú'], (d.nd.dung_cu_ds || []).map((x, i) => [i + 1, x.ten, x.sl, x.ghi_chu || '']), 2)]), TRONG,
         P(R('Tôi cam kết:', { b: 1 }))], dsSo(['Sử dụng đúng mục đích, đúng phòng và thời gian đã đăng ký; quét mã QR5 trước khi sử dụng thiết bị.',
