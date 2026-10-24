@@ -107,6 +107,7 @@
   const camKet = (qr) => '<div class="warn">' + (qr === 'QR5' ? '⚠ BẮT BUỘC quét mã QR5 TRƯỚC KHI sử dụng thiết bị. Tự ý sử dụng thiết bị mà không quét mã, nếu bị phát hiện sẽ bị buộc ngừng sử dụng và lập biên bản.\n' : '') +
     'Đăng ký thay / mạo danh người khác bị xử lý như vi phạm nội quy.</div>' +
     '<label class="opt"><input type="checkbox" name="cam_ket"><span>Tôi cam kết thông tin trên là đúng; thực hiện đúng nội quy, quy định của PTN Khoa KHSK và chịu trách nhiệm bồi thường nếu làm hư hỏng, mất mát tài sản.</span></label>';
+  const MON_TAY = '__tay'; // QR3: chọn "Môn khác – nhập thủ công"
   const PHONG_TB_QR2 = 'D11.01'; // QR2: chỉ cho mượn thiết bị đặt tại phòng này
   const dsPhong = () => S.dm.phong.map(p => [p.ma, '<b>' + esc(p.ma) + '</b> – ' + esc(p.ten)]);
   const dsTB = (phong) => S.dm.thiet_bi.filter(t => !phong || t.phong === phong).map(t => [t.id, esc(t.ten) + (t.ma_ts ? ' <span class="note">' + esc(t.ma_ts) + '</span>' : '') + (phong ? '' : ' <span class="note">· ' + esc(t.phong || '—') + '</span>') + (t.ban ? ' <span class="note">(đang bận / hỏng)</span>' : ''), t.ban]);
@@ -218,7 +219,7 @@
         }
         break;
       case 'QR3':
-        f = chonO('lop_hp', 'Môn thực hành – giảng viên', dsMonGV('hc'), { req: 1, h: 'Mỗi môn – giảng viên một dòng (GV dạy nhiều nhóm chỉ chọn một lần); số liệu ghi vào biên bản bàn giao hóa chất của môn, học kỳ ' + esc(S.dm.hk) }) + '<div id="o-dong"></div>' +
+        f = chonO('lop_hp', 'Môn thực hành – giảng viên', dsMonGV('hc').concat([[MON_TAY, '✎ Môn khác – nhập thủ công (không có trong thời khóa biểu)']]), { req: 1, h: 'Mỗi môn – giảng viên một dòng (GV dạy nhiều nhóm chỉ chọn một lần); số liệu ghi vào biên bản bàn giao hóa chất của môn, học kỳ ' + esc(S.dm.hk) }) + '<div id="o-mon-tay" class="hide">' + nhap('mon_tu_nhap', 'Tên môn thực hành – giảng viên', { ph: 'VD: TH Hóa phân tích – ThS. Nguyễn Văn A', req: 1 }) + '</div>' + '<div id="o-dong"></div>' +
           nhap('ngay_can', 'Ngày cần nhận', { type: 'date', v: homNay() }) +
           nhap('gvhd', 'Giảng viên dạy thực hành', { h: 'Sinh viên đăng ký thay giảng viên: ghi tên giảng viên' });
         break;
@@ -278,6 +279,8 @@
         form.dataset.hs = x.id; dong = x.dung_cu; ten = x.dung_cu.length ? 'Dụng cụ trong biên bản đề tài ' + x.id : 'Hồ sơ ' + x.id + ' chưa có biên bản dụng cụ – gõ dụng cụ cần mượn';
       } else {
         const l = S.dm.lop.find(x => x.ma_lhp === (form.querySelector('[name=lop_hp]') || {}).value), bb = l && (qr === 'QR3' ? l.bb_hc : l.bb_dc);
+        if (qr === 'QR3') { const tay = (form.querySelector('[name=lop_hp]') || {}).value === MON_TAY; $('o-mon-tay').classList.toggle('hide', !tay);
+          if (tay) return veBang('Hóa chất – vật tư cần cấp', 'Môn không có trong thời khóa biểu: gõ tên hóa chất, số lượng, đơn vị tính.', []); }
         if (!l) return qr === 'QR8' ? veBang('Dụng cụ cần mượn thêm', 'Chọn lớp học phần ở trên để hiện dụng cụ trong biên bản của lớp; hoặc gõ dụng cụ cần mượn ở dưới.', []) : (box.innerHTML = '');
         if (!bb && qr === 'QR8') ten = 'Lớp chưa có biên bản dụng cụ – gõ dụng cụ cần mượn, PTN sẽ ghi vào biên bản của lớp';
       }
@@ -328,6 +331,7 @@
       e.preventDefault();
       const v = giaTri(form), d = Object.assign({}, v);
       if (qr === 'QR3' || qr === 'QR8') d.dong = docBangDong('bang-dong');
+      if (qr === 'QR3') { if (v.lop_hp === MON_TAY) { delete d.lop_hp; if (!v.mon_tu_nhap) { $('err').textContent = 'Nhập tên môn thực hành – giảng viên'; return; } } else delete d.mon_tu_nhap; }
       if (qr === 'QR8') { if (v.nhanh === 'hs') { d.hs = form.dataset.hs || (v.hs_ma || v.hs_chon || '').toUpperCase(); delete d.lop_hp; if (!d.hs) { $('err').textContent = 'Chọn hoặc nhập mã hồ sơ đề tài'; return; } } else delete d.hs; delete d.hs_chon; delete d.hs_ma; d.nhanh = v.nhanh; }
       if (qr === 'QR2') {
         if (v.dung_cho !== 'lop') { delete d.lop_hp; delete d.mon_tu_nhap; } if (v.dung_cho !== 'hs') delete d.hs; if (v.dung_cho !== 'ca_nhan') delete d.de_tai;

@@ -113,7 +113,7 @@
   }
   const TINH_TRANG_TRA = { QR1: ['Bình thường', 'Hư hỏng', 'Thiếu'], QR2: ['Bình thường', 'Hỏng – chờ sửa', 'Thiếu phụ kiện'], QR4: ['Bình thường', 'Chưa vệ sinh', 'Hư hỏng'], QR5: ['Bình thường', 'Bất thường – hư hỏng'] };
   const ND_TEN = { noi_dung: 'Nội dung', muc_dich: 'Mục đích', gvhd: 'GVHD / GV dạy', dung_cu: 'Thiết bị, dụng cụ mượn thêm', so_nguoi: 'Số người', tinh_trang_truoc: 'Tình trạng trước', tinh_trang_sau: 'Tình trạng sau',
-    ten_mon: 'Môn thực hành', de_tai: 'Đề tài', dung_cho: 'Dùng cho',
+    ten_mon: 'Môn thực hành', khong_bb: 'Không ghi vào biên bản', de_tai: 'Đề tài', dung_cho: 'Dùng cho',
     ghi_chu_sau: 'Mô tả sau sử dụng', do_dung: 'Đồ dùng trong tủ', bai: 'Bài thực hành', ly_do: 'Lý do cấp bổ sung', noi_su_dung: 'Nơi sử dụng', hoc_phan: 'Học phần / lớp', ghi_chu: 'Ghi chú', dang_ky_thay: 'Lưu ý', so_lan_doi: 'Số lần đã đòi trả', nhanh: 'Mượn cho', ten_mon: 'Môn thực hành', ten_hs: 'Đề tài' };
   const DUNG_CHO = { lop: 'Lớp thực hành', hs: 'Đồ án / đề tài của sinh viên', ca_nhan: 'Đề tài cá nhân' }; // QR2
   async function hopDon(id) {
@@ -148,7 +148,7 @@
     const body = $('modal-body');
     body.querySelectorAll('[data-nav]').forEach(b => { b.onclick = () => { if (b.dataset.nav) hopDon(b.dataset.nav); }; });
     if ($('b-in-don')) $('b-in-don').onclick = (e) => chay(e.target, async () => window.PTN_DON_QR.xemTruoc(d, ((await anhQR(lienKet('don/' + d.qr + '/' + d.id))) || {}).dataUrl));
-    if ($('chon-bb')) { const bb = (await api('bb_ds', { hk: (S.dm.hoc_ky || [])[0] })).filter(b => b.loai === 'HC'); $('chon-bb').innerHTML = o('bb', 'Ghi vào biên bản hóa chất', { select: [['', '— Chọn —']].concat(bb.map(b => [b.id, b.ten_mon + ' (' + b.id + ')'])) }); }
+    if ($('chon-bb')) { const bb = (await api('bb_ds', { hk: (S.dm.hoc_ky || [])[0] })).filter(b => b.loai === 'HC'); $('chon-bb').innerHTML = o('bb', 'Ghi vào biên bản hóa chất', { select: [['', '— Chọn —']].concat(bb.map(b => [b.id, b.ten_mon + ' (' + b.id + ')']), [['khong', 'Không ghi vào biên bản (môn ngoài thời khóa biểu)']]), v: d.nd.mon_tu_nhap ? 'khong' : '' }); }
     body.querySelectorAll('[data-tai]').forEach(b => { b.onclick = (e) => chay(e.target, () => taiVe(b.dataset.tai)); });
     $('tep-don').onchange = async (e) => { const f = e.target.files[0]; if (!f) return; await chay(null, () => guiTep(d.id, f, 'Đính kèm đơn ' + d.id)); toast('Đã tải lên'); hopDon(id); };
     body.querySelectorAll('[data-hd]').forEach(b => { b.onclick = async (e) => {
