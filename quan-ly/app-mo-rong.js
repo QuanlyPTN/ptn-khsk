@@ -22,7 +22,7 @@
     return new Promise((ok, loi) => { const s = document.createElement('script'); s.src = url; s.onload = () => ok(window[ten]); s.onerror = () => loi(new Error('Không tải được thư viện (cần mạng)')); document.head.appendChild(s); });
   }
   function tomTat(d) {
-    return [d.nd.nhanh && d.qr === 'QR8' && '[' + d.nd.nhanh + ']', d.phong && 'Phòng ' + d.phong, d.tu && 'Tủ ' + d.tu, d.ten_tb && d.ten_tb.length && d.ten_tb.join(', '), d.lop_hp && 'LHP ' + d.lop_hp, !d.lop_hp && d.nd.ten_mon, d.hs && 'Đề tài ' + d.hs,
+    return [d.nd.nhanh && d.qr === 'QR8' && '[' + d.nd.nhanh + ']', d.phong && 'Phòng ' + d.phong, d.tu && 'Tủ ' + d.tu, d.qr !== 'QR1' && d.ten_tb && d.ten_tb.length && d.ten_tb.join(', '), d.qr === 'QR1' && dsMuonThem(d).join('; '), d.lop_hp && 'LHP ' + d.lop_hp, !d.lop_hp && d.nd.ten_mon, d.hs && 'Đề tài ' + d.hs,
       (d.nd.dong || []).length && d.nd.dong.map(x => x.ten + ' ' + fmt(x.sl) + (x.dvt ? ' ' + x.dvt : '')).join('; '), d.nd.noi_dung, d.nd.muc_dich].filter(Boolean).join(' · ');
   }
   const thoiGian = (d) => d.qr === 'QR5' ? ngayVN(d.tu_ngay) + (d.den_ngay ? ' → ' + d.den_ngay.slice(11) : ' → đang dùng') : [d.tu_ngay && ngayVN(d.tu_ngay), d.den_ngay && 'hạn ' + ngayVN(d.den_ngay)].filter(Boolean).join(' · ');
@@ -132,14 +132,15 @@
     const d = await api('don_ct', { id }), dsId = S.cache.donIds || [], vt = dsId.indexOf(id);
     const tt = d.trang_thai, dangMo = tt === 'Đang mượn' || tt === 'Đang dùng', coBang = d.qr === 'QR3' || d.qr === 'QR8', choGiao = tt === 'Chờ duyệt' || tt === 'Đã duyệt';
     const kv = [['Người đăng ký', d.ho_ten + ' – ' + d.ma_so + ' (' + d.doi_tuong + ')'], ['Lớp / bộ môn', [d.lop, d.bo_mon].filter(Boolean).join(' · ')], ['Liên hệ', [d.sdt, d.email].filter(Boolean).join(' · ')],
-      ['Phòng', d.phong], ['Tủ', d.tu], ['Thiết bị', d.ten_tb.join('; ')], ['Lớp học phần', d.lop_hp], ['Từ', ngayVN(d.tu_ngay)], ['Đến / hạn', ngayVN(d.den_ngay)]]
-      .concat(Object.keys(ND_TEN).filter(k => d.nd[k]).map(k => [ND_TEN[k], k === 'dung_cho' ? DUNG_CHO[d.nd[k]] || d.nd[k] : String(d.nd[k])])).filter(x => x[1]);
+      ['Phòng', d.qr === 'QR1' ? dsPhongDon(d).join('\n') : d.phong], ['Tủ', d.tu], ['Thiết bị', d.qr === 'QR1' ? '' : d.ten_tb.join('; ')],
+      ['Thiết bị, dụng cụ mượn thêm', d.qr === 'QR1' ? dsMuonThem(d).join('\n') : ''], ['Lớp học phần', d.lop_hp], ['Từ', ngayVN(d.tu_ngay)], ['Đến / hạn', ngayVN(d.den_ngay)]]
+      .concat(Object.keys(ND_TEN).filter(k => d.nd[k] && !(d.qr === 'QR1' && k === 'dung_cu')).map(k => [ND_TEN[k], k === 'dung_cho' ? DUNG_CHO[d.nd[k]] || d.nd[k] : String(d.nd[k])])).filter(x => x[1]);
     let h = (vt >= 0 ? '<div class="nav-ds" style="float:right"><button class="btn o sm" data-nav="' + esc(dsId[vt - 1] || '') + '"' + (vt ? '' : ' disabled') + '>‹ Trước</button><span class="note">' + (vt + 1) + ' / ' + dsId.length + '</span><button class="btn o sm" data-nav="' + esc(dsId[vt + 1] || '') + '"' + (vt < dsId.length - 1 ? '' : ' disabled') + '>Tiếp ›</button></div>' : '') +
       '<h2>' + d.qr + ' · ' + esc(d.id) + ' ' + tagTT(tt, d.qua_han) + '</h2><p class="note">' + esc(QR_TEN[d.qr]) + ' · gửi ' + ngayVN(d.tg) + ' · mã máy ' + esc(d.ma_may) + '</p>' +
       (window.PTN_DON_QR && window.PTN_DON_QR.coMau(d.qr) ? '<div class="btns" style="margin-bottom:8px"><button class="btn o sm" id="b-in-don">🖨 ' + esc(window.PTN_DON_QR.TEN[d.qr]) + ' – xem trước, in / Word</button>' + (window.PTN_DON_QR.coBienBan(d) ? '<button class="btn o sm" id="b-in-bb8">🖨 Biên bản bàn giao dụng cụ</button>' : '') + '</div>' : '') +
       (d.cung_may.length ? '<p class="err">⚠ Máy này cũng gửi đơn cho: ' + esc(d.cung_may.join('; ')) + ' – kiểm tra thẻ SV / CCCD khi giao đồ.</p>' : '') +
       (d.ly_do ? '<p class="err">Lý do từ chối: ' + esc(d.ly_do) + '</p>' : '') +
-      '<dl class="kv">' + kv.map(x => '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>').join('') +
+      '<dl class="kv">' + kv.map(x => '<dt>' + esc(x[0]) + '</dt><dd style="white-space:pre-line">' + esc(x[1]) + '</dd>').join('') +
       (d.hs ? '<dt>Hồ sơ đề tài</dt><dd><a href="#/de-tai/' + esc(d.hs) + '">' + esc(d.hs) + '</a></dd>' : '') + (d.bb ? '<dt>Biên bản</dt><dd><a href="#/bien-ban/' + encodeURIComponent(d.bb) + '">' + esc(d.bb) + '</a> ' + esc(d.ten_bb || '') + '</dd>' : '') + '</dl>';
     if (coBang) h += '<h2 style="margin-top:12px">' + (d.qr === 'QR3' ? 'Hóa chất – vật tư đề nghị' : 'Dụng cụ mượn thêm') + '</h2><div class="tbl-wrap"><table><thead><tr><th>Tên</th><th>ĐVT</th><th class="num">Đề nghị</th>' + (choGiao ? '<th style="width:110px">Thực ' + (d.qr === 'QR3' ? 'cấp' : 'giao') + '</th>' : '') + '</tr></thead><tbody>' +
       d.nd.dong.map((x, i) => '<tr><td>' + esc(x.ten) + (x.dong ? '' : ' <span class="tag t-warn">ngoài biên bản</span>') + '</td><td>' + esc(x.dvt) + '</td><td class="num">' + fmt(x.sl) + '</td>' + (choGiao ? '<td><input type="number" step="any" min="0" data-i="' + i + '" value="' + esc(x.sl) + '"></td>' : '') + '</tr>').join('') + '</tbody></table></div>';
