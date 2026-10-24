@@ -27,7 +27,8 @@
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const pad = (n) => String(n).padStart(2, '0');
   const homNay = (n) => { const d = new Date(Date.now() + (n || 0) * 864e5); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
-  const gioNay = (phut) => { const d = new Date(Date.now() + (phut || 0) * 6e4); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+  // giờ hiện tại + phut (không vượt sang ngày hôm sau: tối muộn thì giờ trả mặc định là 23:59)
+  const gioNay = (phut) => { const n = new Date(), d = new Date(n.getTime() + (phut || 0) * 6e4); return d.getDate() !== n.getDate() ? '23:59' : pad(d.getHours()) + ':' + pad(d.getMinutes()); };
   const ngayVN = (s) => { const m = /^(\d{4})-(\d{2})-(\d{2})(.*)$/.exec(s || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] + m[4] : (s || ''); };
   const boDau = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
   function doc(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
@@ -39,6 +40,8 @@
   function toast(t, bad) { const x = $('toast'); x.textContent = t; x.className = 'toast' + (bad ? ' bad' : ''); clearTimeout(toast._t); toast._t = setTimeout(() => { x.className = 'toast hide'; }, bad ? 5000 : 2600); }
 
   // hồ sơ cá nhân (chuyển từ bản cũ nếu có) + mã máy và khóa bí mật của máy
+  // hồ sơ gửi lên máy chủ: đối tượng "Khác" kèm phần ghi rõ ("Khác – Nhân viên …")
+  function ngGui() { const p = Object.assign({}, hoSo()); if (p.doi_tuong === 'Khác' && p.doi_tuong_khac) p.doi_tuong = 'Khác – ' + p.doi_tuong_khac; delete p.doi_tuong_khac; return p; }
   function hoSo() {
     let p = doc('khsk_ho_so');
     if (!p) {
@@ -143,7 +146,7 @@
   async function trangChu() {
     $('hb').classList.add('hide'); nutLui(false);
     const p = hoSo();
-    let h = '<div class="card prof"><div class="av">' + esc((p.ho_ten || '?').trim().split(' ').pop().charAt(0)) + '</div><div class="i"><b>' + esc(p.ho_ten) + '</b><span>' + esc([p.ma_so, p.doi_tuong, p.lop].filter(Boolean).join(' · ')) +
+    let h = '<div class="card prof"><div class="av">' + esc((p.ho_ten || '?').trim().split(' ').pop().charAt(0)) + '</div><div class="i"><b>' + esc(p.ho_ten) + '</b><span>' + esc([p.ma_so, ngGui().doi_tuong, p.lop].filter(Boolean).join(' · ')) +
       '</span></div><a class="lnk" href="#/ho-so">Sửa</a></div><div id="tb"></div><div class="tieu-de-nhom">Đăng ký – biểu mẫu</div><div class="grid">' +
       Object.keys(QR_TEN).map(q => '<a class="tile" href="#/' + q + '">' + bieu(q) + (QR_AI[q] ? '<span class="ai">' + QR_AI[q] + '</span>' : '') + '<span class="q">' + q + '</span>' + QR_TEN[q] + '</a>').join('') +
       '</div><div class="tieu-de-nhom">Tiện ích</div><div class="grid"><a class="tile t2" href="#/don-cua-toi">' + bieu('cua_toi') + '<span><b>Đơn của tôi</b><br><span class="note" id="dem-don">Trạng thái các đơn đã gửi</span></span></a>' +
@@ -165,17 +168,25 @@
   // ---------------- Hồ sơ cá nhân ----------------
   function trangHoSo(lanDau) {
     nutLui(!lanDau);
-    const p = hoSo() || {};
+    const p = hoSo() || {}, bmKhac = !!p.bo_mon && BO_MON.indexOf(p.bo_mon) < 0; // bộ môn đã nhập tay trước đó
     M('<div class="card"><h2>' + (lanDau ? 'Thông tin cá nhân (nhập một lần)' : 'Sửa thông tin cá nhân') + '</h2><p class="note">Thông tin lưu trên điện thoại này và tự điền vào mọi biểu mẫu.</p><form id="f">' +
       nhap('ho_ten', 'Họ và tên', { v: p.ho_ten, req: 1, extra: ' autocomplete="name"' }) + chon('doi_tuong', 'Đối tượng', DOI_TUONG, { v: p.doi_tuong || 'Sinh viên', req: 1 }) +
       nhap('ma_so', 'MSSV / mã học viên / mã viên chức', { v: p.ma_so, req: 1 }) + nhap('lop', 'Lớp (sinh viên, học viên)', { v: p.lop }) +
-      chon('bo_mon', 'Bộ môn / ngành', BO_MON, { v: p.bo_mon || 'Dược học', req: 1 }) + nhap('sdt', 'Số điện thoại', { type: 'tel', v: p.sdt, req: 1, extra: ' inputmode="tel" autocomplete="tel"' }) +
+      '<div id="o-dt-khac" class="' + (p.doi_tuong === 'Khác' ? '' : 'hide') + '">' + nhap('doi_tuong_khac', 'Đối tượng khác (ghi rõ)', { v: p.doi_tuong_khac, ph: 'VD: Nhân viên, nghiên cứu viên, khách mời…', req: 1 }) + '</div>' +
+      chon('bo_mon', 'Bộ môn / ngành', BO_MON, { v: bmKhac ? 'Khác' : p.bo_mon || 'Dược học', req: 1 }) +
+      '<div id="o-bm-khac" class="' + (bmKhac ? '' : 'hide') + '">' + nhap('bo_mon_khac', 'Bộ môn / ngành khác (ghi rõ)', { v: bmKhac ? p.bo_mon : '', ph: 'VD: Công nghệ sinh học – Khoa CNSH', req: 1 }) + '</div>' + nhap('sdt', 'Số điện thoại', { type: 'tel', v: p.sdt, req: 1, extra: ' inputmode="tel" autocomplete="tel"' }) +
       nhap('email', 'Email', { type: 'email', v: p.email, extra: ' autocomplete="email"' }) +
       '<div class="err" id="err"></div><button class="btn g">Lưu thông tin</button>' + (lanDau ? '' : '<a class="btn o" href="#/">Hủy</a>') + '</form></div>');
     danhDau($('f'));
+    $('f').addEventListener('change', (e) => {
+      if (e.target.name === 'doi_tuong') $('o-dt-khac').classList.toggle('hide', e.target.value !== 'Khác');
+      if (e.target.name === 'bo_mon') $('o-bm-khac').classList.toggle('hide', e.target.value !== 'Khác');
+    });
     $('f').onsubmit = (e) => {
       e.preventDefault(); const v = giaTri(e.target);
       v.sdt = v.sdt.replace(/\s/g, ''); v.ma_so = v.ma_so.toUpperCase();
+      if (v.doi_tuong !== 'Khác') delete v.doi_tuong_khac; else if (!v.doi_tuong_khac) { $('err').textContent = 'Ghi rõ đối tượng khác'; return; }
+      if (v.bo_mon === 'Khác') { if (!v.bo_mon_khac) { $('err').textContent = 'Ghi rõ bộ môn / ngành'; return; } v.bo_mon = v.bo_mon_khac; } delete v.bo_mon_khac;
       const loi = !v.ho_ten ? 'Nhập họ và tên' : !v.ma_so ? 'Nhập MSSV / mã viên chức' : !/^0\d{9,10}$/.test(v.sdt) ? 'Số điện thoại gồm 10 – 11 chữ số, bắt đầu bằng 0' : v.email && !/^\S+@\S+\.\S+$/.test(v.email) ? 'Email không hợp lệ' : '';
       if (loi) { $('err').textContent = loi; return; }
       ghi('khsk_ho_so', v); S.hs = null; toast('Đã lưu'); location.hash = '#/';
@@ -356,7 +367,7 @@
       if (thieu) { $('err').textContent = thieu; return; }
       $('sb').disabled = true; $('sb').textContent = 'Đang gửi…'; $('err').textContent = '';
       try {
-        const r = await api('ck_gui_don', { qr, ng: hoSo(), may: may(), d });
+        const r = await api('ck_gui_don', { qr, ng: ngGui(), may: may(), d });
         M('<div class="card msg"><div class="ok">✓</div><h2>Đã gửi ' + qr + '</h2><p>Mã đơn <b>' + esc(r.id) + '</b> · ' + tagTT(r.trang_thai) + '</p><p class="note">' +
           (qr === 'QR5' ? 'Bắt đầu tính giờ sử dụng từ ' + esc(r.tg.slice(11)) + '. Dùng xong, vào <b>Đơn của tôi</b> bấm <b>Kết thúc sử dụng</b>.' : 'Cán bộ PTN sẽ xử lý; theo dõi trạng thái ở <b>Đơn của tôi</b>. Mang theo thẻ SV / CCCD khi nhận đồ.') + '</p>' +
           '<a class="btn" href="#/don-cua-toi">Đơn của tôi</a><a class="btn o" href="#/">Về trang chủ</a></div>');
@@ -420,7 +431,7 @@
       if (hs.nhom.some(m => !m.ma_so)) { $('err').textContent = 'Nhập MSSV cho mọi thành viên'; return; }
       $('sb').disabled = true; $('sb').textContent = 'Đang lưu…'; $('err').textContent = '';
       try {
-        const r = sua ? await api('ck_sua_hs', { id: sua.id, khoa: may().khoa, ng: hoSo(), hs }) : await api('ck_gui_hs', { ng: hoSo(), may: may(), hs });
+        const r = sua ? await api('ck_sua_hs', { id: sua.id, khoa: may().khoa, ng: ngGui(), hs }) : await api('ck_gui_hs', { ng: ngGui(), may: may(), hs });
         const mc = $('mc') && $('mc').files[0];
         if (mc) { try { await guiMinhChung(r.id, mc); } catch (err) { toast('Chưa tải được minh chứng: ' + err.message, true); } }
         S.hs = null; xongQR7(r);
