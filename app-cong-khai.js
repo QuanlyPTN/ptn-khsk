@@ -220,7 +220,7 @@
           f = truong('Thiết bị cần mượn (phòng ' + PHONG_TB_QR2 + ')', tb.length ? '<input type="search" id="tim-tb" placeholder="Tìm tên thiết bị…">' : '<div class="h">Phòng ' + PHONG_TB_QR2 + ' chưa có thiết bị trong danh mục – nhập ở ô dưới.</div>', { req: 1 }) +
             '<div id="o-tb2">' + (tb.length ? chon('thiet_bi', '', tb, { nhieu: 1 }) : '') + '</div>' +
             truong('Thiết bị khác (ngoài danh sách)', '<div class="h">Không có trong danh sách trên thì ghi vào đây. Có tên thiết bị thì phải nhập số lượng.</div><div id="tb-khac"></div><button type="button" class="lnk" id="them-tb-khac">+ Thêm thiết bị</button>') +
-            '<div class="hai">' + nhap('tu_ngay', 'Ngày mượn', { type: 'date', v: homNay(), req: 1 }) + nhap('den_ngay', 'Ngày dự kiến trả', { type: 'date', req: 1 }) + '</div>' +
+            '<div class="hai">' + nhap('tu_ngay', 'Ngày mượn', { type: 'date', v: homNay(), req: 1 }) + nhap('den_ngay', 'Ngày dự kiến trả', { type: 'date', req: 1, h: 'Tối đa 03 tháng kể từ ngày mượn' }) + '</div>' +
             chon('dung_cho', 'Dùng cho', [['lop', 'Lớp thực hành'], ['hs', 'Đồ án / đề tài của sinh viên (hồ sơ QR7)'], ['ca_nhan', 'Đề tài cá nhân']], { v: 'lop', req: 1 }) +
             '<div id="o-lop">' + (mon.length ? chonO('lop_hp', 'Môn thực hành – giảng viên', mon, { h: 'Mỗi môn – giảng viên một dòng (GV dạy nhiều nhóm chỉ chọn một lần)' })
               : nhap('mon_tu_nhap', 'Môn thực hành – giảng viên', { ph: 'VD: TH Bào chế 1 – ThS. Nguyễn Văn A', h: 'Chưa có thời khóa biểu học kỳ trên hệ thống – gõ tên môn và giảng viên' })) + '</div>' +
@@ -354,6 +354,8 @@
         if (thieuSL) { $('err').textContent = 'Nhập số lượng cho thiết bị "' + thieuSL.ten + '"'; return; }
         if (!(v.thiet_bi || []).length && !d.tb_khac.length) { $('err').textContent = 'Chọn thiết bị cần mượn hoặc nhập thiết bị ngoài danh sách'; return; }
         if (v.dung_cho === 'hs' && !v.hs) { $('err').textContent = 'Nhập mã hồ sơ đề tài'; return; }
+        if (v.tu_ngay && v.den_ngay) { const d = new Date(v.tu_ngay + 'T00:00:00'); d.setMonth(d.getMonth() + 3); const max = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+          if (v.den_ngay > max) { $('err').textContent = 'Mượn thiết bị dài ngày tối đa 03 tháng – ngày trả muộn nhất ' + max.split('-').reverse().join('/'); return; } }
         if (v.dung_cho === 'lop' && !v.lop_hp && !v.mon_tu_nhap) { $('err').textContent = 'Chọn (hoặc gõ) môn thực hành – giảng viên'; return; }
       }
       if (qr === 'QR1') { d.dung_cu = docDong('dc-them'); const thieu = d.dung_cu.find(x => !(+x.sl > 0)); if (thieu) { $('err').textContent = 'Nhập số lượng cho "' + thieu.ten + '"'; return; } }
