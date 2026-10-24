@@ -1151,7 +1151,11 @@
     if (!laAdmin()) { location.hash = '#/tong-quan'; return; }
     const nd = trang('Cán bộ', '<button class="btn sm" id="b-them-cb">+ Thêm cán bộ</button>');
     const ds = await api('canbo_ds');
-    nd.innerHTML = '<div class="tbl-wrap"><table><thead><tr><th>Họ tên</th><th>Gmail đăng nhập</th><th>Vai trò</th><th>Quyền</th><th>Trạng thái</th><th>Ngày tạo</th><th></th></tr></thead><tbody>' +
+    const coCB = ds.some(c => c.quyen);
+    nd.innerHTML = '<div class="card huong-dan-pq"><h2>Phân quyền cán bộ</h2>' + (coCB
+        ? '<p>Bấm nút <b>Phân quyền</b> ở dòng của từng cán bộ để chọn mục được <b>Xem</b> hoặc <b>Xử lý</b> (có mẫu nhanh). Admin luôn có toàn quyền.</p>'
+        : '<p>Hiện chỉ có tài khoản admin nên chưa có ai để phân quyền.</p><ol><li>Bấm <b>+ Thêm cán bộ</b> (góc phải trên): nhập họ tên, <b>Gmail cá nhân</b>, mật khẩu (để trống – hệ thống tự tạo), chọn <b>Phân quyền ban đầu</b>.</li><li>Gửi Gmail + mật khẩu cho cán bộ.</li><li>Muốn chỉnh chi tiết: bấm nút <b>Phân quyền</b> hiện ở dòng của cán bộ đó.</li></ol>') + '</div>' +
+      '<div class="tbl-wrap"><table><thead><tr><th>Họ tên</th><th>Gmail đăng nhập</th><th>Vai trò</th><th>Quyền</th><th>Trạng thái</th><th>Ngày tạo</th><th></th></tr></thead><tbody>' +
       ds.map(c => '<tr><td><b>' + esc(c.ten) + '</b>' + (c.ghi_chu ? '<div class="note">' + esc(c.ghi_chu) + '</div>' : '') + '</td><td>' + esc(c.email) + '</td><td>' + esc(c.vai_tro) + '</td><td>' + tomTatQuyen(c.quyen) + '</td><td>' +
         (c.trang_thai === 'Hoạt động' ? '<span class="tag t-ok">Hoạt động</span>' : '<span class="tag t-gray">Khóa</span>') + '</td><td>' + ngayVN(c.ngay_tao) + '</td>' +
         '<td class="btns">' + (c.quyen ? '<button class="btn sm" data-quyen="' + esc(c.email) + '">Phân quyền</button>' : '') + '<button class="btn o sm" data-sua="' + esc(c.email) + '">Sửa</button><button class="btn o sm" data-pin="' + esc(c.email) + '">Cấp lại mật khẩu</button></td></tr>').join('') + '</tbody></table></div>' +

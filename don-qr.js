@@ -20,7 +20,9 @@
     P([gv(d) ? 'Bộ môn: ' : 'Lớp: ', GT(gv(d) ? d.bo_mon : d.lop, 16), '   Điện thoại: ', GT(d.sdt, 8)]), P(['Email: ', GT(d.email, 30)])]
     .concat(!gv(d) && d.nd.gvhd ? [P(['Giảng viên hướng dẫn: ', GT(d.nd.gvhd, 26)])] : []);
   const thoiGian = (a, b) => [ngay(a), gio(a) && gio(a) + ' giờ', '→', ngay(b), gio(b) && gio(b)].filter(Boolean).join(' ');
-  const ghiChuTra = (d) => { const t = buoc(d, /^(Nhận trả|Nhận lại chìa khóa|Trả tủ|Kết thúc sử dụng)/); return t ? [P([R('Xác nhận trả: ', { b: 1 }), R(ngay(t.tg) + ' ' + gio(t.tg) + (t.nd ? ' – ' + t.nd : '') + ' (cán bộ ' + t.nguoi + ')')])] : []; };
+  // người giải quyết: họ tên + tài khoản đăng nhập web quản lý PTN (đơn xử lý trước 25/10/2026 chỉ có họ tên)
+  const nguoiGQ = (t) => 'Người giải quyết: ' + t.nguoi + (t.email ? ' – ' + t.email : '');
+  const ghiChuTra = (d) => { const t = buoc(d, /^(Nhận trả|Nhận lại chìa khóa|Trả tủ|Kết thúc sử dụng)/); return t ? [P([R('Xác nhận trả: ', { b: 1 }), R(ngay(t.tg) + ' ' + gio(t.tg) + (t.nd ? ' – ' + t.nd : '') + ' (' + nguoiGQ(t) + ')')])] : []; };
   const cuoi = (d, dsKy, trong) => [P(R(ngayKy(d), { i: 1 }), { al: 'right' }), ky(dsKy, trong == null ? 3 : trong)];
   // bảng thiết bị của đơn: tb_ct (chi tiết) hoặc ten_tb
   // tủ của đơn QR6: "tủ số 05 (phòng D11.02), tủ số 07 (phòng D11.03)"
@@ -129,7 +131,7 @@
           (d.nd.dong || []).map((x, i) => [i + 1, x.ten + (x.quy_cach ? ' – ' + x.quy_cach : ''), x.dvt || '', giao ? soVN(x.sl) : '', giao ? 'Tốt' : '', tra ? soVN(x.sl) : '', tra ? (d.nd.tinh_trang_tra || 'Đủ, nguyên vẹn') : '', x.ghi_chu || '']), 5),
         P(R('Bên nhận cam kết:', { b: 1 }))],
       dsSo(['Sử dụng dụng cụ đúng mục đích; giữ gìn, vệ sinh và sấy khô trước khi trả.', 'Trả đúng hạn, đủ số lượng và đúng tình trạng như khi nhận.', 'Bồi thường dụng cụ nứt, mẻ, gãy, vỡ hoặc mất trong thời gian mượn.']),
-      [P([R('Xác nhận trả: ', { b: 1 }), bt ? R(ngay(bt.tg) + ' ' + gio(bt.tg) + ' (cán bộ ' + bt.nguoi + ')') : '……/……/20……'], { al: 'both' }),
+      [P([R('Xác nhận trả: ', { b: 1 }), bt ? R(ngay(bt.tg) + ' ' + gio(bt.tg) + ' (' + nguoiGQ(bt) + ')') : '……/……/20……'], { al: 'both' }),
         P(R('Biên bản được lập thành 02 bản, bên giao và bên nhận mỗi bên giữ 01 bản.', { i: 1 }), { al: 'both' })],
       cuoi(d, [bg ? ['BÊN GIAO (CÁN BỘ PTN)', bg.nguoi] : 'BÊN GIAO (CÁN BỘ PTN)', ['BÊN NHẬN', d.ho_ten], ['GIẢNG VIÊN PHỤ TRÁCH', gv(d) ? d.ho_ten : d.nd.gvhd]])); };
   const coBienBan = (d) => d.qr === 'QR8' && !!(d.nd && d.nd.lop_tu_nhap) && d.trang_thai !== 'Từ chối';

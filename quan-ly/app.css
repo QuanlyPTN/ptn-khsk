@@ -303,3 +303,6 @@ td.nhom-dong { background: #F7F8FB; font-weight: 600; color: var(--ink); font-si
 /* Quay lại / Tiếp / Trang công khai ở đầu màn đăng nhập */
 .di-chuyen { display: flex; gap: 8px; flex-wrap: wrap; padding: 10px 16px; background: var(--card); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
 .di-chuyen .btn { text-decoration: none; }
+
+.huong-dan-pq { border-left: 4px solid var(--mn); background: var(--mn-soft); }
+.huong-dan-pq p, .huong-dan-pq ol { margin: 4px 0; }
