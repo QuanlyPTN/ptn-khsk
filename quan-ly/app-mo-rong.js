@@ -124,7 +124,7 @@
       .concat(Object.keys(ND_TEN).filter(k => d.nd[k]).map(k => [ND_TEN[k], k === 'dung_cho' ? DUNG_CHO[d.nd[k]] || d.nd[k] : String(d.nd[k])])).filter(x => x[1]);
     let h = (vt >= 0 ? '<div class="nav-ds" style="float:right"><button class="btn o sm" data-nav="' + esc(dsId[vt - 1] || '') + '"' + (vt ? '' : ' disabled') + '>‹ Trước</button><span class="note">' + (vt + 1) + ' / ' + dsId.length + '</span><button class="btn o sm" data-nav="' + esc(dsId[vt + 1] || '') + '"' + (vt < dsId.length - 1 ? '' : ' disabled') + '>Tiếp ›</button></div>' : '') +
       '<h2>' + d.qr + ' · ' + esc(d.id) + ' ' + tagTT(tt, d.qua_han) + '</h2><p class="note">' + esc(QR_TEN[d.qr]) + ' · gửi ' + ngayVN(d.tg) + ' · mã máy ' + esc(d.ma_may) + '</p>' +
-      (window.PTN_DON_QR && window.PTN_DON_QR.coMau(d.qr) ? '<div class="btns" style="margin-bottom:8px"><button class="btn o sm" id="b-in-don">🖨 ' + esc(window.PTN_DON_QR.TEN[d.qr]) + ' – xem trước, in / Word</button></div>' : '') +
+      (window.PTN_DON_QR && window.PTN_DON_QR.coMau(d.qr) ? '<div class="btns" style="margin-bottom:8px"><button class="btn o sm" id="b-in-don">🖨 ' + esc(window.PTN_DON_QR.TEN[d.qr]) + ' – xem trước, in / Word</button>' + (window.PTN_DON_QR.coBienBan(d) ? '<button class="btn o sm" id="b-in-bb8">🖨 Biên bản bàn giao dụng cụ</button>' : '') + '</div>' : '') +
       (d.cung_may.length ? '<p class="err">⚠ Máy này cũng gửi đơn cho: ' + esc(d.cung_may.join('; ')) + ' – kiểm tra thẻ SV / CCCD khi giao đồ.</p>' : '') +
       (d.ly_do ? '<p class="err">Lý do từ chối: ' + esc(d.ly_do) + '</p>' : '') +
       '<dl class="kv">' + kv.map(x => '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>').join('') +
@@ -148,6 +148,7 @@
     const body = $('modal-body');
     body.querySelectorAll('[data-nav]').forEach(b => { b.onclick = () => { if (b.dataset.nav) hopDon(b.dataset.nav); }; });
     if ($('b-in-don')) $('b-in-don').onclick = (e) => chay(e.target, async () => window.PTN_DON_QR.xemTruoc(d, ((await anhQR(lienKet('don/' + d.qr + '/' + d.id))) || {}).dataUrl));
+    if ($('b-in-bb8')) $('b-in-bb8').onclick = (e) => chay(e.target, async () => window.PTN_DON_QR.xemTruoc(d, ((await anhQR(lienKet('don/' + d.qr + '/' + d.id))) || {}).dataUrl, 1));
     if ($('chon-bb')) { const bb = (await api('bb_ds', { hk: (S.dm.hoc_ky || [])[0] })).filter(b => b.loai === 'HC'); $('chon-bb').innerHTML = o('bb', 'Ghi vào biên bản hóa chất', { select: [['', '— Chọn —']].concat(bb.map(b => [b.id, b.ten_mon + ' (' + b.id + ')']), [['khong', 'Không ghi vào biên bản (môn ngoài thời khóa biểu)']]), v: d.nd.mon_tu_nhap ? 'khong' : '' }); }
     body.querySelectorAll('[data-tai]').forEach(b => { b.onclick = (e) => chay(e.target, () => taiVe(b.dataset.tai)); });
     $('tep-don').onchange = async (e) => { const f = e.target.files[0]; if (!f) return; await chay(null, () => guiTep(d.id, f, 'Đính kèm đơn ' + d.id)); toast('Đã tải lên'); hopDon(id); };

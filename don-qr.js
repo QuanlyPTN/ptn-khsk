@@ -106,22 +106,40 @@
     QR8: (d) => { const hs = d.nd.nhanh === 'Đồ án – KLTN – NCKH', giao = /Đang mượn|Đã trả/.test(d.trang_thai);
       return dau('QR8', 'PHIẾU ĐỀ NGHỊ MƯỢN THÊM DỤNG CỤ', hs ? '(ĐỒ ÁN – KHÓA LUẬN – NGHIÊN CỨU KHOA HỌC)' : '(LỚP THỰC HÀNH)').concat(
         kinhGui(['Bộ phận quản lý Phòng thí nghiệm Khoa Khoa học Sức khỏe.']), nguoi(d),
-        [hs ? P(['Đề tài: ', GT((d.hs ? d.hs + ' – ' : '') + (d.nd.ten_hs || ''), 30)], { al: 'both' }) : P(['Lớp học phần: ', GT(d.lop_hp, 12), d.nd.ten_mon ? ' – ' + d.nd.ten_mon : '']),
+        [hs ? P(['Đề tài: ', GT((d.hs ? d.hs + ' – ' : '') + (d.nd.ten_hs || ''), 30)], { al: 'both' }) : (d.nd.lop_tu_nhap ? P(['Môn – lớp – giảng viên: ', GT(d.nd.ten_mon, 30)], { al: 'both' }) : P(['Lớp học phần: ', GT(d.lop_hp, 12), d.nd.ten_mon ? ' – ' + d.nd.ten_mon : ''])),
           P(['Phòng: ', GT(d.phong, 6), '   Hạn trả: ', d.den_ngay ? R(ngay(d.den_ngay), { b: 1 }) : '……/……/20……']),
           P('Tôi làm đơn này kính đề nghị PTN cho mượn thêm các dụng cụ dưới đây (ngoài số lượng đã bàn giao theo biên bản):', { al: 'both' }),
           bang([700, 3600, 900, 1200, 1200, 1471], ['STT', 'Tên dụng cụ – quy cách', 'ĐVT', 'SL đề nghị', 'SL mượn thêm', 'Ghi chú'],
             (d.nd.dong || []).map((x, i) => [i + 1, x.ten + (x.quy_cach ? ' – ' + x.quy_cach : ''), x.dvt || '', soVN(x.sl_dk != null ? x.sl_dk : x.sl), giao ? soVN(x.sl) : '', x.ghi_chu || '']), 3),
-          P([R('Ghi chú: ', { i: 1 }), 'Số lượng mượn thêm được ghi vào cột "Mượn thêm" của biên bản bàn giao dụng cụ' + (d.bb ? ' số ' + d.bb : '') + '; khi trả, PTN ghi vào cột "Trả".'], { al: 'both' }),
+          P([R('Ghi chú: ', { i: 1 }), d.nd.lop_tu_nhap && !d.bb ? 'Lớp ngoài thời khóa biểu: PTN lập biên bản bàn giao dụng cụ riêng theo danh sách trên (mã đơn ' + d.id + ').' : 'Số lượng mượn thêm được ghi vào cột "Mượn thêm" của biên bản bàn giao dụng cụ' + (d.bb ? ' số ' + d.bb : '') + '; khi trả, PTN ghi vào cột "Trả".'], { al: 'both' }),
           P(R('Tôi cam kết:', { b: 1 }))], dsSo(['Trả đúng hạn, đủ số lượng và đúng tình trạng như khi nhận; vệ sinh, sấy khô dụng cụ trước khi trả.', 'Bồi thường dụng cụ nứt, mẻ, gãy, vỡ hoặc mất trong thời gian mượn.']),
         ghiChuTra(d), cuoi(d, [['NGƯỜI MƯỢN', d.ho_ten], ['GIẢNG VIÊN HƯỚNG DẪN', gv(d) ? d.ho_ten : d.nd.gvhd], 'CÁN BỘ PTN'])); }
   };
+  // Biên bản bàn giao dụng cụ của đơn QR8 lớp nhập tay (không có biên bản lớp trong thời khóa biểu): giao – trả theo chính danh sách đã đăng ký
+  const BB8 = (d) => { const giao = /Đang mượn|Đã trả/.test(d.trang_thai), tra = /Đã trả/.test(d.trang_thai), bg = buoc(d, /^Đã giao/), bt = buoc(d, /^Nhận trả/);
+    return dau('QR8', 'BIÊN BẢN BÀN GIAO DỤNG CỤ THỰC HÀNH', '(MƯỢN THEO ĐƠN QR8 – LỚP / MÔN NGOÀI THỜI KHÓA BIỂU)').concat(
+      [P(['Hôm nay, ngày ', bg ? R(ngay(bg.tg), { b: 1 }) : '……/……/20……', ', tại Phòng thí nghiệm Khoa Khoa học Sức khỏe, chúng tôi gồm:'], { al: 'both' }),
+        P(R('Bên giao: Bộ phận quản lý Phòng thí nghiệm Khoa Khoa học Sức khỏe', { b: 1 })), P(['Cán bộ giao: ', GT(bg ? bg.nguoi : '', 26)]),
+        P(R('Bên nhận:', { b: 1 })), P(['Họ tên: ', GT(d.ho_ten, 22), (gv(d) ? '   Mã viên chức: ' : '   MSSV: '), GT(d.ma_so, 8)]),
+        P([gv(d) ? 'Bộ môn: ' : 'Lớp: ', GT(gv(d) ? d.bo_mon : d.lop, 16), '   Điện thoại: ', GT(d.sdt, 8)]),
+        P(['Môn – lớp – giảng viên: ', GT(d.nd.ten_mon, 30)], { al: 'both' }),
+        P(['Phòng sử dụng: ', GT(d.phong, 8), '   Thời gian mượn: từ ngày ', R(ngay(d.tu_ngay), { b: 1 }), ' đến ngày ', d.den_ngay ? R(ngay(d.den_ngay), { b: 1 }) : '……/……/20……']),
+        P('Hai bên thống nhất bàn giao các dụng cụ dưới đây:', { al: 'both' }),
+        bang([560, 2600, 700, 900, 1300, 900, 1300, 811], ['STT', 'Tên dụng cụ – quy cách', 'ĐVT', 'SL giao', 'Tình trạng khi giao', 'SL trả', 'Tình trạng khi trả', 'Ghi chú'],
+          (d.nd.dong || []).map((x, i) => [i + 1, x.ten + (x.quy_cach ? ' – ' + x.quy_cach : ''), x.dvt || '', giao ? soVN(x.sl) : '', giao ? 'Tốt' : '', tra ? soVN(x.sl) : '', tra ? (d.nd.tinh_trang_tra || 'Đủ, nguyên vẹn') : '', x.ghi_chu || '']), 5),
+        P(R('Bên nhận cam kết:', { b: 1 }))],
+      dsSo(['Sử dụng dụng cụ đúng mục đích; giữ gìn, vệ sinh và sấy khô trước khi trả.', 'Trả đúng hạn, đủ số lượng và đúng tình trạng như khi nhận.', 'Bồi thường dụng cụ nứt, mẻ, gãy, vỡ hoặc mất trong thời gian mượn.']),
+      [P([R('Xác nhận trả: ', { b: 1 }), bt ? R(ngay(bt.tg) + ' ' + gio(bt.tg) + ' (cán bộ ' + bt.nguoi + ')') : '……/……/20……'], { al: 'both' }),
+        P(R('Biên bản được lập thành 02 bản, bên giao và bên nhận mỗi bên giữ 01 bản.', { i: 1 }), { al: 'both' })],
+      cuoi(d, [bg ? ['BÊN GIAO (CÁN BỘ PTN)', bg.nguoi] : 'BÊN GIAO (CÁN BỘ PTN)', ['BÊN NHẬN', d.ho_ten], ['GIẢNG VIÊN PHỤ TRÁCH', gv(d) ? d.ho_ten : d.nd.gvhd]])); };
+  const coBienBan = (d) => d.qr === 'QR8' && !!(d.nd && d.nd.lop_tu_nhap) && d.trang_thai !== 'Từ chối';
   const TEN = { QR1: 'Đơn mượn phòng, TB – DC trong ngày', QR2: 'Đơn mượn thiết bị dài ngày', QR3: 'Phiếu đề nghị cấp bổ sung hóa chất', QR4: 'Phiếu mượn chìa khóa',
     QR5: 'Phiếu ghi nhận sử dụng', QR6: 'Đơn đăng ký sử dụng tủ', QR8: 'Phiếu đề nghị mượn thêm dụng cụ' };
   const coMau = (qr) => !!MAU[qr];
   // d: đơn (xemDon_ / ctDon), qr: ảnh mã QR (dataURL) dẫn tới đơn trên trang quản lý
   // mã đơn in ở góc phải dưới "Mẫu QRx" (trên đầu trang, tách khỏi mã QR)
-  const khoi = (d) => { const k = MAU[d.qr](d); k.splice(1, 0, P([R('Mã đơn: ', { i: 1 }), R(d.id || '……………', { b: 1 })], { al: 'right' })); return k; };
-  const taiLieu = (d, qr) => ({ ten: d.qr + ' · ' + TEN[d.qr] + ' · ' + d.id, tep: d.qr + '_' + d.id, trang: [khoi(d)], qr });
-  window.PTN_DON_QR = { coMau, TEN, khoi, html: (d, qr) => D.htmlTL(taiLieu(d, qr)), docx: (d, qr) => D.docxTL(taiLieu(d, qr)),
-    xemTruoc: (d, qr) => D.xemTruocTL(taiLieu(d, qr)), taiWord: (d, qr) => D.taiWordTL(taiLieu(d, qr)) };
+  const khoi = (d, bb) => { const k = (bb ? BB8 : MAU[d.qr])(d); k.splice(1, 0, P([R('Mã đơn: ', { i: 1 }), R(d.id || '……………', { b: 1 })], { al: 'right' })); return k; };
+  const taiLieu = (d, qr, bb) => bb ? { ten: 'Biên bản bàn giao dụng cụ · ' + d.id, tep: 'BBBG_' + d.id, trang: [khoi(d, 1)], qr } : { ten: d.qr + ' · ' + TEN[d.qr] + ' · ' + d.id, tep: d.qr + '_' + d.id, trang: [khoi(d)], qr };
+  window.PTN_DON_QR = { coMau, coBienBan, TEN, khoi, html: (d, qr, bb) => D.htmlTL(taiLieu(d, qr, bb)), docx: (d, qr, bb) => D.docxTL(taiLieu(d, qr, bb)),
+    xemTruoc: (d, qr, bb) => D.xemTruocTL(taiLieu(d, qr, bb)), taiWord: (d, qr, bb) => D.taiWordTL(taiLieu(d, qr, bb)) };
 })();

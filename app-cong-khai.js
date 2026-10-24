@@ -241,7 +241,8 @@
       case 'QR8': // hai nhánh: lớp thực hành (biên bản dụng cụ của lớp) / Đồ án – KLTN – NCKH (biên bản dụng cụ của hồ sơ QR7)
         f = chon('nhanh', 'Mượn thêm dụng cụ cho', [['lop', '<b>Lớp học thực hành</b><br><span class="note">Theo lớp học phần – ghi vào biên bản dụng cụ của lớp</span>'],
           ['hs', '<b>Đồ án / KLTN / NCKH</b><br><span class="note">Theo hồ sơ đề tài (QR7) – ghi vào biên bản dụng cụ của đề tài</span>']], { v: ds.length && !gv ? 'hs' : 'lop', req: 1 }) +
-          '<div id="o-lop">' + chonO('lop_hp', 'Lớp học phần thực hành', S.dm.lop.map(l => [l.ma_lhp, l.ten_mon + ' – ' + l.lop + (l.nhom ? ' nhóm ' + l.nhom : '') + (l.gv ? ' – ' + l.gv : '') + (l.bb_dc ? '' : ' (chưa có biên bản dụng cụ)')]), { req: 1 }) + '</div>' +
+          '<div id="o-lop">' + chonO('lop_hp', 'Lớp học phần thực hành', S.dm.lop.map(l => [l.ma_lhp, l.ten_mon + ' – ' + l.lop + (l.nhom ? ' nhóm ' + l.nhom : '') + (l.gv ? ' – ' + l.gv : '') + (l.bb_dc ? '' : ' (chưa có biên bản dụng cụ)')]).concat([[MON_TAY, '✎ Lớp khác – nhập tay (không có trong thời khóa biểu)']]), { req: 1 }) + '<div id="o-lop-tay" class="hide">' + nhap('lop_tu_nhap', 'Môn – lớp – giảng viên', { ph: 'VD: TH Vi sinh – DHDUOC18A nhóm 2 – ThS. Nguyễn Văn A', req: 1 }) +
+            nhap('phong_tu_nhap', 'Phòng sử dụng', { ph: 'VD: D11.02' }) + '</div></div>' +
           '<div id="o-hs" class="hide">' + (ds.length ? chonO('hs_chon', 'Hồ sơ đề tài của bạn', ds.map(x => [x.id, x.id + ' – ' + x.ten]), { v: ds[0].id }) : '') +
           nhap('hs_ma', ds.length ? 'Hoặc nhập mã hồ sơ khác' : 'Mã hồ sơ đề tài', { ph: 'VD: KL-2627-015', h: gv ? 'Giảng viên nhập mã hồ sơ của nhóm mình hướng dẫn (in trên đơn QR7).' : ds.length ? '' : 'Không thấy hồ sơ đã duyệt có MSSV của bạn – nhập mã hồ sơ in trên đơn QR7.', req: !ds.length }) +
           '<div id="hs-tb" class="note" style="margin-bottom:12px"></div></div><div id="o-dong"></div>' +
@@ -281,6 +282,8 @@
         const l = S.dm.lop.find(x => x.ma_lhp === (form.querySelector('[name=lop_hp]') || {}).value), bb = l && (qr === 'QR3' ? l.bb_hc : l.bb_dc);
         if (qr === 'QR3') { const tay = (form.querySelector('[name=lop_hp]') || {}).value === MON_TAY; $('o-mon-tay').classList.toggle('hide', !tay);
           if (tay) return veBang('Hóa chất – vật tư cần cấp', 'Môn không có trong thời khóa biểu: gõ tên hóa chất, số lượng, đơn vị tính.', []); }
+        if (qr === 'QR8') { const tay = (form.querySelector('[name=lop_hp]') || {}).value === MON_TAY; $('o-lop-tay').classList.toggle('hide', !tay);
+          if (tay) return veBang('Dụng cụ cần mượn', 'Lớp không có trong thời khóa biểu: gõ tên dụng cụ, số lượng, đơn vị tính. PTN lập biên bản bàn giao riêng theo danh sách này.', []); }
         if (!l) return qr === 'QR8' ? veBang('Dụng cụ cần mượn thêm', 'Chọn lớp học phần ở trên để hiện dụng cụ trong biên bản của lớp; hoặc gõ dụng cụ cần mượn ở dưới.', []) : (box.innerHTML = '');
         if (!bb && qr === 'QR8') ten = 'Lớp chưa có biên bản dụng cụ – gõ dụng cụ cần mượn, PTN sẽ ghi vào biên bản của lớp';
       }
@@ -332,6 +335,7 @@
       const v = giaTri(form), d = Object.assign({}, v);
       if (qr === 'QR3' || qr === 'QR8') d.dong = docBangDong('bang-dong');
       if (qr === 'QR3') { if (v.lop_hp === MON_TAY) { delete d.lop_hp; if (!v.mon_tu_nhap) { $('err').textContent = 'Nhập tên môn thực hành – giảng viên'; return; } } else delete d.mon_tu_nhap; }
+      if (qr === 'QR8' && v.nhanh !== 'hs') { if (v.lop_hp === MON_TAY) { delete d.lop_hp; if (!v.lop_tu_nhap) { $('err').textContent = 'Nhập môn – lớp – giảng viên'; return; } } else { delete d.lop_tu_nhap; delete d.phong_tu_nhap; } }
       if (qr === 'QR8') { if (v.nhanh === 'hs') { d.hs = form.dataset.hs || (v.hs_ma || v.hs_chon || '').toUpperCase(); delete d.lop_hp; if (!d.hs) { $('err').textContent = 'Chọn hoặc nhập mã hồ sơ đề tài'; return; } } else delete d.hs; delete d.hs_chon; delete d.hs_ma; d.nhanh = v.nhanh; }
       if (qr === 'QR2') {
         if (v.dung_cho !== 'lop') { delete d.lop_hp; delete d.mon_tu_nhap; } if (v.dung_cho !== 'hs') delete d.hs; if (v.dung_cho !== 'ca_nhan') delete d.de_tai;
