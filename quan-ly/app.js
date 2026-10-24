@@ -43,8 +43,9 @@
   }
 
   // ---------------- Gọi máy chủ ----------------
+  // Đơn QR (don_ds, don_ct, hom_nay, qr_ds…) luôn đọc mới để xử lý kịp thời.
   // Kết quả đọc giữ 60 giây trong trang (quay lại trang vừa xem hiện ngay); có thao tác ghi bất kỳ thì xóa hết để đọc lại dữ liệu mới
-  const API_DOC = /^(tong_quan|phong_ds|phong_ct|tb_ds|tb_ct|qr_tong|hk_ds|vt_ds|mon_ds|mon_ct|lop_ds|kh_tinh|bb_ds|bb_ct|qr_ds|hom_nay|phong_lich|don_ds|don_ct|hs_ds|hs_ct|kho_ds|vt_goi_y|dt_dot|dt_tinh|dt_cap_ds|dtm_tong|dtm_doi_chieu|dtm_phieu|dtm_ct|kho_lo|kho_so_ks|bc_tb|bc_thang|bc_khac|bc_da_luu|so_ds|so_tong)$/;
+  const API_DOC = /^(tong_quan|phong_ds|phong_ct|tb_ds|tb_ct|hk_ds|vt_ds|mon_ds|mon_ct|lop_ds|kh_tinh|bb_ds|bb_ct|phong_lich|hs_ds|hs_ct|kho_ds|vt_goi_y|dt_dot|dt_tinh|dt_cap_ds|dtm_tong|dtm_doi_chieu|dtm_phieu|dtm_ct|kho_lo|kho_so_ks|bc_tb|bc_thang|bc_khac|bc_da_luu|so_ds|so_tong)$/;
   const DEM = new Map();
   async function api(act, data) {
     if (!API_DOC.test(act)) { DEM.clear(); return goiMayChu(act, data); }
@@ -212,11 +213,69 @@
       '<div class="layout"><aside class="side" id="side"><div class="brand">' + logo() + '<div><small>KHOA KHOA HỌC SỨC KHỎE</small><b>Quản lý PTN</b></div></div>' +
       '<nav class="nav" id="nav">' + MENU.filter(m => m[3] ? laAdmin() : coQuyen(m[0], 'xem')).map(m => (NHOM_MENU[m[0]] ? '<div class="nav-nhom"><span>' + NHOM_MENU[m[0]] + '</span></div>' : '') +
         '<a href="#/' + m[0] + '" data-m="' + m[0] + '" title="' + esc(m[2]) + '"><span class="ico">' + icon(m[0]) + '</span>' + m[2] + '</a>').join('') + '</nav>' +
+      (coQuyen('don', 'xem') && 'Notification' in window && Notification.permission === 'default' ? '<button class="bat-tb" id="b-bat-tb">🔔 Bật thông báo đơn mới trên máy này</button>' : '') +
       '<div class="side-foot"><div class="av">' + esc((n.ten || '?').trim().split(' ').pop().charAt(0)) + '</div><div class="ai"><div class="who">' + esc(n.ten) + '</div><div class="role">' + esc(n.vai_tro) + ' · ' + esc(n.email) + '</div></div>' +
       '<button id="b-thoat" title="Thoát">' + icon('thoat') + '</button></div></aside>' +
       '<main class="main" id="main"></main></div>';
     $('b-thoat').onclick = async () => { if (!confirm('Thoát khỏi hệ thống trên máy này?')) return; try { await api('dang_xuat'); } catch (e) { /* phiên đã hết */ } xoaTk(); S.tk = null; manDangNhap(); };
     $('nav').addEventListener('click', () => $('side').classList.remove('open'));
+    const nutTB = $('b-bat-tb');
+    if (nutTB) nutTB.onclick = () => Notification.requestPermission().then(q => { nutTB.remove(); toast(q === 'granted' ? 'Đã bật thông báo đơn mới trên máy này' : 'Trình duyệt chưa cho phép thông báo', q !== 'granted'); });
+    theoDoiDon();
+  }
+  // ---------------- Theo dõi đơn mới (hỏi máy chủ mỗi 15 giây khi trang đang mở) ----------------
+  // Có đơn chờ duyệt mới: thẻ báo góc phải (bấm để mở đơn), chuông, thông báo trên máy (nếu đã bật), số đếm trên menu và tiêu đề tab;
+  // đang ở trang Hôm nay / danh sách đơn thì tự tải lại. QR1, QR2 báo nổi bật (chuông 2 lần, thẻ màu cam).
+  const QR_GAP = ['QR1', 'QR2'], TIEU_DE = document.title;
+  function theoDoiDon() {
+    clearInterval(S.tdDon); S.donDaThay = null;
+    if (!coQuyen('don', 'xem')) return;
+    S.kiemDon = async () => {
+      if (document.hidden || !S.tk || !$('nav')) return;
+      let r; try { r = await goiMayChu('don_moi'); } catch (e) { return; }
+      const a = document.querySelector('#nav a[data-m="don"]');
+      if (a) { let h = a.querySelector('.huy-hieu'); if (!h) { h = document.createElement('span'); h.className = 'huy-hieu'; a.appendChild(h); } h.textContent = r.tong; h.hidden = !r.tong; }
+      document.title = (r.tong ? '(' + r.tong + ') ' : '') + TIEU_DE;
+      const cu = S.donDaThay, moi = cu ? r.moi.filter(d => !cu.has(d.id)) : [];
+      S.donDaThay = new Set(r.moi.map(d => d.id).concat(cu ? [...cu] : []));
+      if (!moi.length) return;
+      DEM.clear(); baoDonMoi(moi.reverse());
+      const o = document.activeElement, dangGo = o && /INPUT|TEXTAREA|SELECT/.test(o.tagName);
+      const tr = location.hash.replace(/^#\/?/, '').split('/');
+      if ((tr[0] === '' || tr[0] === 'tong-quan' || (tr[0] === 'don' && !tr[2])) && $('modal').classList.contains('hide') && !dangGo) dieuHuong();
+    };
+    S.kiemDon(); S.tdDon = setInterval(S.kiemDon, 15000);
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && S.kiemDon && S.tk) S.kiemDon(); });
+  function baoDonMoi(ds) {
+    let hop = $('tb-don');
+    if (!hop) { hop = document.createElement('div'); hop.id = 'tb-don'; document.body.appendChild(hop); }
+    const ten = (S.dm && S.dm.qr_don) || {}, gap = ds.some(d => QR_GAP.indexOf(d.qr) >= 0);
+    ds.forEach(d => {
+      const the = document.createElement('a'), noi = (d.phong ? ' · ' + d.phong : '') + ' · ' + ngayVN(d.tg);
+      the.className = 'the-don' + (QR_GAP.indexOf(d.qr) >= 0 ? ' gap' : ''); the.href = '#/don/' + d.qr + '/' + encodeURIComponent(d.id);
+      the.innerHTML = '<b>🔔 Đơn mới ' + esc(d.qr) + '</b> – ' + esc(ten[d.qr] || '') + '<br>' + esc(d.ho_ten || '') + esc(noi) + '<span class="x" title="Đóng">×</span>';
+      the.onclick = (e) => { if (e.target.classList.contains('x')) e.preventDefault(); the.remove(); };
+      hop.prepend(the);
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try { const n = new Notification('Đơn mới ' + d.qr + ' – ' + (ten[d.qr] || ''), { body: (d.ho_ten || '') + noi, icon: '../icon-192.png', tag: d.id });
+          n.onclick = () => { window.focus(); location.hash = the.getAttribute('href'); n.close(); }; } catch (e) { /* máy không hỗ trợ */ }
+      }
+    });
+    while (hop.children.length > 6) hop.lastChild.remove();
+    chuong(gap ? 2 : 1);
+  }
+  function chuong(lan) {
+    try {
+      const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+      const c = chuong.c = chuong.c || new C();
+      for (let i = 0; i < lan; i++) [880, 660].forEach((f, j) => {
+        const o = c.createOscillator(), g = c.createGain(), t = c.currentTime + i * 0.45 + j * 0.16;
+        o.frequency.value = f; o.connect(g); g.connect(c.destination);
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+        o.start(t); o.stop(t + 0.16);
+      });
+    } catch (e) { /* trình duyệt chặn âm thanh */ }
   }
   // danh sách để đi Trước / Tiếp ở trang chi tiết (trang danh sách gọi ganDieuHuong với các liên kết đang hiển thị)
   function ganDieuHuong(ds, ten) { S.dh = { ds: ds.slice(), ten }; }

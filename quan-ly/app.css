@@ -290,3 +290,12 @@ td.nhom-dong { background: #F7F8FB; font-weight: 600; color: var(--ink); font-si
 .bang-quyen td:first-child, .bang-quyen th:first-child { text-align: left; }
 .bang-quyen input[type=radio] { width: 18px; height: 18px; accent-color: var(--mn); cursor: pointer; }
 .mau-quyen { flex-wrap: wrap; gap: 6px; margin: 0 0 10px; align-items: center; }
+
+/* Thông báo đơn mới */
+.huy-hieu { margin-left: auto; background: #E5484D; color: #fff; font-size: 12px; font-weight: 700; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; }
+.huy-hieu[hidden] { display: none; }
+.bat-tb { margin: 6px 14px; padding: 8px 10px; border-radius: 10px; border: 1px dashed rgba(242, 199, 102, .7); background: rgba(255, 255, 255, .08); color: #FCE7A8; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; text-align: left; }
+#tb-don { position: fixed; top: 14px; right: 14px; z-index: 80; display: flex; flex-direction: column; gap: 8px; width: min(360px, calc(100vw - 28px)); }
+.the-don { position: relative; display: block; background: #fff; color: var(--text); text-decoration: none; border-left: 5px solid var(--mn); border-radius: 10px; padding: 10px 30px 10px 12px; box-shadow: var(--sh-3); font-size: 14.5px; line-height: 1.45; animation: hien .25s ease; }
+.the-don.gap { border-left-color: #F08A24; background: #FFF6EC; }
+.the-don .x { position: absolute; top: 4px; right: 8px; font-size: 20px; color: var(--muted); cursor: pointer; }
