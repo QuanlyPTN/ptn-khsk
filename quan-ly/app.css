@@ -62,11 +62,11 @@ svg.i { width: 18px; height: 18px; flex: none; }
 .side .brand.co-logo b { font-size: 16px; padding-left: 2px; color: #fff; letter-spacing: .3px; }
 .nav { padding: 6px 12px 12px; flex: 1; overflow: auto; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .2) transparent; }
 .nav-nhom { padding: 20px 12px 8px; }
-/* tên nhóm menu: chữ vàng ánh kim (dải sáng – tối như kim loại), bóng nhẹ để nổi trên nền xanh, vạch vàng mảnh bên dưới */
+/* tên nhóm menu: vàng kem sáng pha đồng sáng (theo mẫu anh Phú chọn), bóng nhẹ để nổi trên nền xanh, vạch cùng tông bên dưới */
 .nav-nhom span { display: inline-block; font-size: 17px; letter-spacing: 1.6px; text-transform: uppercase; font-weight: 700;
-  background: linear-gradient(180deg, #FFF6D2 0%, #F8DC8A 30%, #D9A533 52%, #FBE3A0 72%, #C38B22 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 1px 1px rgba(40, 25, 0, .55)) drop-shadow(0 0 6px rgba(242, 199, 102, .25)); }
-.nav-nhom span::after { content: ''; display: block; height: 1.5px; margin-top: 5px; width: 46px; border-radius: 2px; background: var(--vang); }
+  background: linear-gradient(180deg, #FFF5CC 0%, #FAE6A0 34%, #F3CF86 58%, #EAB57E 80%, #F6DCA4 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(40, 25, 0, .5)) drop-shadow(0 0 6px rgba(250, 230, 160, .25)); }
+.nav-nhom span::after { content: ''; display: block; height: 1.5px; margin-top: 5px; width: 46px; border-radius: 2px; background: linear-gradient(90deg, #FAE6A0, #EAB57E); }
 .nav a { position: relative; display: flex; align-items: center; gap: 11px; color: #fff; font-weight: 700; text-decoration: none; padding: 8px 12px; border-radius: 9px; margin-bottom: 2px; font-size: 17px; text-shadow: 0 1px 2px rgba(0, 0, 0, .35); transition: background .15s, color .15s; }
 .nav a:hover { background: rgba(255, 255, 255, .1); color: #fff; }
 .nav a.on { background: var(--mn-grad); color: #fff; font-weight: 700; box-shadow: 0 2px 8px -2px rgba(0, 0, 0, .3), inset 0 0 0 1px rgba(255, 255, 255, .35); }
