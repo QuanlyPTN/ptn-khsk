@@ -67,6 +67,12 @@
   }
 
   // ---------------- Đơn QR1 – QR8 ----------------
+  // QR1: tách Nội dung thành Phòng (mỗi phòng một dòng) và Thiết bị – dụng cụ MƯỢN THÊM (mỗi thứ một dòng);
+  // thiết bị chọn trong phòng không hiện ở đây – khi giao đơn chúng vào nhật ký sử dụng QR5
+  const dsPhongDon = (d) => String(d.phong || '').split(/\s*,\s*/).filter(Boolean);
+  const dsMuonThem = (d) => (d.nd.dung_cu_ds || []).map(x => x.ten + ' – SL ' + fmt(x.sl) + (x.ghi_chu ? ' (' + x.ghi_chu + ')' : ''))
+    .concat(!d.nd.dung_cu_ds && d.nd.dung_cu ? String(d.nd.dung_cu).split(/\s*;\s*/).filter(Boolean) : []);
+  const mucDichQR1 = (d) => [d.nd.noi_dung, d.nd.muc_dich].filter(Boolean).join(' · ');
   async function manDon(p) {
     const qr = /^QR[1-8]$/.test(p[1] || '') ? p[1] : 'QR1';
     if (qr === 'QR7') { location.hash = '#/de-tai'; return; }
@@ -83,9 +89,13 @@
       const q = boDau($('q').value), tt = $('f-tt').value, nghi = $('f-nghi').checked;
       const l = ds.filter(d => (!q || boDau([d.id, d.ho_ten, d.ma_so, d.sdt, tomTat(d)].join(' ')).indexOf(q) >= 0) && (!nghi || d.nghi) &&
         (tt === '' || (tt === 'chua' ? mo(d) : tt === 'dang' ? (d.trang_thai === 'Đang mượn' || d.trang_thai === 'Đang dùng') : tt === 'qh' ? d.qua_han : d.trang_thai === tt)));
-      $('kq').innerHTML = !l.length ? '<div class="card empty">Không có đơn nào.</div>' : '<div class="tbl-wrap"><table><thead><tr><th>Mã đơn</th><th>Gửi lúc</th><th>Người đăng ký</th><th>Nội dung</th><th>Thời gian</th><th>Trạng thái</th><th></th></tr></thead><tbody>' +
+      $('kq').innerHTML = !l.length ? '<div class="card empty">Không có đơn nào.</div>' : '<div class="tbl-wrap"><table><thead><tr><th>Mã đơn</th><th>Gửi lúc</th><th>Người đăng ký</th>' + (qr === 'QR1' ? '<th>Phòng</th><th>Thiết bị – dụng cụ mượn thêm</th>' : '<th>Nội dung</th>') + '<th>Thời gian</th><th>Trạng thái</th><th></th></tr></thead><tbody>' +
         l.slice(0, 500).map(d => '<tr class="click" data-id="' + esc(d.id) + '"><td class="mono">' + esc(d.id) + '</td><td style="white-space:nowrap">' + ngayVN(d.tg) + '</td><td><b>' + esc(d.ho_ten) + '</b><div class="note">' + esc(d.ma_so + ' · ' + d.doi_tuong) + '</div>' +
-          (d.nghi ? '<span class="tag t-bad" title="Một máy gửi cho nhiều người, hoặc một người gửi từ nhiều máy">⚠ nghi đăng ký thay</span>' : '') + (d.nd.dang_ky_thay ? ' <span class="tag t-gray">SV đăng ký thay GV</span>' : '') + '</td><td>' + esc(tomTat(d)).slice(0, 200) + '</td><td>' + thoiGian(d) + '</td><td>' + tagTT(d.trang_thai, d.qua_han) + '</td><td class="btns">' + nutNhanh(d) + '</td></tr>').join('') +
+          (d.nghi ? '<span class="tag t-bad" title="Một máy gửi cho nhiều người, hoặc một người gửi từ nhiều máy">⚠ nghi đăng ký thay</span>' : '') + (d.nd.dang_ky_thay ? ' <span class="tag t-gray">SV đăng ký thay GV</span>' : '') + '</td>' + (qr === 'QR1'
+            ? '<td style="white-space:nowrap">' + dsPhongDon(d).map(x => '<div><b>' + esc(x) + '</b></div>').join('') + '</td><td>' +
+              (dsMuonThem(d).length ? dsMuonThem(d).map(x => '<div>• ' + esc(x) + '</div>').join('') : '<div class="note">—</div>') +
+              (mucDichQR1(d) ? '<div class="note" style="margin-top:4px">' + esc(mucDichQR1(d)) + '</div>' : '') + '</td>'
+            : '<td>' + esc(tomTat(d)).slice(0, 200) + '</td>') + '<td>' + thoiGian(d) + '</td><td>' + tagTT(d.trang_thai, d.qua_han) + '</td><td class="btns">' + nutNhanh(d) + '</td></tr>').join('') +
         '</tbody></table></div>' + (l.length > 500 ? '<p class="note">Hiện 500 / ' + l.length + ' đơn – lọc thêm để xem.</p>' : '');
       S.cache.donIds = l.slice(0, 500).map(d => d.id);
       $('kq').querySelectorAll('tr[data-id]').forEach(tr => { tr.onclick = (e) => { if (e.target.closest('button')) return; hopDon(tr.dataset.id); }; });
@@ -99,8 +109,10 @@
     ve();
     $('b-xuat').onclick = () => window.PTN_IN.xemTruoc({ ten: 'Don ' + qr + ' ' + homNay(), trang: [window.PTN_IN.bang({ ten: 'Don ' + qr, huong: 'ngang', tieuDe: 'DANH SÁCH ĐƠN ' + qr + ' – ' + QR_TEN[qr].toUpperCase(),
       phuDe: 'Xuất ngày ' + ngayVN(homNay()) + ' · ' + ds.length + ' đơn', cot: [{ ten: 'STT', rong: 5, can: 'c' }, { ten: 'MÃ ĐƠN', rong: 10 }, { ten: 'GỬI LÚC', rong: 15 }, { ten: 'HỌ TÊN', rong: 20 }, { ten: 'MSSV / MÃ VC', rong: 12 }, { ten: 'ĐIỆN THOẠI', rong: 12 },
-        { ten: 'NỘI DUNG', rong: 42 }, { ten: 'THỜI GIAN', rong: 22 }, { ten: 'TRẠNG THÁI', rong: 15 }, { ten: 'NGƯỜI XỬ LÝ', rong: 15 }],
-      dong: ds.map((d, i) => [i + 1, d.id, ngayVN(d.tg), d.ho_ten, d.ma_so, d.sdt, tomTat(d), thoiGian(d), d.trang_thai + (d.qua_han ? ' (quá hạn)' : ''), d.nguoi_xu_ly]) })] });
+        ...(qr === 'QR1' ? [{ ten: 'PHÒNG', rong: 14 }, { ten: 'THIẾT BỊ – DỤNG CỤ MƯỢN THÊM', rong: 30 }, { ten: 'NỘI DUNG – MỤC ĐÍCH', rong: 20 }] : [{ ten: 'NỘI DUNG', rong: 42 }]),
+        { ten: 'THỜI GIAN', rong: 22 }, { ten: 'TRẠNG THÁI', rong: 15 }, { ten: 'NGƯỜI XỬ LÝ', rong: 15 }],
+      dong: ds.map((d, i) => [i + 1, d.id, ngayVN(d.tg), d.ho_ten, d.ma_so, d.sdt].concat(qr === 'QR1' ? [dsPhongDon(d).join('\n'), dsMuonThem(d).join('\n'), mucDichQR1(d)] : [tomTat(d)],
+        [thoiGian(d), d.trang_thai + (d.qua_han ? ' (quá hạn)' : ''), d.nguoi_xu_ly])) })] });
     if (p[2]) hopDon(decodeURIComponent(p[2]));
   }
   function nutNhanh(d) {
