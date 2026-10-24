@@ -148,14 +148,14 @@
     hang.push({ cao: 17, o: [{ v: '', cs: 4 }, { v: 'Ngày …….. Tháng …… năm 20……', cs: 4, can: 'c', i: 1, co: 12 }] },
       { cao: 25.25, o: [{ v: 'BÊN NHẬN', cs: 2, can: 'c', b: 1 }, { v: 'GIẢNG VIÊN HƯỚNG DẪN', cs: 3, can: 'c', b: 1 }, { v: 'BÊN GIAO', cs: 3, can: 'c', b: 1 }] },
       { cao: 30, o: [{ v: kltn ? '(Trưởng nhóm - ký, ghi rõ họ tên, MSSV, SĐT)' : '(Đại diện lớp - ký, ghi rõ họ tên, MSSV, SĐT)', cs: 2, can: 'c', i: 1, co: 10 }, { v: '(Ký, ghi rõ họ tên)', cs: 3, can: 'c', i: 1, co: 10 }, { v: '(Cán bộ PTN - ký, ghi rõ họ tên)', cs: 3, can: 'c', i: 1, co: 10 }] });
-    for (let i = 0; i < 4; i++) hang.push({ cao: 15, o: [{ v: '', cs: n }] });
+    for (let i = 0; i < 3; i++) hang.push({ cao: 15, o: [{ v: '', cs: n }] }); // chỗ ký bàn giao (cùng dòng dưới: 4 dòng ~ 2 cm)
     hang.push({ cao: 15, o: [{ v: '', cs: n }] }, // chỗ ký (không in dòng "Họ tên: ……")
       { cao: 15, o: [{ v: '', cs: n }] }, { cao: 15, o: [{ v: 'IV. XÁC NHẬN HOÀN TRẢ', cs: n, b: 1, co: 12 }] },
       { cao: 16, o: [{ v: 'Ngày trả: ........./........./20.......     Tổng SL nợ: ' + (r.dong.some(d => +d.tra) ? tongNo : '........') + '     Hướng xử lý: ..................................................', cs: n }] },
       { cao: 15, o: [{ v: '', cs: n }] },
       { cao: 15, o: [{ v: kltn ? 'ĐẠI DIỆN NHÓM TRẢ' : 'ĐẠI DIỆN LỚP TRẢ', cs: 2, can: 'c', b: 1 }, { v: '', cs: 3 }, { v: 'ĐẠI DIỆN PTN NHẬN LẠI', cs: 3, can: 'c', b: 1 }] },
       { cao: 15, o: [{ v: '(Ký, ghi rõ họ tên)', cs: 2, can: 'c', i: 1, co: 10 }, { v: '', cs: 3 }, { v: '(Ký, ghi rõ họ tên)', cs: 3, can: 'c', i: 1, co: 10 }] });
-    for (let i = 0; i < 4; i++) hang.push({ cao: 15, o: [{ v: '', cs: n }] });
+    for (let i = 0; i < 3; i++) hang.push({ cao: 15, o: [{ v: '', cs: n }] }); // chỗ ký hoàn trả (3 dòng: vừa một trang A4, không dư trang trắng)
     const q = 64, caoKhung = 54 * 4 / 3; // px
     return { ten: b.id, huong: 'doc', cot, lapLai: [dau, dau + 1], hang, le: [0.33, 0.17, 0.3, 0.17],
       anh: qr ? [{ dataUrl: qr.dataUrl, cot: 7 + (pxCot(cot[7]) - q - 6) / pxCot(cot[7]), hang: (caoKhung - q) / 2 / 24, rong: q, cao: q, vi_tri: 'top:' + (caoKhung - q) / 2 * 0.75 + 'pt;right:6px' }] : [] };

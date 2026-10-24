@@ -27,6 +27,13 @@
     return out;
   }
   const LE_MAC_DINH = [0.5, 0.45, 0.5, 0.45]; // lề trái = lề phải để trang in cân hai bên
+  // Trang tính chỉ dư một chút so với 1 trang A4 (≤ 10% chiều cao, sau khi co vừa ngang) → co thêm cho vừa đúng 1 trang,
+  // tránh trang 2 trắng chỉ có dòng tiêu đề lặp lại. tyLeNgang: tỷ lệ co vừa ngang. Trả hệ số co thêm theo chiều cao (1 = không co).
+  function coMotTrang(t, tyLeNgang) {
+    const le = t.le || LE_MAC_DINH, caoTrang = ((t.huong === 'ngang' ? 210 : 297) / 25.4 - le[0] - le[2]) * 72 - 4; // pt, chừa dòng "Trang x / y"
+    const cao = t.hang.reduce((a, h) => a + (h.cao || 15), 0) * tyLeNgang;
+    return cao > caoTrang && cao <= caoTrang * 1.1 ? caoTrang / cao * 0.97 : 1;
+  }
   const canh = (v) => !v ? '' : v === true || v === 1 ? 'tlbr' : String(v); // các cạnh có viền
   const soHien = (v, dd) => {
     if (typeof v !== 'number') return v == null ? '' : String(v);
@@ -40,7 +47,7 @@
     wb.creator = 'Hệ thống quản lý PTN – Khoa KHSK'; wb.created = new Date();
     for (const t of tl.trang) {
       const ws = wb.addWorksheet(String(t.ten).slice(0, 31).replace(/[\\/?*[\]:]/g, '-'), {
-        pageSetup: { paperSize: 9, orientation: t.huong === 'ngang' ? 'landscape' : 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0, horizontalCentered: true,
+        pageSetup: { paperSize: 9, orientation: t.huong === 'ngang' ? 'landscape' : 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: coMotTrang(t, tyLeNgang_(t)) < 1 ? 1 : 0, horizontalCentered: true,
           margins: (function (m) { return { top: m[0], right: m[1], bottom: m[2], left: m[3], header: 0.2, footer: 0.25 }; })(t.le || LE_MAC_DINH) },
         headerFooter: { oddFooter: '&C&"Times New Roman"&9Trang &P / &N' }, views: [t.dongBang ? { state: 'frozen', ySplit: t.dongBang, showGridLines: true } : { showGridLines: false }] });
       if (t.lapLai) ws.pageSetup.printTitlesRow = t.lapLai[0] + ':' + t.lapLai[1];
@@ -83,11 +90,13 @@
   // ---------- Xem trước khi in (HTML khổ A4) ----------
   // Giống Excel khi in "vừa chiều ngang trang": cột theo đúng độ rộng Excel (w ký tự ≈ 7w + 5 px), cả trang thu nhỏ cùng tỷ lệ; lề theo từng trang tính.
   const MM = 96 / 25.4;
+  // tỷ lệ co để bảng vừa ngang trang (giống Excel "vừa 1 trang ngang")
+  function tyLeNgang_(t) { const le = t.le || LE_MAC_DINH, tuNhien = t.cot.reduce((a, w) => a + w * 7 + 5, 0); return Math.min(1, ((t.huong === 'ngang' ? 297 : 210) - (le[1] + le[3]) * 25.4) * MM / tuNhien); }
   function html(tl) {
     const kieuTrang = [];
     const trang = tl.trang.map((t, k) => {
       const g = luoi(t), leIn = t.le || LE_MAC_DINH, le = leIn.map(x => (x * 25.4).toFixed(1) + 'mm'), ngang = t.huong === 'ngang';
-      const px = t.cot.map(w => w * 7 + 5), tuNhien = px.reduce((a, w) => a + w, 0), tyLe = Math.min(1, ((ngang ? 297 : 210) - (leIn[1] + leIn[3]) * 25.4) * MM / tuNhien);
+      const px = t.cot.map(w => w * 7 + 5), tuNhien = px.reduce((a, w) => a + w, 0), tyLe = tyLeNgang_(t) * coMotTrang(t, tyLeNgang_(t));
       kieuTrang.push('@page p' + k + '{size:A4 ' + (ngang ? 'landscape' : 'portrait') + ';margin:' + le.join(' ') + '}');
       const hangHtml = t.hang.map((h, r) => '<tr style="height:' + (h.cao || 15) + 'pt">' + g.filter(x => x.r === r).map(({ cs, rs, o }) =>
         '<td' + (cs > 1 ? ' colspan="' + cs + '"' : '') + (rs > 1 ? ' rowspan="' + rs + '"' : '') + ' style="' + [canh(o.vien).split('').map(k => 'border-' + { t: 'top', l: 'left', b: 'bottom', r: 'right' }[k] + ':.6pt solid #000').join(';'), o.b ? 'font-weight:bold' : '', o.i ? 'font-style:italic' : '',
