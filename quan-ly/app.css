@@ -61,11 +61,13 @@ svg.i { width: 18px; height: 18px; flex: none; }
 .side .brand.co-logo img.logo-ngang { max-width: none; }
 .side .brand.co-logo b { font-size: 16px; padding-left: 2px; color: #fff; letter-spacing: .3px; }
 .nav { padding: 6px 12px 12px; flex: 1; overflow: auto; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .2) transparent; }
-.nav-nhom { padding: 20px 12px 8px; }
-/* tên nhóm menu: vàng đậm ánh kim (dải sáng – đậm như kim loại), viền nét mảnh cho sắc; không dùng filter (làm nhòe chữ) */
+.nav-nhom { padding: 20px 12px 8px; isolation: isolate; }
+/* tên nhóm menu: vàng ánh kim sáng; bóng xanh đậm đặt ở lớp chữ phía sau (::before) để chữ vàng nổi và sáng trên nền xanh mà không bị nhòe */
 .nav-nhom span { display: inline-block; font-size: 17px; letter-spacing: 1.6px; text-transform: uppercase; font-weight: 700;
-  background: linear-gradient(180deg, #FFE69A 0%, #F2C24E 28%, #D39A22 50%, #F6D266 72%, #C98F1F 100%); -webkit-text-stroke: .35px rgba(90, 55, 0, .55); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.nav-nhom span::after { content: ''; display: block; height: 1.5px; margin-top: 5px; width: 46px; border-radius: 2px; background: linear-gradient(90deg, #F6D266, #D39A22, #F2C24E); }
+  position: relative; background: linear-gradient(180deg, #FFF4C4 0%, #FFDC6E 32%, #F4BC3A 54%, #FFE38A 76%, #EDB035 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.nav-nhom span::before { content: attr(data-t); position: absolute; left: 0; top: 0; z-index: -1; color: transparent; pointer-events: none;
+  text-shadow: 0 1px 0 #142A6E, 0 2px 4px rgba(5, 15, 60, .45); }
+.nav-nhom span::after { content: ''; display: block; height: 1.5px; margin-top: 5px; width: 46px; border-radius: 2px; background: linear-gradient(90deg, #FFE38A, #F4BC3A, #FFDC6E); }
 .nav a { position: relative; display: flex; align-items: center; gap: 11px; color: #fff; font-weight: 700; text-decoration: none; padding: 8px 12px; border-radius: 9px; margin-bottom: 2px; font-size: 17px; text-shadow: 0 1px 1px rgba(0, 0, 0, .28); transition: background .15s, color .15s; }
 .nav a:hover { background: rgba(255, 255, 255, .1); color: #fff; }
 .nav a.on { background: var(--mn-grad); color: #fff; font-weight: 700; box-shadow: 0 2px 8px -2px rgba(0, 0, 0, .3), inset 0 0 0 1px rgba(255, 255, 255, .35); }
