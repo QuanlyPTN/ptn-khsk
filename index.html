@@ -68,7 +68,7 @@ textarea{min-height:80px;resize:vertical}
 <header><button id="hl" class="lui hide" aria-label="Quay lại" title="Quay lại">‹</button><button id="hn" class="lui tiep hide" aria-label="Tiếp" title="Tiếp">›</button><img src="logo-mark.png" alt="Logo"><div class="brand"><span>ĐẠI HỌC CÔNG NGHIỆP TP. HỒ CHÍ MINH</span><b>KHOA KHOA HỌC SỨC KHỎE</b></div><a id="hb" class="home hide" href="#/" aria-label="Trang chủ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/></svg></a></header>
 <main id="m"><div class="spin"></div><p class="note" style="text-align:center">Đang tải…</p></main>
 <div id="toast" class="toast hide"></div>
-<script src="quan-ly/config.js"></script>
+<script src="quan-ly/config.js?v=64cf48cd"></script>
 <script>
   // Chạy thử trên máy: index.html?demo=1 → máy chủ giả lập ngay trong trình duyệt.
   // Mở tệp trên máy (file://) khi chưa có link máy chủ thật → tự chuyển sang chạy thử (lệnh open của macOS có thể bỏ mất "?demo=1").
@@ -76,7 +76,7 @@ textarea{min-height:80px;resize:vertical}
   if (/[?&]demo=1/.test(location.search)) document.write('<script src="quan-ly/demo/may-chu-gia-lap.js"><\/script>');
   else if ('serviceWorker' in navigator) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
 </script>
-<script src="don-phu-luc.js"></script>
-<script src="don-qr.js"></script>
-<script src="app-cong-khai.js"></script>
+<script src="don-phu-luc.js?v=061569c0"></script>
+<script src="don-qr.js?v=a97bdb17"></script>
+<script src="app-cong-khai.js?v=6b229344"></script>
 </body></html>

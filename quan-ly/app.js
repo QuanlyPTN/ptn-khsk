@@ -230,6 +230,18 @@
     if (nutTB) nutTB.onclick = () => Notification.requestPermission().then(q => { nutTB.remove(); toast(q === 'granted' ? 'Đã bật thông báo đơn mới trên máy này' : 'Trình duyệt chưa cho phép thông báo', q !== 'granted'); });
     theoDoiDon();
   }
+  // ---------------- Báo có bản cập nhật hệ thống (trang mở lâu vẫn chạy mã cũ) ----------------
+  // So phien-ban.json (tạo khi đóng gói web) mỗi 5 phút / khi quay lại tab; khác lúc mở trang → dải báo "bấm để tải lại".
+  (function theoDoiPhienBan() {
+    if (DEMO || location.protocol === 'file:') return;
+    let dau = null;
+    const kiem = () => fetch('../phien-ban.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(j => {
+      if (!j || !j.v) return; if (dau === null) { dau = j.v; return; }
+      if (j.v !== dau && !$('bao-cap-nhat')) { const b = document.createElement('div'); b.id = 'bao-cap-nhat'; b.className = 'bao-cap-nhat';
+        b.innerHTML = '🔄 Hệ thống vừa được cập nhật. <button type="button" class="btn sm">Tải lại trang</button>'; b.querySelector('button').onclick = () => location.reload(); document.body.appendChild(b); }
+    }).catch(() => { /* mất mạng: thử lại lần sau */ });
+    kiem(); setInterval(kiem, 300000); document.addEventListener('visibilitychange', () => { if (!document.hidden) kiem(); });
+  })();
   // ---------------- Theo dõi đơn mới (hỏi máy chủ mỗi 15 giây khi trang đang mở) ----------------
   // Có đơn chờ duyệt mới: thẻ báo góc phải (bấm để mở đơn), chuông, thông báo trên máy (nếu đã bật), số đếm trên menu và tiêu đề tab;
   // đang ở trang Hôm nay / danh sách đơn thì tự tải lại. QR1, QR2 báo nổi bật (chuông 2 lần, thẻ màu cam).

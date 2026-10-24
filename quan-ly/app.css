@@ -306,3 +306,5 @@ td.nhom-dong { background: #F7F8FB; font-weight: 600; color: var(--ink); font-si
 
 .huong-dan-pq { border-left: 4px solid var(--mn); background: var(--mn-soft); }
 .huong-dan-pq p, .huong-dan-pq ol { margin: 4px 0; }
+
+.bao-cap-nhat { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 90; background: var(--mn-2); color: #fff; padding: 10px 14px; border-radius: 12px; box-shadow: var(--sh-3); font-weight: 700; display: flex; gap: 10px; align-items: center; }

@@ -7,24 +7,24 @@
 <meta name="theme-color" content="#1E4FC2">
 <meta name="robots" content="noindex, nofollow"><!-- trang quản lý: không cho Google lập chỉ mục -->
 <link rel="icon" type="image/png" href="../icon-192.png">
-<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="app.css?v=721b93f8">
 </head>
 <body>
 <div id="app"><div class="loading"><div class="spin"></div></div></div>
 <div id="modal" class="modal hide" role="dialog" aria-modal="true"><div class="modal-box"><div id="modal-body"></div></div></div>
 <div id="toast" class="toast hide"></div>
-<script src="config.js"></script>
+<script src="config.js?v=64cf48cd"></script>
 <script>
   // Chế độ chạy thử trên máy: index.html?demo=1 → dùng máy chủ giả lập (không cần mạng)
   if (location.protocol === 'file:' && !/[?&]demo=1/.test(location.search) && !/^https?:/.test(window.PTN_API || '')) location.replace('chay-thu.html' + location.hash); // mở tệp trên máy → bản chạy thử
   if (/[?&]demo=1/.test(location.search)) document.write('<script src="demo/may-chu-gia-lap.js"><\/script>');
 </script>
-<script src="../don-phu-luc.js"></script>
-<script src="../don-qr.js"></script>
-<script src="xuat-file.js"></script>
-<script src="mau-in.js"></script>
-<script src="doc-scan.js"></script>
-<script src="app.js"></script>
-<script src="app-mo-rong.js"></script>
+<script src="../don-phu-luc.js?v=061569c0"></script>
+<script src="../don-qr.js?v=a97bdb17"></script>
+<script src="xuat-file.js?v=23721e09"></script>
+<script src="mau-in.js?v=e273cca8"></script>
+<script src="doc-scan.js?v=cf011e66"></script>
+<script src="app.js?v=88b1655e"></script>
+<script src="app-mo-rong.js?v=9295871e"></script>
 </body>
 </html>
