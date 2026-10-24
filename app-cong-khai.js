@@ -125,7 +125,7 @@
     const box = $(id); if (!box) return;
     const add = () => { const r = document.createElement('div'); r.className = 'dong tu-do';
       r.innerHTML = '<input type="text" placeholder="Tên – quy cách" data-k="ten">' + (coQuyCach ? '<input type="text" placeholder="Đặc điểm, NSX" data-k="quy_cach">' : '') + '<input type="number" min="0" step="any" placeholder="SL" data-k="sl" style="max-width:80px"><input type="text" placeholder="ĐVT" data-k="dvt" style="max-width:70px">';
-      box.querySelector('.them').appendChild(r); };
+      r.querySelectorAll('input').forEach(i => i.setAttribute('autocomplete', 'off')); box.querySelector('.them').appendChild(r); };
     box.querySelector('[data-them-dong]').onclick = add; add();
   }
   function docBangDong(id) {
@@ -247,7 +247,7 @@
           nhap('den_ngay', 'Ngày trả', { type: 'date', v: homNay(1), req: 1 }) + nhap('muc_dich', 'Mục đích') ;
         break;
     }
-    M(h + '<form class="card" id="f">' + f + camKet(qr) + '<div id="err" class="err"></div><button class="btn" id="sb">Gửi đăng ký</button></form>');
+    M(h + '<form class="card" id="f" autocomplete="off">' + f + camKet(qr) + '<div id="err" class="err"></div><button class="btn" id="sb">Gửi đăng ký</button></form>');
     const form = $('f'); danhDau(form);
     const phongChon = () => [...form.querySelectorAll('[name=phong]:checked')].map(i => i.value);
     // thiết bị của các phòng đã chọn (giữ lựa chọn cũ khi đổi phòng)
@@ -308,9 +308,12 @@
       const them = () => { const r = document.createElement('div'); r.className = 'tb-khac';
         r.innerHTML = '<input type="text" data-k="ten" placeholder="' + tenGoiY + '"><div class="hai"><input type="number" min="0" step="any" inputmode="decimal" data-k="sl" placeholder="Số lượng *">' +
           (coTinhTrang ? '<input type="text" data-k="tinh_trang" placeholder="Tình trạng thiết bị"></div><input type="text" data-k="ghi_chu" placeholder="Ghi chú">' : '<input type="text" data-k="ghi_chu" placeholder="Ghi chú"></div>');
-        $(hop).appendChild(r); };
+        khongTuDien(r); $(hop).appendChild(r); };
       them(); $(nut).onclick = them;
     };
+    // tắt tự điền / gợi ý của trình duyệt (điện thoại hay chép dữ liệu đã gõ trước vào ô mới)
+    function khongTuDien(root) { root.querySelectorAll('input:not([type=checkbox]):not([type=radio]), textarea').forEach(i => { i.setAttribute('autocomplete', 'off'); i.setAttribute('autocorrect', 'off'); i.setAttribute('spellcheck', 'false'); }); }
+    khongTuDien(form);
     const docDong = (hop) => [...document.querySelectorAll('#' + hop + ' .tb-khac')].map(r => { const o = {}; r.querySelectorAll('[data-k]').forEach(i => { o[i.dataset.k] = i.value.trim(); }); return o; }).filter(x => x.ten);
     khungDong('tb-khac', 'them-tb-khac', 'Tên thiết bị (model, hãng)', true);
     khungDong('dc-them', 'them-dc', 'Tên thiết bị / dụng cụ');
@@ -363,7 +366,7 @@
     const bmChon = x.bo_mon ? (BM_KHOA.indexOf(x.bo_mon) >= 0 ? x.bo_mon : '~khac') : (BM_KHOA.find(b => p.bo_mon && b.indexOf(p.bo_mon) === 0) || '');
     const h = '<h2>QR7 – ' + (sua ? 'Sửa hồ sơ ' + esc(sua.id) : 'Hồ sơ đề tài KLTN – NCKH') + '</h2>' +
       '<div class="card note">Điền một lần → hệ thống tạo sẵn đơn đúng mẫu Phụ lục (1A – 3) → tải về, in, ký, đề nghị GVHD ký → nộp bản giấy cho PTN. Cán bộ quét mã trên đơn để mở đúng hồ sơ.</div>' +
-      '<form class="card" id="f"><div class="sec">Đề tài</div>' + (sua ? '<input type="hidden" name="loai" value="' + esc(x.loai) + '"><p><b>Loại:</b> ' + esc(x.ten_loai) + '</p>' : chon('loai', 'Loại đề tài', dsLoai, { v: x.loai, req: 1 })) +
+      '<form class="card" id="f" autocomplete="off"><div class="sec">Đề tài</div>' + (sua ? '<input type="hidden" name="loai" value="' + esc(x.loai) + '"><p><b>Loại:</b> ' + esc(x.ten_loai) + '</p>' : chon('loai', 'Loại đề tài', dsLoai, { v: x.loai, req: 1 })) +
       nhap('ten', 'Tên đề tài', { v: x.ten, req: 1, area: 1 }) + nhap('gvhd', 'Giảng viên hướng dẫn', { v: x.gvhd, req: 1 }) +
       chon('bm_chon', 'Bộ môn – khoa', BM_KHOA.map(b => [b, b]).concat([['~khac', 'Khoa khác (tự nhập tay)']]), { v: bmChon, req: 1 }) +
       '<div id="o-bm-khac">' + nhap('bm_khac', 'Ghi rõ bộ môn – khoa', { v: bmChon === '~khac' ? x.bo_mon : '', ph: 'VD: Bộ môn Hóa phân tích – Khoa Công nghệ Hóa học' }) + '</div>' +
@@ -481,7 +484,7 @@
       if (b.dataset.wordDon) { try { await window.PTN_DON_QR.taiWord(d, q); } catch (e) { toast(e.message, true); } } else window.PTN_DON_QR.xemTruoc(d, q); }; });
   }
   function hopKetThuc(id) {
-    M('<h2>Kết thúc sử dụng – ' + esc(id) + '</h2><form class="card" id="f">' + chon('tinh_trang', 'Tình trạng thiết bị / phòng sau khi sử dụng', ['Bình thường', 'Bất thường – hư hỏng'], { v: 'Bình thường', req: 1 }) +
+    M('<h2>Kết thúc sử dụng – ' + esc(id) + '</h2><form class="card" id="f" autocomplete="off">' + chon('tinh_trang', 'Tình trạng thiết bị / phòng sau khi sử dụng', ['Bình thường', 'Bất thường – hư hỏng'], { v: 'Bình thường', req: 1 }) +
       nhap('ghi_chu', 'Mô tả bất thường (nếu có)', { area: 1 }) + '<div id="err" class="err"></div><button class="btn g" id="sb">Xác nhận kết thúc</button><a class="btn o" href="#/don-cua-toi">Quay lại</a></form>');
     danhDau($('f'));
     $('f').onsubmit = async (e) => {
