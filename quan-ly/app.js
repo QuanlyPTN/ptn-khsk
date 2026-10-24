@@ -137,7 +137,7 @@
   function manDangNhap(thongBao) {
     document.body.classList.remove('in');
     $('app').innerHTML = (DEMO ? '<div class="demo-bar">' + thanhDemo() + ' Admin: <b>nguyen.phu789@gmail.com</b> / <b>123456</b> · Thử phân quyền: <b>canbo.hoachat@gmail.com</b> / <b>HoaChat2026</b>, <b>canbo.xem@gmail.com</b> / <b>ChiXem2026</b>, <b>canbo.ptn@gmail.com</b> / <b>CanBo2026</b></div>' : '') +
-      '<div class="login"><section class="login-hero"><div class="brand">' + logo() + '<div><small>Đại học Công nghiệp TP. Hồ Chí Minh</small><b>Khoa Khoa học Sức khỏe</b></div></div>' +
+      thanhDiChuyen() + '<div class="login"><section class="login-hero"><div class="brand">' + logo() + '<div><small>Đại học Công nghiệp TP. Hồ Chí Minh</small><b>Khoa Khoa học Sức khỏe</b></div></div>' +
       '<div style="position:relative;z-index:1"><div class="vach"></div><h1>Hệ thống quản lý<br><span>Phòng thí nghiệm</span></h1><p>Tài sản – thiết bị, đơn đăng ký QR1 – QR8, hồ sơ đề tài, hóa chất – vật tư, biên bản bàn giao và báo cáo trên một nền tảng.</p>' +
       '<ul><li>' + icon('kiem') + 'Đơn đăng ký qua một mã QR tổng</li><li>' + icon('kiem') + 'Dự trù, biên bản bàn giao tự động theo thời khóa biểu</li><li>' + icon('kiem') + 'Theo dõi thiết bị, kho hóa chất – dược liệu theo thời gian thực</li></ul></div>' +
       '<small class="chan">© Khoa Khoa học Sức khỏe – IUH</small></section><div class="login-form"><form class="login-box" id="f-login" autocomplete="on">' +
@@ -160,6 +160,13 @@
     });
   }
 
+  // ‹ Quay lại · Tiếp › · Trang công khai – cần khi mở từ ứng dụng cài ra màn hình chính (không có nút của trình duyệt)
+  function lienKetCongKhai() { return DEMO ? '../chay-thu.html' : '../'; }
+  function thanhDiChuyen() {
+    return '<div class="di-chuyen"><button type="button" class="btn o sm" onclick="history.length>1?history.back():location.href=\'' + lienKetCongKhai() + '\'" title="Quay lại trang trước">‹ Quay lại</button>' +
+      '<button type="button" class="btn o sm" onclick="history.forward()" title="Đi tiếp trang sau">Tiếp ›</button>' +
+      '<a class="btn o sm" href="' + lienKetCongKhai() + '" title="Về trang đăng ký của SV / GV">⌂ Trang công khai</a></div>';
+  }
   // nút 👁 hiện / ẩn mật khẩu trong một form
   function ganHienMatKhau(root) {
     root.querySelectorAll('.mk-hien').forEach(b => { b.onclick = () => { const i = b.parentNode.querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; i.focus(); }; });
@@ -281,7 +288,7 @@
   function ganDieuHuong(ds, ten) { S.dh = { ds: ds.slice(), ten }; }
   function nutDieuHuong() {
     const h = location.hash.split('?')[0], d = S.dh, i = d ? d.ds.indexOf(h) : -1;
-    const lui = location.hash.replace(/^#\/?/, '').split('/')[0] !== 'tong-quan' ? '<button class="btn o sm" id="b-lui" title="Quay lại trang trước">← Quay lại</button>' : '';
+    const lui = '<button class="btn o sm" id="b-lui" title="Quay lại trang trước">← Quay lại</button><button class="btn o sm" id="b-tiep" title="Đi tiếp trang sau">Tiếp →</button>';
     if (i < 0) return lui;
     return lui + '<span class="nav-ds"><a class="btn o sm' + (i ? '' : ' tat') + '" href="' + (d.ds[i - 1] || '#') + '" title="Mục trước">‹ Trước</a><span class="note">' + (i + 1) + ' / ' + d.ds.length + (d.ten ? ' ' + esc(d.ten) : '') + '</span>' +
       '<a class="btn o sm' + (i < d.ds.length - 1 ? '' : ' tat') + '" href="' + (d.ds[i + 1] || '#') + '" title="Mục tiếp theo">Tiếp ›</a></span>';
@@ -297,6 +304,7 @@
     if (chiXem) anNutGhi($('main'));
     nutX.onclick = (e) => chay(e.target, () => xuatBangTrang(nd));
     if ($('b-lui')) $('b-lui').onclick = () => { if (history.length > 1) history.back(); else location.hash = '#/tong-quan'; };
+    if ($('b-tiep')) $('b-tiep').onclick = () => history.forward();
     window.scrollTo(0, 0);
     return $('nd');
   }

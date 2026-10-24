@@ -34,7 +34,8 @@
   function ghi(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* trình duyệt chặn lưu trữ */ } }
   function M(h) { $('m').innerHTML = h; window.scrollTo(0, 0); }
   // nút ← Quay lại ở đầu trang (trừ trang chủ)
-  function nutLui(hien) { $('hl').classList.toggle('hide', !hien); }
+  // nút ‹ Quay lại / › Tiếp (cần khi cài ra màn hình chính – không có thanh trình duyệt): hiện khi đã đi qua trang khác
+  function nutLui(hien) { const co = hien || history.length > 1; $('hl').classList.toggle('hide', !co); $('hn').classList.toggle('hide', !co); }
   function toast(t, bad) { const x = $('toast'); x.textContent = t; x.className = 'toast' + (bad ? ' bad' : ''); clearTimeout(toast._t); toast._t = setTimeout(() => { x.className = 'toast hide'; }, bad ? 5000 : 2600); }
 
   // hồ sơ cá nhân (chuyển từ bản cũ nếu có) + mã máy và khóa bí mật của máy
@@ -146,7 +147,7 @@
       '</div><div class="tieu-de-nhom">Tiện ích</div><div class="grid"><a class="tile t2" href="#/don-cua-toi">' + bieu('cua_toi') + '<span><b>Đơn của tôi</b><br><span class="note" id="dem-don">Trạng thái các đơn đã gửi</span></span></a>' +
       '<a class="tile t2" href="#/bieu-mau">' + bieu('mau') + '<span><b>Biểu mẫu PTN</b><br><span class="note">Mẫu đơn, phiếu trống</span></span></a></div>' +
       (navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ? '' : '<div class="card note" style="margin-top:14px"><b>Cài như ứng dụng:</b> iPhone (Safari): bấm Chia sẻ → <i>Thêm vào MH chính</i>. Android (Chrome): bấm ⋮ → <i>Thêm vào màn hình chính</i>.</div>') +
-      '<p class="note" style="text-align:center;margin-top:18px"><a href="quan-ly/' + (DEMO ? '?demo=1' : '') + '">Cán bộ PTN đăng nhập</a></p>';
+      '<p class="note" style="text-align:center;margin-top:18px"><a href="' + (DEMO ? 'quan-ly/chay-thu.html' : 'quan-ly/') + '">Cán bộ PTN đăng nhập</a></p>';
     M(h);
     try {
       const dm = await danhMuc(true);
@@ -487,6 +488,7 @@
   }
   window.addEventListener('hashchange', dieuHuong);
   $('hl').onclick = () => { if (history.length > 1) history.back(); else location.hash = '#/'; };
+  $('hn').onclick = () => history.forward();
   if (DEMO) document.body.insertAdjacentHTML('afterbegin', '<div class="demo-bar">' + (window.PTN_DEMO_LIEN_THONG ? 'CHẠY THỬ – dữ liệu lưu trong trình duyệt, <b>dùng chung với trang quản lý</b>. ' +
     '<a href="quan-ly/chay-thu.html" target="_blank" rel="noopener">Mở trang quản lý ↗</a> · <a href="#" id="demo-lam-lai">Làm lại dữ liệu mẫu</a>' : 'CHẠY THỬ – dữ liệu giả lập, mất khi tải lại trang') + '</div>');
   if ($('demo-lam-lai')) $('demo-lam-lai').onclick = (e) => { e.preventDefault(); if (confirm('Xóa mọi dữ liệu đã nhập thử và tạo lại dữ liệu mẫu (cả trang quản lý)?')) { window.PTN_DEMO_LAM_LAI(); location.reload(); } };

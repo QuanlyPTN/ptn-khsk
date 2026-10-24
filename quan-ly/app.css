@@ -299,3 +299,7 @@ td.nhom-dong { background: #F7F8FB; font-weight: 600; color: var(--ink); font-si
 .the-don { position: relative; display: block; background: #fff; color: var(--text); text-decoration: none; border-left: 5px solid var(--mn); border-radius: 10px; padding: 10px 30px 10px 12px; box-shadow: var(--sh-3); font-size: 14.5px; line-height: 1.45; animation: hien .25s ease; }
 .the-don.gap { border-left-color: #F08A24; background: #FFF6EC; }
 .the-don .x { position: absolute; top: 4px; right: 8px; font-size: 20px; color: var(--muted); cursor: pointer; }
+
+/* Quay lại / Tiếp / Trang công khai ở đầu màn đăng nhập */
+.di-chuyen { display: flex; gap: 8px; flex-wrap: wrap; padding: 10px 16px; background: var(--card); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+.di-chuyen .btn { text-decoration: none; }
