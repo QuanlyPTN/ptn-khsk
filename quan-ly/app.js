@@ -25,7 +25,11 @@
     try { localStorage.removeItem(KHOA_TK); sessionStorage.removeItem(KHOA_TK); (nho ? localStorage : sessionStorage).setItem(KHOA_TK, tk); } catch (e) { /* trình duyệt chặn lưu trữ */ }
   }
   function docTk() { try { return localStorage.getItem(KHOA_TK) || sessionStorage.getItem(KHOA_TK); } catch (e) { return null; } }
-  function xoaTk() { try { localStorage.removeItem(KHOA_TK); sessionStorage.removeItem(KHOA_TK); } catch (e) { /* bỏ qua */ } }
+  function xoaTk() { try { [localStorage, sessionStorage].forEach(k => { k.removeItem(KHOA_TK); k.removeItem(KHOA_TOI); }); } catch (e) { /* bỏ qua */ } }
+  // Lưu thông tin "tôi" (tên, quyền, danh mục) cùng chỗ với phiên: lần mở sau hiện trang ngay, máy chủ trả lời thì cập nhật lại
+  const KHOA_TOI = 'khsk_ql_toi';
+  function luuToi(r) { try { const k = localStorage.getItem(KHOA_TK) === S.tk ? localStorage : sessionStorage; k.setItem(KHOA_TOI, JSON.stringify({ tk: String(S.tk).slice(-12), r })); } catch (e) { /* bỏ qua */ } }
+  function docToi() { try { const o = JSON.parse(localStorage.getItem(KHOA_TOI) || sessionStorage.getItem(KHOA_TOI) || 'null'); return o && o.tk === String(S.tk).slice(-12) ? o.r : null; } catch (e) { return null; } }
 
   const MAU_TT = { 'Đang sử dụng': 't-ok', 'Đang cho mượn': 't-info', 'Hỏng – chờ sửa': 't-bad', 'Đang sửa': 't-warn', 'Ngưng sử dụng': 't-gray', 'Đã thanh lý': 't-gray' };
   const tag = (tt) => '<span class="tag ' + (MAU_TT[tt] || 't-gray') + '">' + esc(tt) + '</span>';
@@ -152,8 +156,16 @@
   async function batDau() {
     S.tk = S.tk || docTk();
     if (!S.tk) return manDangNhap();
+    const apToi = (r) => { S.toi = r; S.dm = r.danh_muc; window.PTN_KY = Object.assign({ nguoi: r.nguoi.ten }, r.ky); luuToi(r); };
+    const khoaQuyen = (r) => JSON.stringify([r.nguoi, r.quyen]);
+    const daLuu = docToi();
+    if (daLuu) { // hiện ngay theo lần trước; quyền / vai trò đổi thì vẽ lại khung
+      apToi(daLuu); khung(); dieuHuong();
+      api('toi').then(r => { const doi = khoaQuyen(r) !== khoaQuyen(S.toi); apToi(r); if (doi) { khung(); dieuHuong(); } }).catch(() => { /* lỗi phiên: api() đã đưa về màn đăng nhập */ });
+      return;
+    }
     $('app').innerHTML = '<div class="loading"><div class="spin"></div></div>';
-    try { S.toi = await api('toi'); S.dm = S.toi.danh_muc; window.PTN_KY = Object.assign({ nguoi: S.toi.nguoi.ten }, S.toi.ky); } catch (e) { if (S.tk) $('app').innerHTML = '<div class="card" style="margin:40px">Không tải được: ' + esc(e.message) + ' <button class="btn sm" onclick="location.reload()">Thử lại</button></div>'; return; }
+    try { apToi(await api('toi')); } catch (e) { if (S.tk) $('app').innerHTML = '<div class="card" style="margin:40px">Không tải được: ' + esc(e.message) + ' <button class="btn sm" onclick="location.reload()">Thử lại</button></div>'; return; }
     khung(); dieuHuong();
   }
 
@@ -377,7 +389,7 @@
   const fmt = (n) => { const x = Math.round((+n || 0) * 100) / 100; return x ? x.toLocaleString('vi-VN') : ''; };
   const hkMacDinh = () => S.hk || (S.dm.hoc_ky || [])[0] || '';
   function chonHK(id) { return '<select id="' + id + '">' + (S.dm.hoc_ky || []).map(h => '<option' + (h === hkMacDinh() ? ' selected' : '') + '>' + esc(h) + '</option>').join('') + '</select>'; }
-  async function capNhatDanhMuc() { S.dm = (await api('toi')).danh_muc; }
+  async function capNhatDanhMuc() { const r = await api('toi'); S.toi = r; S.dm = r.danh_muc; luuToi(r); }
   // chọn file Excel → chọn trang tính → hàm xử lý nhận mảng hàng
   function hopFileExcel(tieuDe, huongDan, xuLy, sheetGoiY) {
     moHop('<h2>' + esc(tieuDe) + '</h2><p class="note">' + huongDan + '</p><label class="f"><span>File Excel</span><input type="file" id="x-file" accept=".xlsx,.xls,.xlsm"></label><div id="x-kq"></div>');
@@ -412,7 +424,7 @@
       nd.innerHTML = '<div class="card"><h2>Chưa có học kỳ</h2><p>Bước 1: tạo học kỳ. Bước 2: nhập thời khóa biểu thực hành (file "TH & Phòng học"). Bước 3: nhập định mức ở thẻ "Môn & định mức".</p><button class="btn" id="b-hk">+ Tạo học kỳ</button></div>';
       $('b-hk').onclick = hopHocKy; return;
     }
-    const hk = hkMacDinh(), ds = await api('lop_ds', { hk }), mons = await api('mon_ds');
+    const hk = hkMacDinh(), [ds, mons] = await Promise.all([api('lop_ds', { hk }), api('mon_ds')]);
     const tenMon = {}; mons.forEach(m => { tenMon[m.ma] = m.ten; });
     const chua = ds.filter(l => !l.mon), nhomChua = {}; chua.forEach(l => { nhomChua[l.ten_mon] = (nhomChua[l.ten_mon] || 0) + 1; });
     nd.innerHTML = '<div class="tools"><b>Học kỳ</b> ' + chonHK('f-hk') + '<button class="btn o sm" id="b-hk">+ Học kỳ</button><button class="btn sm" id="b-tkb">Nhập thời khóa biểu (file "TH & Phòng học")</button></div>' +

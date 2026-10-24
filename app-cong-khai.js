@@ -73,7 +73,10 @@
   }
   async function danhMuc(moi) {
     if (S.dm && !moi) return S.dm;
-    S.dm = await api('ck_danh_muc'); ghi('khsk_dm', S.dm); window.PTN_KY = S.dm.ky || {}; return S.dm;
+    const nap = () => api('ck_danh_muc').then(r => { S.dm = r; ghi('khsk_dm', r); window.PTN_KY = r.ky || {}; return r; });
+    const cu = !moi && !DEMO && doc('khsk_dm');
+    if (cu && cu.phong) { S.dm = cu; window.PTN_KY = cu.ky || {}; nap().catch(() => { /* giữ bản đã lưu */ }); return S.dm; } // hiện ngay bản đã lưu, nạp bản mới phía sau
+    return nap();
   }
   async function hoSoCuaToi() { // hồ sơ đề tài đang thực hiện mà MSSV của tôi là thành viên
     const p = hoSo(); if (!p || !p.ma_so) return [];

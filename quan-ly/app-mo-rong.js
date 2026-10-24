@@ -767,6 +767,7 @@
       '<p class="note">Dán poster tại các phòng. Mã QR riêng từng biểu mẫu tạo sẵn, chưa dùng (theo bản chốt).</p></div></div>' +
       '<div class="card"><h2>Xuất toàn bộ dữ liệu (sao lưu)</h2><p class="note">Một file Excel, mỗi bảng dữ liệu một trang tính: cán bộ, phòng, tủ, thiết bị, lịch sử thiết bị, học kỳ, vật tư, định mức, lớp TH, biên bản, dòng biên bản, cấp phát, đơn QR1 – QR8, hồ sơ đề tài, kho, dự trù, sổ theo dõi, nhật ký. Không gồm mật khẩu, khóa máy và phiên đăng nhập.</p>' +
       '<button class="btn sm" id="b-sao-luu">⇩ Tải toàn bộ dữ liệu (Excel)</button></div>' +
+      '<div class="card"><h2>Làm mới dữ liệu</h2><p class="note">Hệ thống giữ tạm dữ liệu 10 phút để tải nhanh. Sau khi <b>sửa tay trực tiếp trong Google Sheet CSDL</b>, bấm nút này để mọi máy thấy ngay (thao tác trên web luôn cập nhật tức thì).</p><button class="btn o sm" id="b-lam-moi">↻ Làm mới dữ liệu</button></div>' +
       '<div class="card"><h2>Báo cáo tháng tự động</h2><p class="note">Trong trình soạn thảo Apps Script, chạy hàm <span class="mono">caiLichBaoCao</span> một lần (cần cấp quyền) → ngày 1 hằng tháng lúc 6 giờ hệ thống tự lưu báo cáo tháng trước (PDF + CSV mở bằng Excel) vào Drive: 05 HE THONG WEB PTN / BAO CAO THANG / NAM HOC ….</p></div>';
     $('f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target); await chay(e.submitter, () => api('cd_luu', v)); toast('Đã lưu');
       Object.assign(window.PTN_KY, { hieu_truong: v.ky_hieu_truong, truong_khoa: v.ky_truong_khoa, nguoi_lap: v.ky_nguoi_lap });
@@ -777,6 +778,7 @@
       '<ol><li>Quét mã bằng camera điện thoại, nhập thông tin cá nhân một lần.</li><li>Chọn biểu mẫu QR1 – QR8 cần đăng ký.</li><li><b>Bắt buộc quét QR5 trước khi sử dụng thiết bị</b>; dùng xong bấm "Kết thúc sử dụng".</li><li>Theo dõi trạng thái ở "Đơn của tôi".</li></ol><p style="font-size:12px;color:#555">' + esc(url) + '</p></body></html>');
     $('b-poster').onclick = poster;
     $('b-sao-luu').onclick = (e) => chay(e.target, xuatTatCa);
+    $('b-lam-moi').onclick = async (e) => { await chay(e.target, () => api('cd_lam_moi')); toast('Đã làm mới – dữ liệu đọc lại từ Google Sheet'); };
     $('b-rieng').onclick = async () => {
       const ten = { QR1: 'Mượn phòng; TB – DC trong ngày', QR2: 'GV mượn thiết bị dài ngày', QR3: 'Cấp hóa chất – vật tư bổ sung', QR4: 'Mượn chìa khóa (Bảo vệ)', QR5: 'Nhật ký sử dụng phòng, thiết bị', QR6: 'Đăng ký sử dụng tủ', QR7: 'Hồ sơ đề tài KLTN – NCKH', QR8: 'Mượn thêm dụng cụ' };
       let h = ''; for (const q of Object.keys(ten)) h += '<div class="o"><div class="qr">' + await svgQR(url + '?qr=' + q, 4) + '</div><b>' + q + '</b><div>' + ten[q] + '</div></div>';
