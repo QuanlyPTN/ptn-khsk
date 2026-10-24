@@ -1,9 +1,9 @@
 /* Đơn / phiếu điền sẵn cho các mã QR1 – QR6, QR8 (QR7 dùng đơn Phụ lục 1A – 3 trong don-phu-luc.js).
-   Cùng khuôn với đơn Phụ lục: đầu trang Trường – Khoa | Quốc hiệu, mã QR đơn bên phải tiêu đề, lề hai bên đều, ngày theo ngày duyệt,
+   Cùng khuôn với đơn Phụ lục: đầu trang Trường – Khoa | Quốc hiệu; "Mẫu QRx", mã đơn, mã QR ở chân trang góc phải; lề hai bên đều, ngày theo ngày duyệt,
    xem trước A4 trên trang + In + file Word .docx. QR2 bám mẫu "Đơn đề nghị mượn thiết bị dài ngày (GV) – Mẫu QR2". Dùng chung trang công khai và trang quản lý. */
 (function () {
   'use strict';
-  const D = window.PTN_DON, { R, GT, P, TRONG, bang, ky, dsSo, ngay } = D;
+  const D = window.PTN_DON, { R, GT, P, TRONG, bang, ky, chan, dsSo, ngay } = D;
   const gio = (s) => String(s || '').slice(11, 16), soVN = (n) => n === '' || n == null ? '' : (Math.round(+n * 1000) / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 3 });
   const buoc = (d, re) => (d.xu_ly || []).filter(x => re.test(x.hd)).pop(); // bước xử lý gần nhất khớp tên
   // ngày ghi cuối đơn: ngày duyệt; đơn không qua bước duyệt (QR5, giao thẳng) → ngày giao / ngày sử dụng; chưa xử lý → để chấm
@@ -12,8 +12,8 @@
     return 'TP. Hồ Chí Minh, ngày ' + (m ? m[3] + ' tháng ' + m[2] + ' năm ' + m[1] : '…… tháng …… năm 20……');
   }
   const gv = (d) => d.doi_tuong === 'Giảng viên';
-  const dau = (ma, tieuDe, phu) => [P(R('Mẫu ' + ma, { b: 1, i: 1 }), { al: 'right' }), { hd: 1 }, P('', { al: 'both', qr: 1 }),
-    P(R(tieuDe, { b: 1, sz: 28 }), { al: 'center' })].concat(phu ? [P(R(phu, { b: 1 }), { al: 'center' })] : []);
+  // đầu đơn: Trường – Khoa | Quốc hiệu, tiêu đề ("Mẫu QRx", mã đơn, mã QR in ở chân trang góc phải – xem khoi)
+  const dau = (ma, tieuDe, phu) => [{ hd: 1 }, TRONG, P(R(tieuDe, { b: 1, sz: 28 }), { al: 'center' })].concat(phu ? [P(R(phu, { b: 1 }), { al: 'center' })] : []);
   const kinhGui = (ds) => [P([R('Kính gửi:  ', { i: 1 }), ds[0]], { ind: { left: 1134 } })].concat(ds.slice(1).map(x => P(x, { ind: { left: 2268 } })));
   // thông tin người đăng ký (SV: MSSV, lớp, GVHD; GV: mã viên chức, bộ môn)
   const nguoi = (d) => [P(['Tôi tên: ', GT(d.ho_ten, 22), (gv(d) ? '   Mã viên chức: ' : '   MSSV: '), GT(d.ma_so, 8)]),
@@ -137,8 +137,8 @@
     QR5: 'Phiếu ghi nhận sử dụng', QR6: 'Đơn đăng ký sử dụng tủ', QR8: 'Phiếu đề nghị mượn thêm dụng cụ' };
   const coMau = (qr) => !!MAU[qr];
   // d: đơn (xemDon_ / ctDon), qr: ảnh mã QR (dataURL) dẫn tới đơn trên trang quản lý
-  // mã đơn in ở góc phải dưới "Mẫu QRx" (trên đầu trang, tách khỏi mã QR)
-  const khoi = (d, bb) => { const k = (bb ? BB8 : MAU[d.qr])(d); k.splice(1, 0, P([R('Mã đơn: ', { i: 1 }), R(d.id || '……………', { b: 1 })], { al: 'right' })); return k; };
+  // chân trang góc phải (cuối trang A4): "Mẫu QRx", mã đơn, mã QR
+  const khoi = (d, bb) => (bb ? BB8 : MAU[d.qr])(d).concat([chan([R('Mẫu ' + d.qr + (bb ? ' – Biên bản bàn giao' : ''), { b: 1, i: 1 })], [R('Mã đơn: ', { i: 1 }), R(d.id || '……………', { b: 1 })])]);
   const taiLieu = (d, qr, bb) => bb ? { ten: 'Biên bản bàn giao dụng cụ · ' + d.id, tep: 'BBBG_' + d.id, trang: [khoi(d, 1)], qr } : { ten: d.qr + ' · ' + TEN[d.qr] + ' · ' + d.id, tep: d.qr + '_' + d.id, trang: [khoi(d)], qr };
   window.PTN_DON_QR = { coMau, coBienBan, TEN, khoi, html: (d, qr, bb) => D.htmlTL(taiLieu(d, qr, bb)), docx: (d, qr, bb) => D.docxTL(taiLieu(d, qr, bb)),
     xemTruoc: (d, qr, bb) => D.xemTruocTL(taiLieu(d, qr, bb)), taiWord: (d, qr, bb) => D.taiWordTL(taiLieu(d, qr, bb)) };

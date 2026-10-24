@@ -1,5 +1,5 @@
 /* Đơn Phụ lục 1A – 3 (Quy định quản lý, sử dụng PTN Khoa KHSK 2026, Điều 15) điền sẵn từ hồ sơ đề tài QR7.
-   Bám theo file mẫu 02 MAU DON - PHIEU DE NGHI / 2.1 DON KLTN - NCKH (lề, cỡ chữ, bảng, khối ký); mã QR hồ sơ ở góc phải trên.
+   Bám theo file mẫu 02 MAU DON - PHIEU DE NGHI / 2.1 DON KLTN - NCKH (lề, cỡ chữ, bảng, khối ký); "Phụ lục", mã hồ sơ và mã QR ở chân trang góc phải.
    Một bản mô tả → (1) xem trước khổ A4 trên web để in, (2) file Word .docx thật. Dùng chung trang công khai và trang quản lý. */
 (function () {
   'use strict';
@@ -37,6 +37,8 @@
     const them = Array.from({ length: Math.max(0, toiThieu - dong.length) }, (_, i) => [dong.length + i + 1].concat(dau.slice(1).map(() => '')));
     return { bang: { grid, dau, dong: dong.concat(them) } };
   };
+  // chân trang góc phải dưới của trang A4: các dòng chữ (Mẫu / Phụ lục, mã đơn / mã hồ sơ) + mã QR bên phải
+  const chan = (...dong) => ({ chan: dong.map(d => [].concat(d)) });
   // khối ký: cot = chức danh hoặc [chức danh, họ tên in dưới chữ ký]
   const ky = (cot, trong) => ({ ky: { cot: cot.map(c => [].concat(c)), trong } });
   // ngày ghi trên đơn: tự điền theo ngày duyệt hồ sơ (chưa duyệt → để chấm viết tay)
@@ -48,11 +50,10 @@
   function khoi(ma, hs) {
     const t = TEN[ma], tn = (hs.nhom || [])[0] || {}, kltn = t[1] === 1, doAn = hs.loai === 'do_an';
     const viec = doAn ? 'đồ án' : kltn ? 'khóa luận tốt nghiệp/luận văn' : 'nghiên cứu khoa học';
-    // qr: 1 → mã QR đặt bên phải, bắt đầu từ đoạn này (dưới quốc hiệu, ngang tiêu đề đơn)
-    // mã hồ sơ in rõ ở góc phải (trên đầu trang, tách khỏi mã QR) – SV dùng mã này khi đăng ký mượn thêm dụng cụ (QR8)
-    const k = [P(R('Phụ lục ' + ma, { b: 1, i: 1 }), { al: 'right' }), P([R('Mã hồ sơ: ', { i: 1 }), R(hs.id || '……………', { b: 1 })], { al: 'right' }), { hd: 1 }, ma === '3' ? TRONG : P('', { al: 'both', qr: 1 })];
+    // chân trang góc phải (cuối trang A4): "Phụ lục …", mã hồ sơ (SV dùng khi mượn thêm dụng cụ – QR8) và mã QR
+    const k = [{ hd: 1 }].concat(ma === '3' ? [TRONG] : []).concat([chan([R('Phụ lục ' + ma, { b: 1, i: 1 })], [R('Mã hồ sơ: ', { i: 1 }), R(hs.id || '……………', { b: 1 })])]);
     if (ma === '3') {
-      k.push(P(R(ngayDon(hs), { i: 1 }), { al: 'right' }), P(R(t[0], { b: 1, sz: 28 }), { al: 'center', qr: 1 }),
+      k.push(P(R(ngayDon(hs), { i: 1 }), { al: 'right' }), P(R(t[0], { b: 1, sz: 28 }), { al: 'center' }),
         P(R('(Dành cho sinh viên NCKH không thuộc đơn vị quản lý)', { i: 1 }), { al: 'center' }),
         P('Kính gửi: Ban lãnh đạo Khoa Khoa học Sức khỏe', { al: 'both', ind: { left: 1134 } }),
         P(['Họ và tên sinh viên: ', GT(tn.ho_ten, 40)], { al: 'both' }), P(['MSSV: ', GT(tn.ma_so, 40)], { al: 'both' }),
@@ -99,7 +100,7 @@
   const HD = [[R('ĐẠI HỌC CÔNG NGHIỆP TP. HỒ CHÍ MINH', { sz: 20 }), R('KHOA KHOA HỌC SỨC KHỎE', { b: 1, sz: 24 }), R('–––––––––––', { sz: 22 })],
     [R('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', { b: 1, sz: 20 }), R('Độc lập – Tự do – Hạnh phúc', { b: 1 }), R('–––––––––––––––––––', { sz: 22 })]];
   // trang in cân hai bên: lề trái = lề phải 2,5 cm → vùng chữ 16 cm (= 9071 twip, đúng độ rộng bảng của mẫu)
-  const LE = { tren: 20, duoi: 20, ben: 25 }, QR_MM = 15, QR_LO = 3; // mã QR 15 mm, lấn ra lề phải 3 mm để không chạm tiêu đề
+  const LE = { tren: 15, duoi: 12, ben: 25 }, QR_MM = 16, CHAN_MM = 18; // lề trên 15 mm, dưới 12 mm (chân trang); mã QR 16 mm; chừa 18 mm cuối vùng chữ cho chân trang
 
   // ---------- Xem trước khổ A4 (HTML) ----------
   const pt = (sz) => (sz || 26) / 2 + 'pt';
@@ -109,7 +110,8 @@
   // k: các khối của một trang (đoạn văn / đầu trang / bảng / khối ký)
   function htmlKhoi(k, qr) {
     return k.map(b => {
-      if (b.p) return pHtml(b, b.qr && qr ? '<img class="qr" src="' + qr + '" alt="Mã QR">' : '');
+      if (b.chan) return '<div class="chan"><div class="chu">' + b.chan.map(d => '<div>' + d.map(runHtml).join('') + '</div>').join('') + '</div>' + (qr ? '<img class="qr" src="' + qr + '" alt="Mã QR">' : '') + '</div>';
+      if (b.p) return pHtml(b, '');
       if (b.hd) return '<table class="hd"><colgroup>' + HD_GRID.map(w => '<col style="width:' + w / 20 + 'pt">').join('') + '</colgroup><tr>' +
         HD.map(c => '<td>' + c.map(r => '<div>' + runHtml(r) + '</div>').join('') + '</td>').join('') + '</tr></table>';
       if (b.bang) return '<table class="ds"><colgroup>' + b.bang.grid.map(w => '<col style="width:' + w / 20 + 'pt">').join('') + '</colgroup><tr>' +
@@ -119,13 +121,14 @@
     }).join('');
   }
   const CSS = '@page{size:A4;margin:' + LE.tren + 'mm ' + LE.ben + 'mm ' + LE.duoi + 'mm}body{margin:0;background:#E9ECF2;font-family:"Times New Roman",Times,serif;color:#000}' +
-    '.trang{width:210mm;min-height:297mm;box-sizing:border-box;padding:' + LE.tren + 'mm ' + LE.ben + 'mm ' + LE.duoi + 'mm;margin:14px auto;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.18)}' +
-    'img.qr{position:absolute;top:0;right:-' + QR_LO + 'mm;width:' + QR_MM + 'mm;height:' + QR_MM + 'mm;text-indent:0}' +
+    '.trang{position:relative;width:210mm;min-height:297mm;box-sizing:border-box;padding:' + LE.tren + 'mm ' + LE.ben + 'mm ' + (LE.duoi + CHAN_MM) + 'mm;margin:14px auto;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.18)}' +
+    '.chan{position:absolute;right:' + LE.ben + 'mm;bottom:' + LE.duoi + 'mm;display:flex;align-items:flex-end;gap:3mm}.chan .chu{text-align:right;line-height:1.25}.chan .chu span{font-size:11pt !important}' +
+    'img.qr{width:' + QR_MM + 'mm;height:' + QR_MM + 'mm;display:block}' +
     'p{margin:0 0 1.5pt;line-height:1.2;white-space:pre-wrap}table{border-collapse:collapse;table-layout:fixed;width:453.55pt}td,th{padding:1pt 2pt;vertical-align:top;font-size:12pt;line-height:1.2;overflow-wrap:anywhere}' +
     'table.hd td{text-align:center}' +
     'table.ds th,table.ds td{border:.5pt solid #000}table.ds th{text-align:center;font-weight:bold}table.ds td{height:16pt}.c{text-align:center}' +
     'table.ky td{text-align:center;font-size:11pt}' +
-    '@media print{body{background:#fff}.trang{margin:0;padding:0;box-shadow:none;width:auto;min-height:0;break-after:page}.trang:last-child{break-after:auto}}' +
+    '@media print{body{background:#fff}.trang{margin:0;padding:0 0 ' + CHAN_MM + 'mm;box-shadow:none;width:auto;min-height:' + (297 - LE.tren - LE.duoi - 1) + 'mm;break-after:page}.trang:last-child{break-after:auto}.chan{right:0;bottom:0}}' +
     '@media screen and (max-width:820px){.trang{zoom:var(--k,1)}}';
   // tl = { ten, tep (tên file Word), trang: [khối của từng trang], qr (ảnh dataURL) }
   function htmlTL(tl) {
@@ -148,17 +151,17 @@
   const tblX = (grid, rows, coVien) => '<w:tbl><w:tblPr><w:tblW w:w="' + grid.reduce((a, b) => a + b, 0) + '" w:type="dxa"/>' + VIEN(coVien) +
     '<w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="57" w:type="dxa"/><w:right w:w="57" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>' + grid.map(w => '<w:gridCol w:w="' + w + '"/>').join('') + '</w:tblGrid>' +
     rows.map(r => '<w:tr>' + r.map((c, j) => '<w:tc><w:tcPr><w:tcW w:w="' + grid[j] + '" w:type="dxa"/></w:tcPr>' + c + '</w:tc>').join('') + '</w:tr>').join('') + '</w:tbl>';
-  // mã QR nổi, neo vào đoạn có cờ qr (dưới quốc hiệu, ngang tiêu đề đơn), sát lề phải; không chiếm chỗ chữ
+  // mã QR trong chân trang (ảnh nằm cùng dòng, ô bên phải bảng chân trang)
   const EMU_MM = 36000, QR_EMU = QR_MM * EMU_MM;
-  const anhX = (rid, id) => '<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="' + (251659264 + id) + '" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1">' +
-    '<wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="margin"><wp:posOffset>' + (210 - 2 * LE.ben + QR_LO - QR_MM) * EMU_MM + '</wp:posOffset></wp:positionH><wp:positionV relativeFrom="paragraph"><wp:posOffset>0</wp:posOffset></wp:positionV>' +
-    '<wp:extent cx="' + QR_EMU + '" cy="' + QR_EMU + '"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="' + id + '" name="QR ' + id + '"/><wp:cNvGraphicFramePr/>' +
+  const anhX = (rid, id) => '<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">' +
+    '<wp:extent cx="' + QR_EMU + '" cy="' + QR_EMU + '"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="' + id + '" name="QR ' + id + '"/><wp:cNvGraphicFramePr/>' +
     '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
     '<pic:nvPicPr><pic:cNvPr id="' + id + '" name="qr"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="' + rid + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
-    '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + QR_EMU + '" cy="' + QR_EMU + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:anchor></w:drawing></w:r>';
+    '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + QR_EMU + '" cy="' + QR_EMU + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>';
   function docxKhoi(k, coQR, so) {
     return k.map(b => {
-      if (b.p) return pX(b, b.qr && coQR ? anhX('rIdQR', so) : '');
+      if (b.chan) return '';
+      if (b.p) return pX(b);
       if (b.hd) return tblX(HD_GRID, [HD.map(c => c.map(r => pX({ p: [r], al: 'center' })).join(''))], false);
       if (b.bang) return tblX(b.bang.grid, [b.bang.dau.map(h => pX({ p: [R(h, { b: 1 })], al: 'center' }))].concat(b.bang.dong.map(r => r.map((c, j) => pX({ p: [R(c)], al: j === 0 ? 'center' : '' })))), true);
       if (b.ky) { const w = Math.floor(9071 / b.ky.cot.length), g = b.ky.cot.map((_, i) => i < b.ky.cot.length - 1 ? w : 9071 - w * (b.ky.cot.length - 1));
@@ -169,17 +172,30 @@
   }
   async function docxTL(tl) {
     const qr = tl.qr, Z = await napZip(), z = new Z(), m = qr && /^data:image\/(png|gif|jpeg);base64,(.+)$/.exec(qr), duoi = m ? (m[1] === 'jpeg' ? 'jpg' : m[1]) : '';
-    const than = tl.trang.map((k, i) => docxKhoi(k, !!m, i + 1) + (i < tl.trang.length - 1 ? '<w:p><w:r><w:br w:type="page"/></w:r></w:p>' : '')).join('');
+    // mỗi đơn (trang) là một section có chân trang riêng (Mẫu / Phụ lục, mã đơn, mã QR) – chân trang in ở cuối mọi trang của đơn đó
+    const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
+    const sect = (i) => '<w:sectPr><w:footerReference w:type="default" r:id="rIdF' + i + '"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="' + Math.round(LE.tren * 56.7) + '" w:right="' + Math.round(LE.ben * 56.7) + '" w:bottom="' + Math.round((LE.duoi + CHAN_MM) * 56.7) + '" w:left="' + Math.round(LE.ben * 56.7) + '" w:header="708" w:footer="' + Math.round(LE.duoi * 56.7) + '" w:gutter="0"/></w:sectPr>';
+    const chanX = (k, i) => { const c = k.find(b => b.chan); const chu = c ? c.chan.map(d => pX({ p: d.map(r => Object.assign({}, r, { sz: 22 })), al: 'right' })).join('') : pX({ p: [] });
+      const o = (w, noi) => '<w:tc><w:tcPr><w:tcW w:w="' + w + '" w:type="dxa"/><w:vAlign w:val="bottom"/></w:tcPr>' + noi + '</w:tc>', qrW = Math.round((QR_MM + 2) * 56.7);
+      return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr ' + NS + '><w:tbl><w:tblPr><w:tblW w:w="9071" w:type="dxa"/>' + VIEN(false) + '<w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="' + (9071 - qrW) + '"/><w:gridCol w:w="' + qrW + '"/></w:tblGrid><w:tr>' +
+        o(9071 - qrW, chu) + o(qrW, '<w:p><w:pPr><w:jc w:val="right"/></w:pPr>' + (m ? anhX('rIdQR', 100 + i) : '') + '</w:p>') + '</w:tr></w:tbl><w:p/></w:ftr>'; };
+    const than = tl.trang.map((k, i) => docxKhoi(k, !!m, i + 1) + (i < tl.trang.length - 1 ? '<w:p><w:pPr>' + sect(i + 1) + '</w:pPr></w:p>' : '')).join('');
+    tl.trang.forEach((k, i) => {
+      z.file('word/footer' + (i + 1) + '.xml', chanX(k, i + 1));
+      if (m) z.file('word/_rels/footer' + (i + 1) + '.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdQR" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/qr.' + duoi + '"/></Relationships>');
+    });
+    const ctFooter = tl.trang.map((_, i) => '<Override PartName="/word/footer' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>').join('');
+    const relFooter = tl.trang.map((_, i) => '<Relationship Id="rIdF' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer' + (i + 1) + '.xml"/>').join('');
     z.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
-      (m ? '<Default Extension="' + duoi + '" ContentType="image/' + m[1] + '"/>' : '') + '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>');
+      (m ? '<Default Extension="' + duoi + '" ContentType="image/' + m[1] + '"/>' : '') + ctFooter + '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>');
     z.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
-    z.file('word/_rels/document.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdSt" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+    z.file('word/_rels/document.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdSt" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' + relFooter +
       (m ? '<Relationship Id="rIdQR" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/qr.' + duoi + '"/>' : '') + '</Relationships>');
     z.file('word/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="26"/><w:szCs w:val="26"/><w:lang w:val="vi-VN"/></w:rPr></w:rPrDefault><w:pPrDefault/></w:docDefaults>' +
       '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style></w:styles>');
     if (m) z.file('word/media/qr.' + duoi, m[2], { base64: true });
     z.file('word/document.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body>' +
-      than + '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="' + Math.round(LE.tren * 56.7) + '" w:right="' + Math.round(LE.ben * 56.7) + '" w:bottom="' + Math.round(LE.duoi * 56.7) + '" w:left="' + Math.round(LE.ben * 56.7) + '" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>');
+      than + sect(tl.trang.length) + '</w:body></w:document>');
     return z.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
   }
   async function taiWordTL(tl) {
@@ -214,5 +230,5 @@
   const taiWord = (dsMa, hs, qr) => taiWordTL(tlPhuLuc(dsMa, hs, qr)), xemTruoc = (dsMa, hs, qr) => xemTruocTL(tlPhuLuc(dsMa, hs, qr));
   window.PTN_PHU_LUC = { danhSach, khoi, html, docx, taiWord, xemTruoc };
   // khuôn dùng chung cho các đơn QR khác (don-qr.js): khối văn bản + dựng xem trước / Word
-  window.PTN_DON = { R, GT, P, TRONG, bang, ky, dsSo, ngayDon, ngay, htmlTL, docxTL, taiWordTL, xemTruocTL };
+  window.PTN_DON = { R, GT, P, TRONG, bang, ky, chan, dsSo, ngayDon, ngay, htmlTL, docxTL, taiWordTL, xemTruocTL };
 })();
