@@ -99,6 +99,10 @@
   const HD_GRID = [4500, 4571];
   const HD = [[R('ĐẠI HỌC CÔNG NGHIỆP TP. HỒ CHÍ MINH', { sz: 20 }), R('KHOA KHOA HỌC SỨC KHỎE', { b: 1, sz: 24 }), R('–––––––––––', { sz: 22 })],
     [R('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', { b: 1, sz: 20 }), R('Độc lập – Tự do – Hạnh phúc', { b: 1 }), R('–––––––––––––––––––', { sz: 22 })]];
+  // mẫu của Trường (TCHC – mẫu số 28): Bộ Công Thương – Trường | Quốc hiệu  ({ hd: 'truong' })
+  const HD_TRUONG = [[R('BỘ CÔNG THƯƠNG', { sz: 22 }), R('TRƯỜNG ĐẠI HỌC CÔNG NGHIỆP', { b: 1, sz: 22 }), R('THÀNH PHỐ HỒ CHÍ MINH', { b: 1, sz: 22 }), R('–––––––––––', { sz: 22 })],
+    [R('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', { b: 1, sz: 20 }), R('Độc lập – Tự do – Hạnh phúc', { b: 1 }), R('–––––––––––––––––––', { sz: 22 })]];
+  const dauTrang = (b) => b.hd === 'truong' ? HD_TRUONG : HD;
   // trang in cân hai bên: lề trái = lề phải 2,5 cm → vùng chữ 16 cm (= 9071 twip, đúng độ rộng bảng của mẫu)
   const LE = { tren: 15, duoi: 12, ben: 25 }, QR_MM = 16, CHAN_MM = 18; // lề trên 15 mm, dưới 12 mm (chân trang); mã QR 16 mm; chừa 18 mm cuối vùng chữ cho chân trang
 
@@ -113,9 +117,9 @@
       if (b.chan) return '<div class="chan"><div class="chu">' + b.chan.map(d => '<div>' + d.map(runHtml).join('') + '</div>').join('') + '</div>' + (qr ? '<img class="qr" src="' + qr + '" alt="Mã QR">' : '') + '</div>';
       if (b.p) return pHtml(b, '');
       if (b.hd) return '<table class="hd"><colgroup>' + HD_GRID.map(w => '<col style="width:' + w / 20 + 'pt">').join('') + '</colgroup><tr>' +
-        HD.map(c => '<td>' + c.map(r => '<div>' + runHtml(r) + '</div>').join('') + '</td>').join('') + '</tr></table>';
+        dauTrang(b).map(c => '<td>' + c.map(r => '<div>' + runHtml(r) + '</div>').join('') + '</td>').join('') + '</tr></table>';
       if (b.bang) return '<table class="ds"><colgroup>' + b.bang.grid.map(w => '<col style="width:' + w / 20 + 'pt">').join('') + '</colgroup><tr>' +
-        b.bang.dau.map(h => '<th>' + esc(h) + '</th>').join('') + '</tr>' + b.bang.dong.map(r => '<tr>' + r.map((c, j) => '<td' + (j === 0 ? ' class="c"' : '') + '>' + esc(c) + '</td>').join('') + '</tr>').join('') + '</table>';
+        b.bang.dau.map(h => '<th>' + esc(h) + '</th>').join('') + '</tr>' + b.bang.dong.map(r => '<tr>' + r.map((c, j) => '<td' + (j === 0 ? ' class="c"' : '') + '>' + esc(c).replace(/\n/g, '<br>') + '</td>').join('') + '</tr>').join('') + '</table>';
       if (b.ky) return '<table class="ky"><tr>' + b.ky.cot.map(c => '<td><b>' + esc(c[0]) + '</b><br><i>(Ký và ghi rõ họ tên)</i>' + '<br>'.repeat(b.ky.trong) + (c[1] ? '<br><b>' + esc(c[1]) + '</b>' : '') + '</td>').join('') + '</tr></table>';
       return '';
     }).join('');
@@ -162,8 +166,8 @@
     return k.map(b => {
       if (b.chan) return '';
       if (b.p) return pX(b);
-      if (b.hd) return tblX(HD_GRID, [HD.map(c => c.map(r => pX({ p: [r], al: 'center' })).join(''))], false);
-      if (b.bang) return tblX(b.bang.grid, [b.bang.dau.map(h => pX({ p: [R(h, { b: 1 })], al: 'center' }))].concat(b.bang.dong.map(r => r.map((c, j) => pX({ p: [R(c)], al: j === 0 ? 'center' : '' })))), true);
+      if (b.hd) return tblX(HD_GRID, [dauTrang(b).map(c => c.map(r => pX({ p: [r], al: 'center' })).join(''))], false);
+      if (b.bang) return tblX(b.bang.grid, [b.bang.dau.map(h => pX({ p: [R(h, { b: 1 })], al: 'center' }))].concat(b.bang.dong.map(r => r.map((c, j) => String(c).split('\n').map(t => pX({ p: [R(t)], al: j === 0 ? 'center' : '' })).join('')))), true); // ô nhiều dòng: \n
       if (b.ky) { const w = Math.floor(9071 / b.ky.cot.length), g = b.ky.cot.map((_, i) => i < b.ky.cot.length - 1 ? w : 9071 - w * (b.ky.cot.length - 1));
         return tblX(g, [b.ky.cot.map(c => pX({ p: [R(c[0], { b: 1, sz: 22 })], al: 'center' }) + pX({ p: [R('(Ký và ghi rõ họ tên)', { i: 1, sz: 22 })], al: 'center' }) + pX({ p: [] }).repeat(b.ky.trong) +
           (c[1] ? pX({ p: [R(c[1], { b: 1 })], al: 'center' }) : ''))], false); }

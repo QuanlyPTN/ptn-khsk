@@ -138,10 +138,15 @@
   const TEN = { QR1: 'Đơn mượn phòng, TB – DC trong ngày', QR2: 'Đơn mượn thiết bị dài ngày', QR3: 'Phiếu đề nghị cấp bổ sung hóa chất', QR4: 'Phiếu mượn chìa khóa',
     QR5: 'Phiếu ghi nhận sử dụng', QR6: 'Đơn đăng ký sử dụng tủ', QR8: 'Phiếu đề nghị mượn thêm dụng cụ' };
   const coMau = (qr) => !!MAU[qr];
+  // mẫu đăng ký từ tệp khác (phieu-gv.js – mục Giảng viên): mã, tên, hàm dựng khối, nhãn chân trang (mặc định "Mẫu <mã>")
+  const CHAN = {};
+  const them = (qr, ten, fn, nhanChan) => { MAU[qr] = fn; TEN[qr] = ten; if (nhanChan) CHAN[qr] = nhanChan; };
   // d: đơn (xemDon_ / ctDon), qr: ảnh mã QR (dataURL) dẫn tới đơn trên trang quản lý
   // chân trang góc phải (cuối trang A4): "Mẫu QRx", mã đơn, mã QR
-  const khoi = (d, bb) => (bb ? BB8 : MAU[d.qr])(d).concat([chan([R('Mẫu ' + d.qr + (bb ? ' – Biên bản bàn giao' : ''), { b: 1, i: 1 })], [R('Mã đơn: ', { i: 1 }), R(d.id || '……………', { b: 1 })])]);
-  const taiLieu = (d, qr, bb) => bb ? { ten: 'Biên bản bàn giao dụng cụ · ' + d.id, tep: 'BBBG_' + d.id, trang: [khoi(d, 1)], qr } : { ten: d.qr + ' · ' + TEN[d.qr] + ' · ' + d.id, tep: d.qr + '_' + d.id, trang: [khoi(d)], qr };
-  window.PTN_DON_QR = { coMau, coBienBan, TEN, khoi, html: (d, qr, bb) => D.htmlTL(taiLieu(d, qr, bb)), docx: (d, qr, bb) => D.docxTL(taiLieu(d, qr, bb)),
+  // mẫu trả về các khối của một trang, hoặc { trang: [khối trang 1, khối trang 2…] } khi in kèm giấy tờ khác (phiếu GV mang tài sản ra: tờ trình + giấy báo)
+  const khoi = (d, bb) => { const k = (bb ? BB8 : MAU[d.qr])(d), c = chan([R((CHAN[d.qr] || 'Mẫu ' + d.qr) + (bb ? ' – Biên bản bàn giao' : ''), { b: 1, i: 1 })], [R('Mã đơn: ', { i: 1 }), R(d.id || '……………', { b: 1 })]);
+    return k.trang ? k.trang.map(t => t.concat([c])) : [k.concat([c])]; };
+  const taiLieu = (d, qr, bb) => bb ? { ten: 'Biên bản bàn giao dụng cụ · ' + d.id, tep: 'BBBG_' + d.id, trang: khoi(d, 1), qr } : { ten: d.qr + ' · ' + TEN[d.qr] + ' · ' + d.id, tep: d.qr + '_' + d.id, trang: khoi(d), qr };
+  window.PTN_DON_QR = { coMau, coBienBan, TEN, khoi, them, html: (d, qr, bb) => D.htmlTL(taiLieu(d, qr, bb)), docx: (d, qr, bb) => D.docxTL(taiLieu(d, qr, bb)),
     xemTruoc: (d, qr, bb) => D.xemTruocTL(taiLieu(d, qr, bb)), taiWord: (d, qr, bb) => D.taiWordTL(taiLieu(d, qr, bb)) };
 })();

@@ -32,7 +32,8 @@
     const nd = trang('Hôm nay · ' + ngayVN(homNay()), '<a class="btn o sm" href="#/ts-tong-quan">Tổng quan tài sản – phòng</a>');
     const [h, t] = await Promise.all([api('hom_nay'), api('tong_quan')]);
     const tt = t.theo_tinh_trang, cho = h.cho_xu_ly;
-    let x = '<h2>Đơn chờ xử lý</h2><div class="grid g4" style="margin-bottom:14px">' + Object.keys(QR_TEN).map(q => st(cho[q] || 0, '<b>' + q + '</b> – ' + QR_TEN[q], cho[q] ? 'warn' : 'ok', q === 'QR7' ? '#/de-tai' : '#/don/' + q)).join('') + '</div>';
+    let x = '<h2>Đơn chờ xử lý</h2><div class="grid g4" style="margin-bottom:14px">' + Object.keys(QR_TEN).map(q => st(cho[q] || 0, '<b>' + q + '</b> – ' + QR_TEN[q], cho[q] ? 'warn' : 'ok', q === 'QR7' ? '#/de-tai' : '#/don/' + q)).join('') +
+      (h.gv && coQuyen('giang-vien', 'xem') ? st(h.gv.cho, '<b>GV</b> – Phiếu giảng viên chờ duyệt' + (h.gv.dang ? ' · ' + h.gv.dang + ' đang xử lý' : ''), h.gv.cho ? 'warn' : 'ok', '#/giang-vien') : '') + '</div>';
     const canh = [];
     h.qua_han.forEach(d => canh.push('⚠ <b>' + d.qr + '</b> <a href="#/don/' + d.qr + '/' + esc(d.id) + '">' + esc(d.id) + '</a> – ' + esc(d.ho_ten) + ' quá hạn ' + esc(ngayVN(d.den_ngay)) + ' – ' + esc(tomTat(d)).slice(0, 120)));
     h.hs_qua_han.forEach(x2 => canh.push('⚠ Hồ sơ <a href="#/de-tai/' + esc(x2.id) + '">' + esc(x2.id) + '</a> quá hạn ' + ngayVN(x2.den_ngay) + ' – ' + esc(x2.ten)));

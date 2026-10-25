@@ -11,7 +11,12 @@
     QR3: '<path d="M9 3h6"/><path d="M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/><path d="M7 15h10"/>', QR4: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
     QR5: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', QR6: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 3v18"/><path d="M9 12h.01M15 12h.01"/>',
     QR7: '<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>', QR8: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 12v6M9 15h6"/>',
-    mau: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/>', cua_toi: '<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="m9 14 2 2 4-4"/>' };
+    mau: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/>',
+    'GV-BH': '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+    'GV-SC': '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/>',
+    'GV-BS': '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/>',
+    'GV-BG': '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
+    'GV-TS': '<path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.3a1 1 0 0 0-.2-.6L18.3 9H14v8h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>', cua_toi: '<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="m9 14 2 2 4-4"/>' };
   const bieu = (k) => '<span class="bieu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + BIEU[k] + '</svg></span>';
   const DOI_TUONG = ['Sinh viên', 'Học viên', 'Giảng viên', 'Khác'];
   const BO_MON = ['Dược học', 'Dinh dưỡng', 'Điều dưỡng', 'Khác'];
@@ -20,7 +25,7 @@
     ['Đơn KLTN – luận văn (Phụ lục 1)', [['PL1A_Don-de-nghi-muon-dung-cu_KLTN_luan-van.docx', 'Phụ lục 1A – Đơn đề nghị mượn dụng cụ'], ['PL1B_Don-de-nghi-muon-phong-thi-nghiem_KLTN_luan-van.docx', 'Phụ lục 1B – Đơn đề nghị mượn phòng thí nghiệm'], ['PL1C_Don-de-nghi-muon-thiet-bi_KLTN_luan-van.docx', 'Phụ lục 1C – Đơn đề nghị mượn thiết bị']]],
     ['Đơn NCKH (Phụ lục 2)', [['PL2A_Don-de-nghi-muon-dung-cu_NCKH.docx', 'Phụ lục 2A – Đơn đề nghị mượn dụng cụ'], ['PL2B_Don-de-nghi-muon-phong-thi-nghiem_NCKH.docx', 'Phụ lục 2B – Đơn đề nghị mượn phòng thí nghiệm'], ['PL2C_Don-de-nghi-muon-thiet-bi_NCKH.docx', 'Phụ lục 2C – Đơn đề nghị mượn thiết bị']]],
     ['Sinh viên ngoài đơn vị (Phụ lục 3)', [['PL3_Don-dang-ky-su-dung-PTN_SV-ngoai-don-vi.docx', 'Phụ lục 3 – Đơn đăng ký sử dụng phòng thí nghiệm']]],
-    ['Giảng viên – thiết bị', [['Don-de-nghi-muon-thiet-bi-dai-ngay_GV_Mau-QR2.docx', 'Đơn đề nghị mượn thiết bị dài ngày (mẫu QR2)'], ['Bieu-mau-bao-hong-thiet-bi.docx', 'Biểu mẫu báo hỏng thiết bị'], ['Phieu-de-nghi-sua-chua-thiet-bi.docx', 'Phiếu đề nghị sửa chữa thiết bị'], ['Phieu-de-nghi-bo-sung-thiet-bi.docx', 'Phiếu đề nghị bổ sung thiết bị'], ['Bien-ban-ban-giao-thiet-bi-PTN-cho-giang-vien.docx', 'Biên bản bàn giao thiết bị PTN cho giảng viên']]]
+    ['Giảng viên – thiết bị', [['Don-de-nghi-muon-thiet-bi-dai-ngay_GV_Mau-QR2.docx', 'Đơn đề nghị mượn thiết bị dài ngày (mẫu QR2)'], ['Bieu-mau-bao-hong-thiet-bi.docx', 'Biểu mẫu báo hỏng thiết bị'], ['Phieu-de-nghi-sua-chua-thiet-bi.docx', 'Phiếu đề nghị sửa chữa thiết bị'], ['Phieu-de-nghi-bo-sung-thiet-bi.docx', 'Phiếu đề nghị bổ sung thiết bị'], ['Bien-ban-ban-giao-thiet-bi-PTN-cho-giang-vien.docx', 'Biên bản bàn giao thiết bị PTN cho giảng viên'], ['Giay-bao-mang-tai-san-vao-ra-co-quan_TCHC-mau-28.docx', 'Giấy báo mang tài sản vào / ra cơ quan (mẫu của Trường – TCHC mẫu số 28)'], ['Phieu-de-nghi-giai-quyet-cong-viec_mang-tai-san-ra.docx', 'Phiếu đề nghị giải quyết công việc (tờ trình BGH) – kèm giấy báo mang tài sản ra']]]
   ];
 
   // ---------------- Tiện ích ----------------
@@ -140,7 +145,7 @@
   }
 
   // ---------------- Trang chủ ----------------
-  const MAU_TT = { 'Chờ duyệt': 'c', 'Đã duyệt': 'i', 'Đang mượn': 'w', 'Đang dùng': 'w', 'Đã trả – hoàn tất': 'o', 'Đã cấp phát': 'o', 'Từ chối': 'b', 'Chờ nộp bản ký': 'c', 'Đã nhận đơn ký': 'i',
+  const MAU_TT = { 'Chờ duyệt': 'c', 'Đã duyệt': 'i', 'Đang xử lý': 'w', 'Hoàn tất': 'o', 'Đang mượn': 'w', 'Đang dùng': 'w', 'Đã trả – hoàn tất': 'o', 'Đã cấp phát': 'o', 'Từ chối': 'b', 'Chờ nộp bản ký': 'c', 'Đã nhận đơn ký': 'i',
     'Đã duyệt – đang thực hiện': 'w', 'Gia hạn': 'w', 'Chờ trả đồ': 'w', 'Đã đóng': 'o' };
   const tagTT = (t, qh) => '<span class="tag t-' + (qh ? 'b' : MAU_TT[t] || 'c') + '">' + esc(qh ? 'Quá hạn' : t) + '</span>';
   async function trangChu() {
@@ -149,6 +154,9 @@
     let h = '<div class="card prof"><div class="av">' + esc((p.ho_ten || '?').trim().split(' ').pop().charAt(0)) + '</div><div class="i"><b>' + esc(p.ho_ten) + '</b><span>' + esc([p.ma_so, ngGui().doi_tuong, p.lop].filter(Boolean).join(' · ')) +
       '</span></div><a class="lnk" href="#/ho-so">Sửa</a></div><div id="tb"></div><div class="tieu-de-nhom">Đăng ký – biểu mẫu</div><div class="grid">' +
       Object.keys(QR_TEN).map(q => '<a class="tile" href="#/' + q + '">' + bieu(q) + (QR_AI[q] ? '<span class="ai">' + QR_AI[q] + '</span>' : '') + '<span class="q">' + q + '</span>' + QR_TEN[q] + '</a>').join('') +
+      '</div><div class="tieu-de-nhom">Giảng viên – thiết bị</div><div class="grid">' +
+      '<a class="tile" href="#/QR2">' + bieu('QR2') + '<span class="qv">QR2</span>Mượn thiết bị dài ngày</a>' +
+      Object.keys(GV().LOAI).map(q => '<a class="tile" href="#/' + q + '">' + bieu(q) + '<span class="qv">' + q + '</span>' + esc(GV().LOAI[q].ten) + '</a>').join('') +
       '</div><div class="tieu-de-nhom">Tiện ích</div><div class="grid"><a class="tile t2" href="#/don-cua-toi">' + bieu('cua_toi') + '<span><b>Đơn của tôi</b><br><span class="note" id="dem-don">Trạng thái các đơn đã gửi</span></span></a>' +
       '<a class="tile t2" href="#/bieu-mau">' + bieu('mau') + '<span><b>Biểu mẫu PTN</b><br><span class="note">Mẫu đơn, phiếu trống</span></span></a></div>' +
       (navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ? '' : '<div class="card note" style="margin-top:14px"><b>Cài như ứng dụng:</b> iPhone (Safari): bấm Chia sẻ → <i>Thêm vào MH chính</i>. Android (Chrome): bấm ⋮ → <i>Thêm vào màn hình chính</i>.</div>') +
@@ -158,7 +166,7 @@
       const dm = await danhMuc(true);
       if (dm.thong_bao && $('tb')) $('tb').innerHTML = '<div class="warn" style="background:#FFF8E1;border-color:#F2D58A;color:#6B4A00">📢 ' + esc(dm.thong_bao) + '</div>';
       const r = await api('ck_cua_toi', { khoa: may().khoa });
-      const mo = r.don.filter(d => ['Chờ duyệt', 'Đã duyệt', 'Đang mượn', 'Đang dùng'].indexOf(d.trang_thai) >= 0).length + r.ho_so.filter(x => ['Đã đóng', 'Từ chối'].indexOf(x.trang_thai) < 0).length;
+      const mo = r.don.filter(d => ['Chờ duyệt', 'Đã duyệt', 'Đang mượn', 'Đang dùng', 'Đang xử lý'].indexOf(d.trang_thai) >= 0).length + r.ho_so.filter(x => ['Đã đóng', 'Từ chối'].indexOf(x.trang_thai) < 0).length;
       const dang = r.don.find(d => d.qr === 'QR5' && d.trang_thai === 'Đang dùng');
       if ($('dem-don')) $('dem-don').innerHTML = mo ? '<b style="color:var(--b)">' + mo + ' đơn đang xử lý</b>' : 'Trạng thái các đơn đã gửi';
       if (dang && $('tb')) $('tb').insertAdjacentHTML('beforeend', '<div class="warn">⏱ Bạn đang sử dụng ' + esc(dang.ten_tb.join(', ') || 'phòng ' + dang.phong) + ' từ ' + esc(dang.tu_ngay.slice(11)) + '. <a href="#/don-cua-toi">Bấm "Kết thúc sử dụng" khi xong</a>.</div>');
@@ -377,6 +385,36 @@
     };
   }
 
+  // ---------------- Phiếu giảng viên: báo hỏng, đề nghị sửa chữa / bổ sung, biên bản bàn giao TB, giấy báo mang tài sản (phieu-gv.js) ----------------
+  const GV = () => window.PTN_PHIEU_GV;
+  async function trangGV(qr) {
+    $('hb').classList.remove('hide'); nutLui(true);
+    M('<div class="spin"></div>');
+    await danhMuc();
+    const p = hoSo(), L = GV().LOAI[qr];
+    M('<h2>' + esc(L.ten) + '</h2><div class="pre"><b>✓ Người đề nghị:</b> ' + esc([p.ho_ten, p.ma_so, p.bo_mon, p.sdt].filter(Boolean).join(' · ')) + ' <a class="lnk" href="#/ho-so">Sửa</a></div>' +
+      (p.doi_tuong === 'Giảng viên' ? '' : '<div class="warn">Biểu mẫu dành cho giảng viên. Nếu bạn là giảng viên, sửa "Đối tượng" trong thông tin cá nhân.</div>') +
+      '<form class="card" id="f" autocomplete="off"><div id="pg"></div><label class="opt"><input type="checkbox" name="cam_ket"><span>Tôi xác nhận thông tin trên là đúng.</span></label>' +
+      '<div id="err" class="err"></div><button class="btn" id="sb">Gửi phiếu</button></form><p class="note">Cần bản trống để in viết tay: <a href="bieu-mau/' + esc(L.mau) + '" download>tải mẫu Word</a>.</p>');
+    GV().ve($('pg'), qr, { dm: S.dm });
+    danhDau($('f'));
+    $('f').onsubmit = async (e) => {
+      e.preventDefault();
+      const x = GV().doc($('pg'), qr), loi = x.loi || ($('f').querySelector('[name=cam_ket]').checked ? '' : 'Đánh dấu ô xác nhận');
+      if (loi) { $('err').textContent = loi; return; }
+      $('sb').disabled = true; $('sb').textContent = 'Đang gửi…'; $('err').textContent = '';
+      try {
+        const r = await api('ck_gui_gv', { qr, ng: ngGui(), may: may(), d: Object.assign({ cam_ket: true }, x.d) });
+        M('<div class="card msg"><div class="ok">✓</div><h2>Đã gửi ' + esc(L.ten.toLowerCase()) + '</h2><p>Mã phiếu <b>' + esc(r.id) + '</b> · ' + tagTT(r.trang_thai) + '</p>' +
+          '<p class="note">Cán bộ PTN sẽ tiếp nhận, xử lý; theo dõi trạng thái và in phiếu ở <b>Đơn của tôi</b>.</p>' +
+          '<div class="dong-don" style="justify-content:center;gap:8px"><button type="button" class="nho" id="in-ngay">Xem – in phiếu</button><button type="button" class="nho o" id="word-ngay">Word</button></div>' +
+          '<a class="btn" href="#/don-cua-toi">Đơn của tôi</a><a class="btn o" href="#/">Về trang chủ</a></div>');
+        const mo = async (word) => { const t = await api('ck_cua_toi', { khoa: may().khoa }), d = t.don.find(y => y.id === r.id); if (d) inDon(d, word); };
+        $('in-ngay').onclick = () => mo(false).catch(err => toast(err.message, true)); $('word-ngay').onclick = () => mo(true).catch(err => toast(err.message, true));
+      } catch (err) { $('sb').disabled = false; $('sb').textContent = 'Gửi phiếu'; $('err').textContent = err.message; }
+    };
+  }
+
   // ---------------- QR7: hồ sơ đề tài ----------------
   async function trangQR7(sua) {
     $('hb').classList.remove('hide'); nutLui(true);
@@ -481,7 +519,7 @@
     M('<h2>Đơn của tôi</h2><div class="spin"></div>');
     let r;
     try { r = await api('ck_cua_toi', { khoa: may().khoa }); } catch (e) { M('<h2>Đơn của tôi</h2><div class="warn">' + esc(e.message) + '</div>'); return; }
-    const chiTiet = (d) => [d.phong && 'Phòng ' + d.phong, d.tu && 'Tủ ' + d.tu, d.ten_tb.length && d.ten_tb.join(', '), d.lop_hp && 'LHP ' + d.lop_hp, d.hs && 'Đề tài ' + d.hs,
+    const chiTiet = (d) => /^GV-/.test(d.qr) ? GV().tomTat(d) : [d.phong && 'Phòng ' + d.phong, d.tu && 'Tủ ' + d.tu, d.ten_tb.length && d.ten_tb.join(', '), d.lop_hp && 'LHP ' + d.lop_hp, d.hs && 'Đề tài ' + d.hs,
       (d.nd.dong || []).length && d.nd.dong.map(x => x.ten + ' ' + x.sl + (x.dvt ? ' ' + x.dvt : '')).join('; '), d.tu_ngay && 'Từ ' + ngayVN(d.tu_ngay), d.den_ngay && (d.qr === 'QR5' ? 'đến ' : 'hạn ') + ngayVN(d.den_ngay)].filter(Boolean).join(' · ');
     let h = '<h2>Đơn của tôi</h2><p class="note">Các đơn gửi từ điện thoại này (mã máy ' + esc(may().ma) + ').</p>';
     if (r.ho_so.length) h += '<div class="sec">Hồ sơ đề tài (QR7)</div>' + r.ho_so.map(x => '<div class="card"><div class="dong-don"><b>' + esc(x.id) + '</b>' + tagTT(x.trang_thai) + '</div><div>' + esc(x.ten) + '</div><div class="note">' +
@@ -489,20 +527,26 @@
       (x.le_phi ? '<div class="note">Lệ phí: ' + esc(x.le_phi) + (x.thu_phi ? ' – <b>đã thu ' + Number(x.thu_phi.so_tien).toLocaleString('vi-VN') + ' đ</b>' : ' – chưa thu') + '</div>' : '') +
       (x.tep.length ? '<div class="note">Minh chứng: ' + x.tep.map(t => esc(t.ten)).join(', ') + '</div>' : '') + khoiDon(x).replace('<div class="card">', '<div>') +
       (['Đã đóng', 'Từ chối'].indexOf(x.trang_thai) < 0 ? '<div class="dong-don"><a class="lnk" href="#/QR7/' + esc(x.id) + '">Sửa hồ sơ / gia hạn / thêm thành viên</a>' + (x.pl === 2 ? '<label class="lnk">+ Minh chứng<input type="file" data-mc="' + esc(x.id) + '" accept=".pdf,image/*" hidden></label>' : '') + '</div>' : '') + '</div>').join('');
-    h += '<div class="sec">Đơn QR1 – QR8 (' + r.don.length + ')</div>' + (r.don.length ? r.don.map(d => '<div class="card"><div class="dong-don"><span><span class="q">' + d.qr + '</span> <b>' + esc(d.id) + '</b></span>' + tagTT(d.trang_thai, d.qua_han) + '</div>' +
+    const dsQR = r.don.filter(d => !/^GV-/.test(d.qr)), dsGV = r.don.filter(d => /^GV-/.test(d.qr));
+    const the = (d) => '<div class="card"><div class="dong-don"><span><span class="q">' + d.qr + '</span> <b>' + esc(d.id) + '</b></span>' + tagTT(d.trang_thai, d.qua_han) + '</div>' +
       '<div>' + esc(d.ten_qr) + '</div><div class="note">' + esc(chiTiet(d)) + '</div><div class="note">Gửi ' + ngayVN(d.tg) + (d.nguoi_xu_ly ? ' · xử lý: ' + esc(d.nguoi_xu_ly) : '') + '</div>' +
       (d.ly_do ? '<div class="err">Lý do: ' + esc(d.ly_do) + '</div>' : '') +
       (d.qr === 'QR5' && d.trang_thai === 'Đang dùng' ? '<button class="btn g" data-kt="' + esc(d.id) + '" style="margin-top:8px">Kết thúc sử dụng</button>' : '') +
-      (window.PTN_DON_QR && window.PTN_DON_QR.coMau(d.qr) && d.trang_thai !== 'Từ chối' ? '<div class="dong-don"><span>📄 ' + esc(window.PTN_DON_QR.TEN[d.qr]) + '</span><span><button type="button" class="nho" data-in-don="' + esc(d.id) + '">Xem – in</button><button type="button" class="nho o" data-word-don="' + esc(d.id) + '">Word</button></span></div>' : '') + '</div>').join('') : '<div class="card note">Chưa có đơn nào.</div>');
+      (window.PTN_DON_QR && window.PTN_DON_QR.coMau(d.qr) && d.trang_thai !== 'Từ chối' ? '<div class="dong-don"><span>📄 ' + esc(window.PTN_DON_QR.TEN[d.qr]) + '</span><span><button type="button" class="nho" data-in-don="' + esc(d.id) + '">Xem – in</button><button type="button" class="nho o" data-word-don="' + esc(d.id) + '">Word</button></span></div>' : '') + '</div>';
+    h += '<div class="sec">Đơn QR1 – QR8 (' + dsQR.length + ')</div>' + (dsQR.length ? dsQR.map(the).join('') : '<div class="card note">Chưa có đơn nào.</div>');
+    if (dsGV.length) h += '<div class="sec">Phiếu giảng viên – thiết bị (' + dsGV.length + ')</div>' + dsGV.map(the).join('');
     M(h);
     r.ho_so.forEach(x => ganKhoiDon(x));
     document.querySelectorAll('[data-mc]').forEach(i => { i.onchange = async () => { const f = i.files[0]; if (!f) return; try { await guiMinhChung(i.dataset.mc, f); toast('Đã tải minh chứng'); trangDonCuaToi(); } catch (e) { toast(e.message, true); } }; });
     document.querySelectorAll('[data-kt]').forEach(b => { b.onclick = () => hopKetThuc(b.dataset.kt); });
-    // đơn điền sẵn của QR1 – QR6, QR8: mã QR trên đơn dẫn tới đơn ở trang quản lý (cán bộ quét để mở đúng đơn)
-    const qrDon = async (d) => { try { await napQR(); const q = window.qrcode(0, 'M'); q.addData(new URL('quan-ly/#/don/' + d.qr + '/' + d.id, location.href.split('#')[0]).href); q.make(); return q.createDataURL(4, 1); } catch (e) { return ''; } };
-    document.querySelectorAll('[data-in-don],[data-word-don]').forEach(b => { b.onclick = async () => {
-      const d = r.don.find(x => x.id === (b.dataset.inDon || b.dataset.wordDon)), q = await qrDon(d);
-      if (b.dataset.wordDon) { try { await window.PTN_DON_QR.taiWord(d, q); } catch (e) { toast(e.message, true); } } else window.PTN_DON_QR.xemTruoc(d, q); }; });
+    document.querySelectorAll('[data-in-don],[data-word-don]').forEach(b => { b.onclick = () => inDon(r.don.find(x => x.id === (b.dataset.inDon || b.dataset.wordDon)), !!b.dataset.wordDon); });
+  }
+  // đơn / phiếu điền sẵn (QR1 – QR6, QR8, phiếu giảng viên): mã QR trên đơn dẫn tới đơn ở trang quản lý (cán bộ quét để mở đúng đơn)
+  async function qrDon(d) { try { await napQR(); const q = window.qrcode(0, 'M'); q.addData(new URL('quan-ly/#/don/' + d.qr + '/' + d.id, location.href.split('#')[0]).href); q.make(); return q.createDataURL(4, 1); } catch (e) { return ''; } }
+  async function inDon(d, word) {
+    const q = await qrDon(d);
+    if (!window.PTN_KY) { try { await danhMuc(true); } catch (e) { /* in không có tên người ký */ } }
+    if (word) { try { await window.PTN_DON_QR.taiWord(d, q); } catch (e) { toast(e.message, true); } } else window.PTN_DON_QR.xemTruoc(d, q);
   }
   function hopKetThuc(id) {
     M('<h2>Kết thúc sử dụng – ' + esc(id) + '</h2><form class="card" id="f" autocomplete="off">' + chon('tinh_trang', 'Tình trạng thiết bị / phòng sau khi sử dụng', ['Bình thường', 'Bất thường – hư hỏng'], { v: 'Bình thường', req: 1 }) +
@@ -533,6 +577,7 @@
         if (p[0] === 'QR7' && p[1]) { const r = await api('ck_cua_toi', { khoa: may().khoa }), x = r.ho_so.find(h => h.id === p[1]); return x ? trangQR7(x) : trangDonCuaToi(); }
         return await trangQR(p[0]);
       }
+      if (/^GV-(BH|SC|BS|BG|TS)$/.test(p[0])) return await trangGV(p[0]);
       if (p[0] === 'ho-so') return trangHoSo(false);
       if (p[0] === 'don-cua-toi') return await trangDonCuaToi();
       if (p[0] === 'bieu-mau') return trangBieuMau();

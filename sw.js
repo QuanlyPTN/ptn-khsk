@@ -1,6 +1,6 @@
 // Service worker: lưu vỏ app để mở nhanh; dữ liệu vẫn lấy trực tiếp từ Google
-var C = 'ptn-khsk-v38';
-var FILES = ['./', 'index.html', 'app-cong-khai.js', 'don-phu-luc.js', 'don-qr.js', 'quan-ly/config.js', 'manifest.webmanifest', 'logo-mark.png', 'logo-ngang-xanh.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
+var C = 'ptn-khsk-v39';
+var FILES = ['./', 'index.html', 'app-cong-khai.js', 'don-phu-luc.js', 'don-qr.js', 'phieu-gv.js', 'quan-ly/config.js', 'manifest.webmanifest', 'logo-mark.png', 'logo-ngang-xanh.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 self.addEventListener('install', function (e) { e.waitUntil(caches.open(C).then(function (c) { return c.addAll(FILES); })); self.skipWaiting(); });
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (k) { return Promise.all(k.filter(function (x) { return x !== C; }).map(function (x) { return caches.delete(x); })); }));

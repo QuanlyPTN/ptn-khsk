@@ -131,6 +131,7 @@
     'bao-cao': '<path d="M3 3v18h18"/><path d="M8 17v-6"/><path d="M13 17V7"/><path d="M18 17v-4"/>',
     'so': '<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/><path d="M8 7h8M8 11h8"/>',
     'bieu-mau': '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/>',
+    'giang-vien': '<path d="M3 4h18v12H3z"/><path d="M7 20h10M12 16v4"/><circle cx="8.5" cy="9" r="2"/><path d="M5.5 14c.6-1.6 1.7-2.5 3-2.5s2.4.9 3 2.5M14 8h4M14 11h3"/>',
     'don-qr': '<rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
     'cai-dat': '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
     'can-bo': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
@@ -202,9 +203,9 @@
     ['tong-quan', '◧', 'Hôm nay'], ['don', '✉', 'Đơn đăng ký QR1 – QR8'], ['de-tai', '✎', 'Hồ sơ đề tài KLTN – NCKH'], ['phong', '▦', 'Phòng thí nghiệm'], ['tai-san', '⚙', 'Tài sản'],
     ['kiem-dinh', '✓', 'Kiểm định – bảo dưỡng'], ['hoa-chat', '⚗', 'Hóa chất – vật tư'], ['kho', '▣', 'Kho hóa chất D11.01'], ['kho-dl', '❀', 'Kho dược liệu D11'],
     ['bien-ban', '▤', 'Biên bản bàn giao'], ['bao-cao', '▥', 'Báo cáo – thống kê'], ['so', '☷', 'Sổ theo dõi – in ấn'], ['bieu-mau', '⎙', 'Biểu mẫu PTN'],
-    ['don-qr', '✉', 'Đơn cũ (Google Form)'], ['cai-dat', '⚑', 'Cài đặt – mã QR tổng', 1], ['can-bo', '☺', 'Cán bộ', 1], ['nhat-ky', '☰', 'Nhật ký', 1], ['tai-khoan', '⚿', 'Tài khoản']
+    ['giang-vien', '☺', 'Giảng viên'], ['don-qr', '✉', 'Đơn cũ (Google Form)'], ['cai-dat', '⚑', 'Cài đặt – mã QR tổng', 1], ['can-bo', '☺', 'Cán bộ', 1], ['nhat-ky', '☰', 'Nhật ký', 1], ['tai-khoan', '⚿', 'Tài khoản']
   ];
-  const NHOM_MENU = { 'tong-quan': 'Vận hành', 'hoa-chat': 'Hóa chất – kho', 'bao-cao': 'Báo cáo – tài liệu', 'don-qr': 'Hệ thống' };
+  const NHOM_MENU = { 'tong-quan': 'Vận hành', 'hoa-chat': 'Hóa chất – kho', 'bao-cao': 'Báo cáo – tài liệu', 'giang-vien': 'Hệ thống' };
   const TUYEN = {}; // trang do app-mo-rong.js đăng ký: { 'kho': (p) => … }
   // dòng báo chạy thử: demo liên thông (dữ liệu thử lưu trong trình duyệt, dùng chung với trang công khai) + làm lại dữ liệu mẫu
   function thanhDemo() {
@@ -261,20 +262,21 @@
   const QR_GAP = ['QR1', 'QR2'], TIEU_DE = document.title;
   function theoDoiDon() {
     clearInterval(S.tdDon); S.donDaThay = null;
-    if (!coQuyen('don', 'xem')) return;
+    if (!coQuyen('don', 'xem') && !coQuyen('giang-vien', 'xem')) return;
     S.kiemDon = async () => {
       if (document.hidden || !S.tk || !$('nav')) return;
       let r; try { r = await goiMayChu('don_moi'); } catch (e) { return; }
       const a = document.querySelector('#nav a[data-m="don"]');
-      if (a) { let h = a.querySelector('.huy-hieu'); if (!h) { h = document.createElement('span'); h.className = 'huy-hieu'; a.appendChild(h); } h.textContent = r.tong; h.hidden = !r.tong; }
-      document.title = (r.tong ? '(' + r.tong + ') ' : '') + TIEU_DE;
+      [[a, r.tong], [document.querySelector('#nav a[data-m="giang-vien"]'), r.gv || 0]].forEach(([el, n]) => { if (!el) return;
+        let h = el.querySelector('.huy-hieu'); if (!h) { h = document.createElement('span'); h.className = 'huy-hieu'; el.appendChild(h); } h.textContent = n; h.hidden = !n; });
+      const tong = r.tong + (r.gv || 0); document.title = (tong ? '(' + tong + ') ' : '') + TIEU_DE;
       const cu = S.donDaThay, moi = cu ? r.moi.filter(d => !cu.has(d.id)) : [];
       S.donDaThay = new Set(r.moi.map(d => d.id).concat(cu ? [...cu] : []));
       if (!moi.length) return;
       DEM.clear(); baoDonMoi(moi.reverse());
       const o = document.activeElement, dangGo = o && /INPUT|TEXTAREA|SELECT/.test(o.tagName);
       const tr = location.hash.replace(/^#\/?/, '').split('/');
-      if ((tr[0] === '' || tr[0] === 'tong-quan' || (tr[0] === 'don' && !tr[2])) && $('modal').classList.contains('hide') && !dangGo) dieuHuong();
+      if ((tr[0] === '' || tr[0] === 'tong-quan' || (tr[0] === 'don' && !tr[2]) || (tr[0] === 'giang-vien' && !tr[1])) && $('modal').classList.contains('hide') && !dangGo) dieuHuong();
     };
     S.kiemDon(); S.tdDon = setInterval(S.kiemDon, 15000);
   }
@@ -285,8 +287,8 @@
     const ten = (S.dm && S.dm.qr_don) || {}, gap = ds.some(d => QR_GAP.indexOf(d.qr) >= 0);
     ds.forEach(d => {
       const the = document.createElement('a'), noi = (d.phong ? ' · ' + d.phong : '') + ' · ' + ngayVN(d.tg);
-      the.className = 'the-don' + (QR_GAP.indexOf(d.qr) >= 0 ? ' gap' : ''); the.href = '#/don/' + d.qr + '/' + encodeURIComponent(d.id);
-      the.innerHTML = '<b>🔔 Đơn mới ' + esc(d.qr) + '</b> – ' + esc(ten[d.qr] || '') + '<br>' + esc(d.ho_ten || '') + esc(noi) + '<span class="x" title="Đóng">×</span>';
+      the.className = 'the-don' + (QR_GAP.indexOf(d.qr) >= 0 ? ' gap' : ''); the.href = /^GV-/.test(d.qr) ? '#/giang-vien/' + encodeURIComponent(d.id) : '#/don/' + d.qr + '/' + encodeURIComponent(d.id);
+      the.innerHTML = '<b>🔔 ' + (/^GV-/.test(d.qr) ? 'Phiếu mới ' : 'Đơn mới ') + esc(d.qr) + '</b> – ' + esc(ten[d.qr] || '') + '<br>' + esc(d.ho_ten || '') + esc(noi) + '<span class="x" title="Đóng">×</span>';
       the.onclick = (e) => { if (e.target.classList.contains('x')) e.preventDefault(); the.remove(); };
       hop.prepend(the);
       if ('Notification' in window && Notification.permission === 'granted') {
@@ -358,6 +360,7 @@
   function dieuHuong() {
     if (!S.toi) return;
     const p = (location.hash.replace(/^#\/?/, '').split('?')[0] || 'tong-quan').split('/');
+    if (p[0] === 'don' && /^GV-/.test(p[1] || '')) { location.replace('#/giang-vien/' + (p[2] || '')); return; } // mã QR trên phiếu giảng viên
     document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('on', a.dataset.m === p[0]));
     const muc = MUC_TRANG[p[0]] || p[0];
     S.muc = (S.toi.muc_quyen || []).some(m => m[0] === muc) ? muc : '';
@@ -709,7 +712,7 @@
     ['Đơn KLTN – luận văn (Phụ lục 1, Quy định PTN 2026)', [['PL1A_Don-de-nghi-muon-dung-cu_KLTN_luan-van.docx', 'Phụ lục 1A – Đơn đề nghị mượn dụng cụ'], ['PL1B_Don-de-nghi-muon-phong-thi-nghiem_KLTN_luan-van.docx', 'Phụ lục 1B – Đơn đề nghị mượn phòng thí nghiệm'], ['PL1C_Don-de-nghi-muon-thiet-bi_KLTN_luan-van.docx', 'Phụ lục 1C – Đơn đề nghị mượn thiết bị']]],
     ['Đơn NCKH (Phụ lục 2)', [['PL2A_Don-de-nghi-muon-dung-cu_NCKH.docx', 'Phụ lục 2A – Đơn đề nghị mượn dụng cụ'], ['PL2B_Don-de-nghi-muon-phong-thi-nghiem_NCKH.docx', 'Phụ lục 2B – Đơn đề nghị mượn phòng thí nghiệm'], ['PL2C_Don-de-nghi-muon-thiet-bi_NCKH.docx', 'Phụ lục 2C – Đơn đề nghị mượn thiết bị']]],
     ['Sinh viên ngoài đơn vị (Phụ lục 3)', [['PL3_Don-dang-ky-su-dung-PTN_SV-ngoai-don-vi.docx', 'Phụ lục 3 – Đơn đăng ký sử dụng phòng thí nghiệm']]],
-    ['Giảng viên – thiết bị', [['Don-de-nghi-muon-thiet-bi-dai-ngay_GV_Mau-QR2.docx', 'Đơn đề nghị mượn thiết bị dài ngày (mẫu QR2)'], ['Bieu-mau-bao-hong-thiet-bi.docx', 'Biểu mẫu báo hỏng thiết bị'], ['Phieu-de-nghi-sua-chua-thiet-bi.docx', 'Phiếu đề nghị sửa chữa thiết bị'], ['Phieu-de-nghi-bo-sung-thiet-bi.docx', 'Phiếu đề nghị bổ sung thiết bị'], ['Bien-ban-ban-giao-thiet-bi-PTN-cho-giang-vien.docx', 'Biên bản bàn giao thiết bị cho giảng viên']]]
+    ['Giảng viên – thiết bị', [['Don-de-nghi-muon-thiet-bi-dai-ngay_GV_Mau-QR2.docx', 'Đơn đề nghị mượn thiết bị dài ngày (mẫu QR2)'], ['Bieu-mau-bao-hong-thiet-bi.docx', 'Biểu mẫu báo hỏng thiết bị'], ['Phieu-de-nghi-sua-chua-thiet-bi.docx', 'Phiếu đề nghị sửa chữa thiết bị'], ['Phieu-de-nghi-bo-sung-thiet-bi.docx', 'Phiếu đề nghị bổ sung thiết bị'], ['Bien-ban-ban-giao-thiet-bi-PTN-cho-giang-vien.docx', 'Biên bản bàn giao thiết bị cho giảng viên'], ['Giay-bao-mang-tai-san-vao-ra-co-quan_TCHC-mau-28.docx', 'Giấy báo mang tài sản vào / ra cơ quan (mẫu của Trường – TCHC mẫu số 28)'], ['Phieu-de-nghi-giai-quyet-cong-viec_mang-tai-san-ra.docx', 'Phiếu đề nghị giải quyết công việc (tờ trình BGH) – kèm giấy báo mang tài sản ra']]]
   ];
   function manBieuMau() {
     const nd = trang('Biểu mẫu PTN');
