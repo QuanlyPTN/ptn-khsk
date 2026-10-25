@@ -13,7 +13,7 @@
     'GV-BH': { ten: 'Báo hỏng thiết bị', mo_ta: 'Báo thiết bị hư hỏng, sự cố về Phòng thí nghiệm', mau: 'Bieu-mau-bao-hong-thiet-bi.docx' },
     'GV-SC': { ten: 'Phiếu đề nghị sửa chữa thiết bị', mo_ta: 'Đề nghị BLĐ Khoa, TBM, PTN kiểm tra – sửa chữa', mau: 'Phieu-de-nghi-sua-chua-thiet-bi.docx' },
     'GV-BS': { ten: 'Phiếu đề nghị bổ sung thiết bị', mo_ta: 'Bổ sung thiết bị phục vụ giảng dạy thực hành', mau: 'Phieu-de-nghi-bo-sung-thiet-bi.docx' },
-    'GV-BG': { ten: 'Biên bản bàn giao thiết bị cho giảng viên', mo_ta: 'PTN bàn giao thiết bị cho giảng viên sử dụng', mau: 'Bien-ban-ban-giao-thiet-bi-PTN-cho-giang-vien.docx' },
+    'GV-BG': { ten: 'Biên bản bàn giao thiết bị cho giảng viên', mo_ta: 'PTN bàn giao thiết bị cho giảng viên sử dụng', mau: 'Bien-ban-ban-giao-thiet-bi-PTN-cho-giang-vien.docx', ngung: 1 }, // ngừng lập mới (anh Phú bỏ 25/10/2026) – giữ để xem / in phiếu cũ
     'GV-TS': { ten: 'Giấy báo mang tài sản vào / ra cơ quan', mo_ta: 'Mẫu của Trường – TCHC mẫu số 28', mau: 'Giay-bao-mang-tai-san-vao-ra-co-quan_TCHC-mau-28.docx',
       to_trinh: 'Phieu-de-nghi-giai-quyet-cong-viec_mang-tai-san-ra.docx' } // mang tài sản ra: kèm phiếu đề nghị giải quyết công việc (tờ trình BGH)
   };
@@ -193,15 +193,15 @@
         P(['•  Các văn bản kèm theo: Giấy báo mang tài sản vào cơ quan ', GT(n.ma_vao, 10), '; Giấy báo mang tài sản ra khỏi cơ quan (mã phiếu ', R(d.id || '……', { b: 1 }), ').'], { al: 'both' }),
         P('•  Nội dung: Đem tài sản ra khỏi cơ quan'), KHOANG,
         muc('1. Tóm tắt nội dung và đề nghị:'),
-        P(['Giảng viên ', R(d.ho_ten, { b: 1 }), d.bo_mon ? ' – Bộ môn ' + d.bo_mon : '', d.sdt ? ' (ĐT: ' + d.sdt + ')' : '', ' đề nghị được mang các tài sản sau ra khỏi cơ quan vào ngày ', R(ngay(d.tu_ngay), { b: 1 }), ':'], gt)]
-        .concat((n.tb || []).map(x => P('-  ' + x.ten + (x.ma ? ' (ID: ' + x.ma + ')' : '') + ' – số lượng: ' + soVN(x.sl) + '.', { ind: { left: 567 } })), [
-        P(['Lý do: ', GT(n.ly_do, 38)], gt),
-        P(['Các tài sản trên đã được mang vào cơ quan theo Giấy báo mang tài sản vào cơ quan ', GT(n.ma_vao, 10), ' (đính kèm).'], gt),
-        P('Khoa Khoa học Sức khỏe kính trình Ban Giám hiệu xem xét và giải quyết.', gt), P('Trân trọng cảm ơn!', gt), KHOANG,
-        muc('2. Họ tên và chữ ký:'), ky([['Người đề nghị', d.ho_ten], ['Trưởng đơn vị', K.truong_khoa], 'Phòng Tổ chức – Hành chính'], 3), KHOANG,
+        P(['Khoa Khoa học Sức khỏe nhận được đề nghị của giảng viên ', GT(d.ho_ten, 12), ', Bộ môn ', GT(d.bo_mon, 10), ', số điện thoại ', GT(d.sdt, 8), ', về việc mang tài sản ra khỏi cơ quan, cụ thể như sau:'], gt),
+        P(['•  Tên tài sản: ', GT((n.tb || []).map(x => x.ten + (x.ma ? ' (ID: ' + x.ma + ')' : '') + ' – số lượng ' + soVN(x.sl)).join('; '), 30)], { al: 'both', ind: { left: 567 } }),
+        P(['•  Lý do đem ra: ', GT(n.ly_do, 30)], { al: 'both', ind: { left: 567 } }),
+        P(['Các tài sản trên do giảng viên mang vào cơ quan theo Giấy báo mang tài sản vào cơ quan ', n.ma_vao ? R(n.ma_vao, { b: 1 }) : 'ngày ……/……/20……', ' (đính kèm) để phục vụ nghiên cứu khoa học và không thuộc tài sản của Trường.'], gt),
+        P('Khoa Khoa học Sức khỏe kính trình Ban Giám hiệu xem xét, phê duyệt để giảng viên hoàn tất thủ tục theo Giấy báo mang tài sản ra khỏi cơ quan (mẫu số 28).', gt), P('Trân trọng cảm ơn!', gt), KHOANG,
+        muc('2. Họ tên và chữ ký:'), ky([['Người đề nghị', K.nguoi_lap], ['Trưởng đơn vị', K.truong_khoa], 'Phòng Tổ chức – Hành chính'], 3), KHOANG,
         ky(['3. Ý kiến của Phó Hiệu trưởng', ['4. Phê duyệt của Hiệu trưởng', K.hieu_truong]], 3), KHOANG,
         P([R('Ghi chú: ', { i: 1 }), R('- Văn bản gửi trực tiếp đến: ……………………… ngày …… tháng …… năm 20……', { i: 1 })]),
-        P(R('- Văn bản gửi qua văn thư: ……………………… ngày …… tháng …… năm 20……', { i: 1 }), { ind: { left: 850 } })]); };
+        P(R('- Văn bản gửi qua văn thư: ……………………… ngày …… tháng …… năm 20……', { i: 1 }), { ind: { left: 850 } })]; };
     // giấy báo vào: một trang; giấy báo ra: tờ trình (trang 1) + giấy báo (trang 2)
     const TS = (d) => d.nd.chieu === 'ra' ? { trang: [TO_TRINH(d), GIAY(d)] } : GIAY(d);
 

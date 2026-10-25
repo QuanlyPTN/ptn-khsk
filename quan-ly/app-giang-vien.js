@@ -26,7 +26,7 @@
       [['chua', 'Chưa xong (' + dem(d => !xong(d)) + ')'], ['Chờ duyệt', 'Chờ duyệt (' + dem(d => d.trang_thai === 'Chờ duyệt') + ')'], ['Đang xử lý', 'Đang xử lý (' + dem(d => d.trang_thai === 'Đang xử lý') + ')'],
         ['Hoàn tất', 'Hoàn tất (' + dem(d => d.trang_thai === 'Hoàn tất') + ')'], ['Từ chối', 'Từ chối (' + dem(d => d.trang_thai === 'Từ chối') + ')'], ['', 'Tất cả (' + ds.length + ')']]
         .map(x => '<option value="' + x[0] + '">' + x[1] + '</option>').join('') + '</select></div><div id="kq"></div>' +
-      '<div class="card" style="margin-top:14px"><h2>Biểu mẫu trống (Word)</h2>' + Object.keys(G.LOAI).map(k => [G.LOAI[k].ten, G.LOAI[k].mau]).concat([['Phiếu đề nghị giải quyết công việc (tờ trình BGH) – kèm giấy báo mang tài sản ra', G.LOAI['GV-TS'].to_trinh]]).map(([ten, mau]) => '<div class="dong-tep" style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line,#E3E7EF)"><span>📄 ' + esc(ten) + '</span><a class="btn o sm" href="../bieu-mau/' + esc(mau) + '" download>Tải về (.docx)</a></div>').join('') + '</div>';
+      '<div class="card" style="margin-top:14px"><h2>Biểu mẫu trống (Word)</h2>' + Object.keys(G.LOAI).filter(k => !G.LOAI[k].ngung).map(k => [G.LOAI[k].ten, G.LOAI[k].mau]).concat([['Phiếu đề nghị giải quyết công việc (tờ trình BGH) – kèm giấy báo mang tài sản ra', G.LOAI['GV-TS'].to_trinh]]).map(([ten, mau]) => '<div class="dong-tep" style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line,#E3E7EF)"><span>📄 ' + esc(ten) + '</span><a class="btn o sm" href="../bieu-mau/' + esc(mau) + '" download>Tải về (.docx)</a></div>').join('') + '</div>';
     let hien = [];
     const ve = () => {
       const q = boDau($('q').value), loai = $('f-loai').value, tt = $('f-tt').value;
@@ -95,8 +95,8 @@
 
   // ---------------- Cán bộ lập phiếu thay giảng viên ----------------
   async function manLap(qr) {
-    qr = G.LOAI[qr] ? qr : 'GV-BH';
-    const tabs = Object.keys(G.LOAI).map(k => '<a class="btn sm ' + (k === qr ? 'chon' : 'o') + '" href="#/giang-vien/lap/' + k + '" title="' + esc(G.LOAI[k].ten) + '">' + k + '</a>').join('');
+    qr = G.LOAI[qr] && !G.LOAI[qr].ngung ? qr : 'GV-BH';
+    const tabs = Object.keys(G.LOAI).filter(k => !G.LOAI[k].ngung).map(k => '<a class="btn sm ' + (k === qr ? 'chon' : 'o') + '" href="#/giang-vien/lap/' + k + '" title="' + esc(G.LOAI[k].ten) + '">' + k + '</a>').join('');
     const nd = trang('Lập phiếu – ' + esc(G.LOAI[qr].ten), '<a class="btn o sm" href="#/giang-vien">‹ Danh sách phiếu</a>', '<span class="btns">' + tabs + '</span>');
     const dm = await danhMuc();
     nd.innerHTML = '<div class="card"><p class="note">' + esc(G.LOAI[qr].mo_ta) + '. Cán bộ lập thay giảng viên: nhập thông tin giảng viên, nội dung và thiết bị → Lưu → in / tải Word.</p><div id="pg"></div>' +

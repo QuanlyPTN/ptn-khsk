@@ -6,7 +6,9 @@
   const S = { dm: null, hs: null, bb: {} };
   const QR_TEN = { QR1: 'Mượn phòng; mượn – trả thiết bị, dụng cụ trong ngày', QR2: 'Giảng viên mượn thiết bị dài ngày', QR3: 'Cấp hóa chất – vật tư bổ sung',
     QR4: 'Mượn chìa khóa tại phòng Bảo vệ', QR5: 'Nhật ký sử dụng phòng, thiết bị', QR6: 'Đăng ký sử dụng tủ', QR7: 'Hồ sơ đề tài KLTN – NCKH', QR8: 'Đăng ký mượn thêm dụng cụ' };
-  const QR_AI = { QR2: 'Giảng viên', QR4: 'Giảng viên', QR7: 'Trưởng nhóm SV' };
+  // đối tượng dùng mã (nhãn góc ô); QR2, QR3, QR4 nằm ở nhóm "Giảng viên – thiết bị"
+  const QR_AI = { QR1: 'Giảng viên, Sinh viên', QR5: 'Giảng viên, Sinh viên', QR6: 'Giảng viên, Sinh viên', QR8: 'Giảng viên, Sinh viên', QR7: 'Sinh viên', QR2: 'Giảng viên', QR3: 'Giảng viên', QR4: 'Giảng viên' };
+  const QR_GV = ['QR2', 'QR3', 'QR4'];
   const BIEU = { QR1: '<path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 21v-6h6v6"/>', QR2: '<path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2z"/>',
     QR3: '<path d="M9 3h6"/><path d="M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/><path d="M7 15h10"/>', QR4: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
     QR5: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', QR6: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 3v18"/><path d="M9 12h.01M15 12h.01"/>',
@@ -148,15 +150,27 @@
   const MAU_TT = { 'Chờ duyệt': 'c', 'Đã duyệt': 'i', 'Đang xử lý': 'w', 'Hoàn tất': 'o', 'Đang mượn': 'w', 'Đang dùng': 'w', 'Đã trả – hoàn tất': 'o', 'Đã cấp phát': 'o', 'Từ chối': 'b', 'Chờ nộp bản ký': 'c', 'Đã nhận đơn ký': 'i',
     'Đã duyệt – đang thực hiện': 'w', 'Gia hạn': 'w', 'Chờ trả đồ': 'w', 'Đã đóng': 'o' };
   const tagTT = (t, qh) => '<span class="tag t-' + (qh ? 'b' : MAU_TT[t] || 'c') + '">' + esc(qh ? 'Quá hạn' : t) + '</span>';
+  const oQR = (q) => '<a class="tile" href="#/' + q + '">' + bieu(q) + (QR_AI[q] ? '<span class="ai">' + QR_AI[q] + '</span>' : '') + '<span class="q">' + q + '</span>' + QR_TEN[q] + '</a>';
+  // thông báo hạn trả cho người đăng ký: đơn đang mượn / đang dùng quá hạn hoặc đến hạn hôm nay – ngày mai; hồ sơ đề tài quá hạn
+  function canhBaoHan(r) {
+    const hn = homNay(), mai = homNay(1), qua = (s) => Math.max(1, Math.round((new Date(hn) - new Date(String(s).slice(0, 10))) / 864e5));
+    const ten = (d) => [d.qr + ' ' + d.id, (d.ten_tb || []).join(', ') || (d.tu ? 'tủ ' + d.tu + ' (' + d.phong + ')' : '') || (d.nd.dong || []).map(x => x.ten).join(', ') || (d.phong ? 'phòng ' + d.phong : '')].filter(Boolean).join(' – ');
+    const dang = r.don.filter(d => (d.trang_thai === 'Đang mượn' || d.trang_thai === 'Đang dùng') && d.den_ngay && d.qr !== 'QR5');
+    const hs = r.ho_so.filter(x => ['Đã duyệt – đang thực hiện', 'Gia hạn', 'Chờ trả đồ'].indexOf(x.trang_thai) >= 0 && x.den_ngay && x.den_ngay < hn);
+    return dang.filter(d => d.qua_han).map(d => '<div class="warn han-qua">⚠ <b>Quá hạn trả</b>: ' + esc(ten(d)) + ' – hạn ' + esc(ngayVN(d.den_ngay)) + ' (quá ' + qua(d.den_ngay) + ' ngày)' +
+        (d.nd.so_lan_doi ? '. PTN đã nhắc ' + d.nd.so_lan_doi + ' lần' : '') + '. Vui lòng trả ngay cho PTN hoặc liên hệ PTN để gia hạn.</div>').join('') +
+      hs.map(x => '<div class="warn han-qua">⚠ <b>Hồ sơ đề tài quá hạn</b>: ' + esc(x.id + ' – ' + x.ten) + ' – hết hạn ' + esc(ngayVN(x.den_ngay)) + '. Gia hạn ở mục "Sửa hồ sơ" hoặc trả đồ cho PTN.</div>').join('') +
+      dang.filter(d => !d.qua_han && d.den_ngay.slice(0, 10) <= mai).map(d => '<div class="warn han-sap" style="background:#FFF8E1;border-color:#F2D58A;color:#6B4A00">⏰ <b>Sắp đến hạn trả</b>: ' + esc(ten(d)) + ' – hạn ' +
+        (d.den_ngay.slice(0, 10) === hn ? 'hôm nay' : 'ngày mai') + ' ' + esc(ngayVN(d.den_ngay)) + '.</div>').join('');
+  }
   async function trangChu() {
     $('hb').classList.add('hide'); nutLui(false);
     const p = hoSo();
     let h = '<div class="card prof"><div class="av">' + esc((p.ho_ten || '?').trim().split(' ').pop().charAt(0)) + '</div><div class="i"><b>' + esc(p.ho_ten) + '</b><span>' + esc([p.ma_so, ngGui().doi_tuong, p.lop].filter(Boolean).join(' · ')) +
       '</span></div><a class="lnk" href="#/ho-so">Sửa</a></div><div id="tb"></div><div class="tieu-de-nhom">Đăng ký – biểu mẫu</div><div class="grid">' +
-      Object.keys(QR_TEN).map(q => '<a class="tile" href="#/' + q + '">' + bieu(q) + (QR_AI[q] ? '<span class="ai">' + QR_AI[q] + '</span>' : '') + '<span class="q">' + q + '</span>' + QR_TEN[q] + '</a>').join('') +
-      '</div><div class="tieu-de-nhom">Giảng viên – thiết bị</div><div class="grid">' +
-      '<a class="tile" href="#/QR2">' + bieu('QR2') + '<span class="qv">QR2</span>Mượn thiết bị dài ngày</a>' +
-      Object.keys(GV().LOAI).map(q => '<a class="tile" href="#/' + q + '">' + bieu(q) + '<span class="qv">' + q + '</span>' + esc(GV().LOAI[q].ten) + '</a>').join('') +
+      Object.keys(QR_TEN).filter(q => QR_GV.indexOf(q) < 0).map(oQR).join('') +
+      '</div><div class="tieu-de-nhom">Giảng viên – thiết bị</div><div class="grid">' + QR_GV.map(oQR).join('') +
+      Object.keys(GV().LOAI).filter(q => !GV().LOAI[q].ngung).map(q => '<a class="tile" href="#/' + q + '">' + bieu(q) + '<span class="qv">' + q + '</span>' + esc(GV().LOAI[q].ten) + '</a>').join('') +
       '</div><div class="tieu-de-nhom">Tiện ích</div><div class="grid"><a class="tile t2" href="#/don-cua-toi">' + bieu('cua_toi') + '<span><b>Đơn của tôi</b><br><span class="note" id="dem-don">Trạng thái các đơn đã gửi</span></span></a>' +
       '<a class="tile t2" href="#/bieu-mau">' + bieu('mau') + '<span><b>Biểu mẫu PTN</b><br><span class="note">Mẫu đơn, phiếu trống</span></span></a></div>' +
       (navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ? '' : '<div class="card note" style="margin-top:14px"><b>Cài như ứng dụng:</b> iPhone (Safari): bấm Chia sẻ → <i>Thêm vào MH chính</i>. Android (Chrome): bấm ⋮ → <i>Thêm vào màn hình chính</i>.</div>') +
@@ -169,6 +183,7 @@
       const mo = r.don.filter(d => ['Chờ duyệt', 'Đã duyệt', 'Đang mượn', 'Đang dùng', 'Đang xử lý'].indexOf(d.trang_thai) >= 0).length + r.ho_so.filter(x => ['Đã đóng', 'Từ chối'].indexOf(x.trang_thai) < 0).length;
       const dang = r.don.find(d => d.qr === 'QR5' && d.trang_thai === 'Đang dùng');
       if ($('dem-don')) $('dem-don').innerHTML = mo ? '<b style="color:var(--b)">' + mo + ' đơn đang xử lý</b>' : 'Trạng thái các đơn đã gửi';
+      if ($('tb')) $('tb').insertAdjacentHTML('beforeend', canhBaoHan(r));
       if (dang && $('tb')) $('tb').insertAdjacentHTML('beforeend', '<div class="warn">⏱ Bạn đang sử dụng ' + esc(dang.ten_tb.join(', ') || 'phòng ' + dang.phong) + ' từ ' + esc(dang.tu_ngay.slice(11)) + '. <a href="#/don-cua-toi">Bấm "Kết thúc sử dụng" khi xong</a>.</div>');
     } catch (e) { if ($('tb')) $('tb').innerHTML = '<div class="warn">' + esc(e.message) + '</div>'; }
   }
@@ -521,7 +536,7 @@
     try { r = await api('ck_cua_toi', { khoa: may().khoa }); } catch (e) { M('<h2>Đơn của tôi</h2><div class="warn">' + esc(e.message) + '</div>'); return; }
     const chiTiet = (d) => /^GV-/.test(d.qr) ? GV().tomTat(d) : [d.phong && 'Phòng ' + d.phong, d.tu && 'Tủ ' + d.tu, d.ten_tb.length && d.ten_tb.join(', '), d.lop_hp && 'LHP ' + d.lop_hp, d.hs && 'Đề tài ' + d.hs,
       (d.nd.dong || []).length && d.nd.dong.map(x => x.ten + ' ' + x.sl + (x.dvt ? ' ' + x.dvt : '')).join('; '), d.tu_ngay && 'Từ ' + ngayVN(d.tu_ngay), d.den_ngay && (d.qr === 'QR5' ? 'đến ' : 'hạn ') + ngayVN(d.den_ngay)].filter(Boolean).join(' · ');
-    let h = '<h2>Đơn của tôi</h2><p class="note">Các đơn gửi từ điện thoại này (mã máy ' + esc(may().ma) + ').</p>';
+    let h = '<h2>Đơn của tôi</h2><p class="note">Các đơn gửi từ điện thoại này (mã máy ' + esc(may().ma) + ').</p>' + canhBaoHan(r);
     if (r.ho_so.length) h += '<div class="sec">Hồ sơ đề tài (QR7)</div>' + r.ho_so.map(x => '<div class="card"><div class="dong-don"><b>' + esc(x.id) + '</b>' + tagTT(x.trang_thai) + '</div><div>' + esc(x.ten) + '</div><div class="note">' +
       esc(x.ten_loai + ' · GVHD ' + x.gvhd + ' · ' + x.nhom.length + ' thành viên' + (x.phong ? ' · ' + x.phong : '') + (x.den_ngay ? ' · đến ' + ngayVN(x.den_ngay) : '')) + '</div>' +
       (x.le_phi ? '<div class="note">Lệ phí: ' + esc(x.le_phi) + (x.thu_phi ? ' – <b>đã thu ' + Number(x.thu_phi.so_tien).toLocaleString('vi-VN') + ' đ</b>' : ' – chưa thu') + '</div>' : '') +
@@ -577,7 +592,7 @@
         if (p[0] === 'QR7' && p[1]) { const r = await api('ck_cua_toi', { khoa: may().khoa }), x = r.ho_so.find(h => h.id === p[1]); return x ? trangQR7(x) : trangDonCuaToi(); }
         return await trangQR(p[0]);
       }
-      if (/^GV-(BH|SC|BS|BG|TS)$/.test(p[0])) return await trangGV(p[0]);
+      if (/^GV-(BH|SC|BS|TS)$/.test(p[0])) return await trangGV(p[0]); // GV-BG: đã bỏ (25/10/2026)
       if (p[0] === 'ho-so') return trangHoSo(false);
       if (p[0] === 'don-cua-toi') return await trangDonCuaToi();
       if (p[0] === 'bieu-mau') return trangBieuMau();
