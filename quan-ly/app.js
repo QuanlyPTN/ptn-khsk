@@ -24,6 +24,15 @@
   function luuTk(tk, nho) {
     try { localStorage.removeItem(KHOA_TK); sessionStorage.removeItem(KHOA_TK); (nho ? localStorage : sessionStorage).setItem(KHOA_TK, tk); } catch (e) { /* trình duyệt chặn lưu trữ */ }
   }
+  // Menu trái trên máy tính: ghim (luôn hiện) hoặc tự ẩn (rê chuột vào mép trái để hiện) – nhớ theo từng máy
+  function menuTuAn(dat) {
+    try { if (dat === undefined) return localStorage.getItem('ptn_menu_tu_an') === '1'; localStorage.setItem('ptn_menu_tu_an', dat ? '1' : '0'); } catch (e) { /* trình duyệt chặn lưu trữ */ }
+    return false;
+  }
+  function datNutGhim() {
+    const an = $('layout').classList.contains('tu-an'), b = $('b-ghim-menu');
+    b.textContent = an ? '📌' : '«'; b.title = an ? 'Ghim menu (luôn hiện)' : 'Tự ẩn menu (rê chuột vào mép trái để hiện)'; b.setAttribute('aria-label', b.title);
+  }
   function docTk() { try { return localStorage.getItem(KHOA_TK) || sessionStorage.getItem(KHOA_TK); } catch (e) { return null; } }
   function xoaTk() { try { [localStorage, sessionStorage].forEach(k => { k.removeItem(KHOA_TK); k.removeItem(KHOA_TOI); }); } catch (e) { /* bỏ qua */ } }
   // Lưu thông tin "tôi" (tên, quyền, danh mục) cùng chỗ với phiên: lần mở sau hiện trang ngay, máy chủ trả lời thì cập nhật lại
@@ -217,7 +226,8 @@
     document.body.classList.add('in');
     const n = S.toi.nguoi;
     $('app').innerHTML = (DEMO ? '<div class="demo-bar">' + thanhDemo() + '</div>' : '') +
-      '<div class="layout"><aside class="side" id="side"><div class="brand co-logo">' + logo() + '<b>Quản lý PTN</b></div>' +
+      '<div class="layout' + (menuTuAn() ? ' tu-an' : '') + '" id="layout"><aside class="side" id="side"><button class="tab-menu" id="b-tab-menu" title="Hiện menu" aria-label="Hiện menu">☰</button>' +
+      '<div class="brand co-logo">' + logo() + '<b>Quản lý PTN</b><button class="ghim-menu" id="b-ghim-menu"></button></div>' +
       '<nav class="nav" id="nav">' + MENU.filter(m => m[3] ? laAdmin() : coQuyen(m[0], 'xem')).map(m => (NHOM_MENU[m[0]] ? '<div class="nav-nhom"><span data-t="' + NHOM_MENU[m[0]] + '">' + NHOM_MENU[m[0]] + '</span></div>' : '') +
         '<a href="#/' + m[0] + '" data-m="' + m[0] + '" title="' + esc(m[2]) + '"><span class="ico">' + icon(m[0]) + '</span>' + m[2] + '</a>').join('') + '</nav>' +
       (coQuyen('don', 'xem') && 'Notification' in window && Notification.permission === 'default' ? '<button class="bat-tb" id="b-bat-tb">🔔 Bật thông báo đơn mới trên máy này</button>' : '') +
@@ -226,6 +236,9 @@
       '<main class="main" id="main"></main></div>';
     $('b-thoat').onclick = async () => { if (!confirm('Thoát khỏi hệ thống trên máy này?')) return; try { await api('dang_xuat'); } catch (e) { /* phiên đã hết */ } xoaTk(); S.tk = null; manDangNhap(); };
     $('nav').addEventListener('click', () => $('side').classList.remove('open'));
+    datNutGhim();
+    $('b-ghim-menu').onclick = () => { const an = !$('layout').classList.contains('tu-an'); $('layout').classList.toggle('tu-an', an); $('side').classList.remove('open'); menuTuAn(an); datNutGhim(); };
+    $('b-tab-menu').onclick = () => $('side').classList.toggle('open');
     const nutTB = $('b-bat-tb');
     if (nutTB) nutTB.onclick = () => Notification.requestPermission().then(q => { nutTB.remove(); toast(q === 'granted' ? 'Đã bật thông báo đơn mới trên máy này' : 'Trình duyệt chưa cho phép thông báo', q !== 'granted'); });
     theoDoiDon();
