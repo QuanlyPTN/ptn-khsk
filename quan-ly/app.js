@@ -561,8 +561,14 @@
     }
     const hk = hkMacDinh(), [ds, mons] = await Promise.all([api('lop_ds', { hk }), api('mon_ds')]);
     const tenMon = {}; mons.forEach(m => { tenMon[m.ma] = m.ten; });
+    // các file TKB đã tải vào học kỳ (cộng dồn)
+    const gTep = {}; ds.forEach(l => { const x = gTep[l.tep || ''] = gTep[l.tep || ''] || { tep: l.tep || '', so: 0, mon: new Set(), luc: '' }; x.so++; x.mon.add(l.ten_mon); if ((l.tai_luc || '') > x.luc) x.luc = l.tai_luc; });
+    const tepTKB = Object.keys(gTep).map(k => Object.assign(gTep[k], { mon: gTep[k].mon.size })).sort((a, b) => (b.luc || '').localeCompare(a.luc || ''));
     const chua = ds.filter(l => !l.mon && !l.khong_du_tru), nhomChua = {}, khongDT = [...new Set(ds.filter(l => l.khong_du_tru).map(l => l.ten_mon))]; chua.forEach(l => { nhomChua[l.ten_mon] = (nhomChua[l.ten_mon] || 0) + 1; });
-    nd.innerHTML = '<div class="tools"><b>Học kỳ</b> ' + chonHK('f-hk') + '<button class="btn o sm" id="b-hk">+ Học kỳ</button><button class="btn sm" id="b-tkb">Nhập thời khóa biểu (file "TH & Phòng học")</button>' + (ds.length ? '<button class="btn o sm" id="b-xoa-tkb">Xóa thời khóa biểu học kỳ</button>' : '') + '</div>' +
+    nd.innerHTML = '<div class="tools"><b>Học kỳ</b> ' + chonHK('f-hk') + '<button class="btn o sm" id="b-hk">+ Học kỳ</button><button class="btn sm" id="b-tkb">Nhập thời khóa biểu (file "TH & Phòng học")</button>' + (ds.length ? '<button class="btn o sm" id="b-xoa-tkb">Xóa toàn bộ TKB học kỳ</button>' : '') + '</div>' +
+      (tepTKB.length ? '<div class="card" style="margin-bottom:12px"><h2>File thời khóa biểu đã tải – ' + esc(hk) + ' (' + tepTKB.length + ' file, cộng dồn)</h2><div class="tbl-wrap"><table><thead><tr><th>File</th><th class="num">Dòng lịch</th><th class="num">Môn</th><th>Tải lúc</th><th></th></tr></thead><tbody>' +
+        tepTKB.map(x => '<tr><td><b>' + esc(x.tep || '(tải trước khi quản lý theo file)') + '</b></td><td class="num">' + x.so + '</td><td class="num">' + x.mon + '</td><td>' + esc(x.luc ? ngayVN(x.luc) : '') + '</td><td><button class="btn red sm o" data-xoa-tep="' + esc(x.tep) + '">Xóa file này</button></td></tr>').join('') +
+        '</tbody></table></div><p class="note">Mỗi bộ môn tải file thời khóa biểu của mình vào cùng học kỳ – các file được cộng dồn. Tải lại file cùng tên thì thay phần của file đó; dòng trùng với file khác được bỏ qua. Xóa / tải nhầm: thu hồi được ở Hệ thống › Lịch sử tải file.</p></div>' : '') +
       (chua.length ? '<div class="card" style="border-color:#E7B4B0"><h2 style="color:var(--bad)">' + chua.length + ' ca chưa khớp môn có định mức</h2>' + Object.keys(nhomChua).map(t => '<div class="btns" style="margin-bottom:6px"><span>• ' + esc(t) + ' (' + nhomChua[t] + ' ca)</span><button class="btn o sm" data-gan="' + esc(t) + '">Gán môn…</button></div>').join('') + '<p class="note">Ca chưa khớp sẽ không được tính dự trù và không có biên bản. Môn không dùng hóa chất – dụng cụ (Yoga, lý thuyết…): bấm "Gán môn…" → chọn "Môn không cần dự trù".</p></div>' : '') +
       (khongDT.length ? '<div class="card note" style="margin-bottom:12px"><b>Môn không cần dự trù hóa chất – dụng cụ (' + khongDT.length + '):</b> ' + khongDT.map(t => esc(t) + ' <button class="lnk" data-bo-kdt="' + esc(t) + '">bỏ đánh dấu</button>').join(' · ') + '</div>' : '') +
       (ds.length ? bangTheoMon(ds, tenMon) : '<div class="card empty">Học kỳ này chưa có thời khóa biểu. Bấm "Nhập thời khóa biểu".</div>');
@@ -572,19 +578,25 @@
       nd.querySelectorAll('tr.ct-mon').forEach(t => { t.hidden = !mo; t.previousElementSibling.querySelector('.mui').textContent = mo ? '▾' : '▸'; }); $('b-mo-mon').textContent = mo ? 'Thu gọn tất cả' : 'Mở tất cả các môn'; };
     $('f-hk').onchange = (e) => { S.hk = e.target.value; dieuHuong(); };
     $('b-hk').onclick = hopHocKy;
+    nd.querySelectorAll('[data-xoa-tep]').forEach(b => { b.onclick = async (e) => { const tep = b.dataset.xoaTep;
+      if (!confirm('Xóa thời khóa biểu của file "' + (tep || '(tải trước khi quản lý theo file)') + '" khỏi ' + hk + '? Các file khác giữ nguyên.\n(Thu hồi lại được ở Hệ thống › Lịch sử tải file.)')) return;
+      const r = await chay(e.target, () => api('lop_xoa_tep', { hk, tep })); toast('Đã xóa ' + r.xoa + ' dòng lịch của file'); dieuHuong(); }; });
     if ($('b-xoa-tkb')) $('b-xoa-tkb').onclick = async (e) => {
-      if (!confirm('Xóa toàn bộ ' + ds.length + ' ca thực hành của ' + hk + '?\n(Biên bản đã tạo không bị xóa. Thu hồi lại được ở Hệ thống › Lịch sử tải file.)')) return;
+      if (!confirm('Xóa TOÀN BỘ ' + ds.length + ' dòng lịch của ' + tepTKB.length + ' file trong ' + hk + '?\n(Muốn xóa một file thì dùng nút "Xóa file này". Biên bản đã tạo không bị xóa. Thu hồi lại được ở Hệ thống › Lịch sử tải file.)')) return;
       const r = await chay(e.target, () => api('lop_xoa_hk', { hk })); toast('Đã xóa ' + r.xoa + ' ca – thu hồi được ở Lịch sử tải file'); dieuHuong();
     };
-    $('b-tkb').onclick = () => hopFileExcel('Nhập thời khóa biểu thực hành – ' + hk, 'Chọn file có trang "TH & Phòng học" (ví dụ "BBBG hoc chat HKI 26-27.xlsm"). Thời khóa biểu cũ của học kỳ này sẽ được thay.', (rows, ten, all) => {
+    const tenTep = () => ((($('x-file') || {}).files || [])[0] || {}).name || '';
+    $('b-tkb').onclick = () => hopFileExcel('Nhập thời khóa biểu thực hành – ' + hk, 'Chọn file thời khóa biểu (của Trường hoặc file "TH & Phòng học"; chỉ lấy ca thực hành). Mỗi bộ môn một file – các file của cùng học kỳ được <b>cộng dồn</b>; tải lại file cùng tên thì thay phần của file đó.', (rows, ten, all) => {
       const l = docTKB(rows);
       $('x-kq').innerHTML = hopFileExcel.chonSheet(ten) + '<p>Đọc được <b>' + l.length + '</b> dòng lịch thực hành (TH), ' + new Set(l.map(x => x.ten_mon)).size + ' môn, ' + new Set(l.map(x => x.ma_lhp.slice(0, 10))).size + ' học phần' +
-        (l.bo_lt ? '; <b>bỏ qua ' + l.bo_lt + ' dòng lý thuyết (LT)</b>' : '') + '.</p>' + (l.length ? '' : '<p class="err">Không có ca thực hành nào – kiểm tra lại trang tính / cột "Loại lịch".</p>') +
+        (l.bo_lt ? '; <b>bỏ qua ' + l.bo_lt + ' dòng lý thuyết (LT)</b>' : '') + '.</p>' +
+        (tepTKB.some(x => x.tep && x.tep === tenTep()) ? '<p class="err">File cùng tên "' + esc(tenTep()) + '" đã tải vào ' + esc(hk) + ' – phần của file đó sẽ được thay bằng file này; các file khác giữ nguyên.</p>'
+          : tepTKB.length ? '<p class="note">Cộng dồn vào ' + esc(hk) + ' (đang có ' + tepTKB.length + ' file); dòng trùng với file khác được bỏ qua.</p>' : '') + (l.length ? '' : '<p class="err">Không có ca thực hành nào – kiểm tra lại trang tính / cột "Loại lịch".</p>') +
         '<div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn" id="x-ok">Nhập vào ' + esc(hk) + '</button></div>';
       hopFileExcel.ganSheet();
       $('x-ok').onclick = async (e) => { const r = await chay(e.target, () => api('lop_nhap', { hk, ds: l, dong_bo: true })); dongHop();
         const tao = r.bien_ban ? r.bien_ban.reduce((a, b) => a + b.tao.length, 0) : 0, cn = r.bien_ban ? r.bien_ban.reduce((a, b) => a + b.cap_nhat.length, 0) : 0;
-        toast('Đã nhập ' + r.them + ' ca' + (r.khong_khop_mon.length ? '; ' + r.khong_khop_mon.length + ' môn chưa khớp' : '') + (tao || cn ? ' · biên bản: ' + tao + ' tạo mới, ' + cn + ' cập nhật' : '')); dieuHuong(); };
+        toast('Đã thêm ' + r.them + ' dòng lịch' + (r.thay ? ' (thay ' + r.thay + ' dòng của lần tải trước cùng file)' : '') + (r.trung ? ', bỏ ' + r.trung + ' dòng trùng file khác' : '') + (r.khong_khop_mon.length ? '; ' + r.khong_khop_mon.length + ' môn chưa khớp' : '') + (tao || cn ? ' · biên bản: ' + tao + ' tạo mới, ' + cn + ' cập nhật' : '')); dieuHuong(); };
     }, /ph[oò]ng|th[ựu]c h[àa]nh/i);
     nd.querySelectorAll('[data-gan]').forEach(b => { b.onclick = () => {
       moHop('<h2>Gán môn cho "' + esc(b.dataset.gan) + '"</h2><form id="f">' + o('mon', 'Môn có định mức', { select: [['', '— Chọn môn —'], ['~khong', '⊘ Môn không cần dự trù hóa chất – dụng cụ']].concat(mons.map(m => [m.ma, m.ten + ' (' + m.so_hc + ' dòng HC)'])),
