@@ -54,7 +54,7 @@
         if (x) {
           const s2 = typeof sl(x) === 'object' ? sl(x) : { v: sl(x) };
           o.push({ v: i + 1, can: 'c', vien: 1 }, { v: x.ten, vien: 1 }, { v: x.ma_vt || (x.dm !== '' ? 'Chưa MVT' : ''), can: 'c', vien: 1 }, { v: x.nsx || '', can: 'c', vien: 1 }, { v: x.dvt || '', can: 'c', vien: 1 },
-            { v: x.dm === '' ? '' : r3(x.dm), can: 'r', vien: 1 }, Object.assign({ can: 'r', vien: 1 }, x.sl === '' ? { v: '' } : s2), { v: x.tru > 0 ? 'Đã trừ ' + r3(x.tru) + ' đã nhận' : '', vien: 1, co: 9, i: 1 });
+            { v: x.dm === '' ? '' : r3(x.dm), can: 'r', vien: 1 }, Object.assign({ can: 'r', vien: 1 }, x.sl === '' ? { v: '' } : s2), { v: '', vien: 1, co: 9, i: 1 });
         } else for (let j = 0; j < 8; j++) o.push({ v: '', vien: 1 });
         t2.push({ cao: 19, o });
       }
