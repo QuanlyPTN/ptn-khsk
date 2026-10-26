@@ -527,7 +527,7 @@
 
   async function manHoaChat(tab, phu) {
     if (!coQuyen('hoa-chat', 'xem')) { location.hash = '#/tong-quan'; return; }
-    const TAB = [['hoc-ky', 'Học kỳ & thời khóa biểu'], ['mon', 'Môn & định mức'], ['vat-tu', 'Danh mục vật tư'], ['du-tru-mon', 'Dự trù của các môn học'], ['du-tru', 'Dự trù theo đợt']];
+    const TAB = [['hoc-ky', 'Học kỳ & thời khóa biểu'], ['mon', 'Môn & định mức'], ['vat-tu', 'Danh mục vật tư'], ['du-tru-mon', 'Dự trù hóa chất ' + (hkMacDinh() || 'HK')], ['du-tru', 'Dự trù theo đợt']];
     const nd = trang('Hóa chất – vật tư', '', '<span class="btns">' + TAB.map(t => '<a class="btn sm ' + (t[0] === tab ? 'chon' : 'o') + '" href="#/hoa-chat/' + t[0] + '">' + t[1] + '</a>').join('') + '</span>');
     if (tab === 'mon') return phu ? manMon(nd, phu) : manDsMon(nd);
     if (tab === 'vat-tu') return manVatTu(nd);
@@ -623,7 +623,11 @@
 
   async function manDsMon(nd) {
     const ds = await api('mon_ds');
-    nd.innerHTML = '<div class="tools"><button class="btn sm" id="b-kh">⇪ Tải file định mức hóa chất (một hay nhiều môn)</button><button class="btn sm" id="b-dc">⇪ Tải file dụng cụ của một môn</button><button class="btn o sm" id="b-mon">+ Môn</button></div>' +
+    nd.innerHTML = '<div class="card" style="border-color:#F2D58A;background:#FFFBEA;margin-bottom:12px"><b>📌 Môn & định mức = định mức CHUẨN của từng môn, không phải dự trù của một học kỳ.</b>' +
+      '<ul style="margin:6px 0 0 18px;padding:0"><li>Hóa chất, vật tư tiêu hao tính cho <b>1 sinh viên</b>; dụng cụ tính cho <b>1 nhóm</b> – nhập một lần, dùng lại mọi học kỳ, chỉ sửa khi môn đổi bài.</li>' +
+      '<li>Số cần cho từng học kỳ = định mức × sĩ số theo thời khóa biểu: xem / lấy ở thẻ <a href="#/hoa-chat/du-tru-mon"><b>Dự trù hóa chất ' + esc(hkMacDinh() || 'HK') + '</b></a> (chọn môn → "Lấy dự trù từ định mức", không cần tải file).</li>' +
+      '<li>Biên bản bàn giao và dự trù theo đợt cũng tự tính từ định mức này.</li></ul></div>' +
+      '<div class="tools"><button class="btn sm" id="b-kh">⇪ Tải file định mức hóa chất (một hay nhiều môn)</button><button class="btn sm" id="b-dc">⇪ Tải file dụng cụ của một môn</button><button class="btn o sm" id="b-mon">+ Môn</button></div>' +
       '<p class="note">Định mức hóa chất tính cho <b>1 sinh viên</b>; định mức dụng cụ tính cho <b>1 nhóm thực hành</b>. Đây là dữ liệu cốt lõi, dùng lại cho mọi học kỳ. Môn nào có file thì tải lên môn đó – biên bản bàn giao và dự trù của học kỳ đang chọn tự cập nhật.</p>' +
       (ds.length ? '<div class="tbl-wrap"><table><thead><tr><th>Mã</th><th>Môn thực hành</th><th>Mã học phần</th><th class="num">Dòng hóa chất</th><th class="num">Dòng dụng cụ</th></tr></thead><tbody>' +
         ds.map(m => '<tr class="click" data-ma="' + esc(m.ma) + '"><td class="mono">' + esc(m.ma) + '</td><td><b>' + esc(m.ten) + '</b></td><td class="mono">' + esc(m.ma_hp) + '</td><td class="num">' + (m.so_hc || '<span class="tag t-warn">0</span>') + '</td><td class="num">' + (m.so_dc || '—') + '</td></tr>').join('') + '</tbody></table></div>'
