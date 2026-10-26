@@ -577,7 +577,8 @@
     };
     $('b-tkb').onclick = () => hopFileExcel('Nhập thời khóa biểu thực hành – ' + hk, 'Chọn file có trang "TH & Phòng học" (ví dụ "BBBG hoc chat HKI 26-27.xlsm"). Thời khóa biểu cũ của học kỳ này sẽ được thay.', (rows, ten, all) => {
       const l = docTKB(rows);
-      $('x-kq').innerHTML = hopFileExcel.chonSheet(ten) + '<p>Đọc được <b>' + l.length + '</b> ca thực hành, ' + l.reduce((a, x) => a + x.si_so, 0) + ' lượt SV, ' + new Set(l.map(x => x.ma_lhp.slice(0, 10))).size + ' học phần.</p>' +
+      $('x-kq').innerHTML = hopFileExcel.chonSheet(ten) + '<p>Đọc được <b>' + l.length + '</b> dòng lịch thực hành (TH), ' + new Set(l.map(x => x.ten_mon)).size + ' môn, ' + new Set(l.map(x => x.ma_lhp.slice(0, 10))).size + ' học phần' +
+        (l.bo_lt ? '; <b>bỏ qua ' + l.bo_lt + ' dòng lý thuyết (LT)</b>' : '') + '.</p>' + (l.length ? '' : '<p class="err">Không có ca thực hành nào – kiểm tra lại trang tính / cột "Loại lịch".</p>') +
         '<div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn" id="x-ok">Nhập vào ' + esc(hk) + '</button></div>';
       hopFileExcel.ganSheet();
       $('x-ok').onclick = async (e) => { const r = await chay(e.target, () => api('lop_nhap', { hk, ds: l, dong_bo: true })); dongHop();
@@ -1092,9 +1093,13 @@
     const C = { lhp: t2(/ma lhp/), mon: t2(/ten mon/), lop: t2(/^lop hoc$/), lopdk: t2(/lop du kien/), thu: t2(/^thu$/), loai: t2(/loai lich/),
       tu: t2(/tu tiet/), den: t2(/den tiet/), nhom: t2(/^nhom$/), ss: t2(/^si so|^sy so/), bd: t2(/bat dau/), kt: t2(/ket thuc/), phong: t2(/phong/), gv: t2(/giang vien/) };
     const gv = (v) => chu(v).replace(/^[A-Z]{0,3}\d{5,}\s*-\s*/, '').replace(/[,;\s]+$/, ''); // "01140029 - Lâm Khắc Kỷ," → "Lâm Khắc Kỷ"
-    return rows.slice(h + 1).filter(r => r && /^\d{6,}/.test(chu(r[C.lhp])) && (C.loai < 0 || !chu(r[C.loai]) || /th/i.test(chu(r[C.loai])))).map(r => ({
+    // chỉ lấy ca thực hành: cột "Loại lịch" = TH (bỏ LT); file không có cột này thì lấy mọi dòng
+    const coMa = rows.slice(h + 1).filter(r => r && /^\d{6,}/.test(chu(r[C.lhp]))), laTH = (r) => C.loai < 0 || !chu(r[C.loai]) || /\bTH\b/i.test(chu(r[C.loai]));
+    const kq = coMa.filter(laTH).map(r => ({
       ma_lhp: chu(r[C.lhp]), ten_mon: chu(r[C.mon]), lop: chu(r[C.lopdk]) || chu(r[C.lop]), nhom: chu(r[C.nhom]), si_so: so1(r[C.ss]), thu: chu(r[C.thu]),
       tiet: [chu(r[C.tu]), chu(r[C.den])].filter(Boolean).join('–'), bat_dau: chuanNgay(r[C.bd]), ket_thuc: chuanNgay(r[C.kt]), phong: chu(r[C.phong]), gv: gv(r[C.gv]) }));
+    kq.bo_lt = coMa.length - kq.length; // số dòng lý thuyết đã bỏ
+    return kq;
   }
   // File danh mục mã vật tư của Trường
   function docMaVT(rows) {
