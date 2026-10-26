@@ -535,6 +535,25 @@
     return manHocKy(nd);
   }
 
+  // Thời khóa biểu gom theo môn thực hành: mỗi môn một dòng (số lớp học phần, nhóm, lớp, sĩ số, giảng viên, phòng, thời gian);
+  // một nhóm (mã LHP + nhóm) có thể có nhiều dòng lịch (đổi thứ / tuần) – sĩ số, số nhóm tính theo nhóm
+  function bangTheoMon(ds, tenMon) {
+    const khoaNhom = (l) => l.nhom ? l.ma_lhp + '|' + l.nhom : '#' + l.id, uniq = (a) => a.filter((x, i) => x && a.indexOf(x) === i);
+    const siSo = (a) => { const da = {}; return a.reduce((s, l) => { const k = khoaNhom(l); if (da[k]) return s; da[k] = 1; return s + (+l.si_so || 0); }, 0); };
+    const soNhom = (a) => new Set(a.map(khoaNhom)).size, tenM = (k) => k.charAt(0) === '~' ? k.slice(1) : tenMon[k] || k;
+    const g = {}; ds.forEach(l => { const k = l.mon || '~' + l.ten_mon; (g[k] = g[k] || []).push(l); });
+    const ks = Object.keys(g).sort((a, b) => tenM(a).localeCompare(tenM(b), 'vi'));
+    const ngay = (a) => { const bd = a.map(l => l.bat_dau).filter(Boolean).sort(), kt = a.map(l => l.ket_thuc).filter(Boolean).sort(); return bd.length ? ngayVN(bd[0]) + ' → ' + ngayVN(kt[kt.length - 1] || '') : ''; };
+    return '<p class="note"><b>' + ks.length + '</b> môn thực hành · <b>' + new Set(ds.map(l => l.ma_lhp)).size + '</b> lớp học phần · <b>' + soNhom(ds) + '</b> nhóm · ' + ds.length + ' dòng lịch · ' + siSo(ds) + ' lượt SV' +
+      ' <button class="btn o sm" id="b-mo-mon" style="margin-left:8px">Mở tất cả các môn</button></p><div class="tbl-wrap"><table class="tkb-mon"><thead><tr><th style="width:24px"></th><th>Môn thực hành</th><th class="num">Lớp HP</th><th class="num">Nhóm</th><th>Lớp</th><th class="num">Sĩ số</th><th>Giảng viên</th><th>Phòng</th><th>Thời gian</th></tr></thead>' +
+      ks.map(k => { const a = g[k].slice().sort((x, y) => (x.ma_lhp + x.nhom + x.bat_dau).localeCompare(y.ma_lhp + y.nhom + y.bat_dau)), khop = k.charAt(0) !== '~', tenTKB = uniq(a.map(l => l.ten_mon));
+        return '<tbody><tr class="click" data-mon="' + esc(k) + '"><td class="mui">▸</td><td><b>' + esc(tenM(k)) + '</b>' + (khop ? ' <a class="note" href="#/hoa-chat/mon/' + esc(k) + '">định mức ›</a>' : ' <span class="tag t-bad">chưa khớp môn định mức</span>') +
+          (khop && tenTKB.join('') !== tenM(k) ? '<div class="note">TKB: ' + esc(tenTKB.join('; ')) + '</div>' : '') + '</td><td class="num">' + new Set(a.map(l => l.ma_lhp)).size + '</td><td class="num">' + soNhom(a) + '</td><td>' + esc(uniq(a.map(l => l.lop)).join(', ')) + '</td>' +
+          '<td class="num">' + siSo(a) + '</td><td>' + esc(uniq(a.map(l => l.gv)).join('; ')) + '</td><td>' + esc(uniq(a.map(l => l.phong)).join(', ')) + '</td><td style="white-space:nowrap">' + ngay(a) + '</td></tr>' +
+          '<tr class="ct-mon" hidden><td></td><td colspan="8"><table class="tkb-ca"><thead><tr><th>Mã LHP</th><th>Lớp</th><th>Nhóm</th><th class="num">Sĩ số</th><th>Thứ – tiết</th><th>Thời gian</th><th>Phòng</th><th>Giảng viên</th></tr></thead><tbody>' +
+          a.map(l => '<tr><td class="mono">' + esc(l.ma_lhp) + '</td><td>' + esc(l.lop) + '</td><td>' + esc(l.nhom) + '</td><td class="num">' + esc(l.si_so) + '</td><td>' + esc(l.thu ? 'T' + l.thu + (l.tiet ? ' · tiết ' + l.tiet : '') : '') + '</td>' +
+            '<td style="white-space:nowrap">' + ngayVN(l.bat_dau) + ' → ' + ngayVN(l.ket_thuc) + '</td><td>' + esc(l.phong) + '</td><td>' + esc(l.gv) + '</td></tr>').join('') + '</tbody></table></td></tr></tbody>'; }).join('') + '</table></div>';
+  }
   async function manHocKy(nd) {
     if (!(S.dm.hoc_ky || []).length) {
       nd.innerHTML = '<div class="card"><h2>Chưa có học kỳ</h2><p>Bước 1: tạo học kỳ. Bước 2: nhập thời khóa biểu thực hành (file "TH & Phòng học"). Bước 3: nhập định mức ở thẻ "Môn & định mức".</p><button class="btn" id="b-hk">+ Tạo học kỳ</button></div>';
@@ -545,10 +564,11 @@
     const chua = ds.filter(l => !l.mon), nhomChua = {}; chua.forEach(l => { nhomChua[l.ten_mon] = (nhomChua[l.ten_mon] || 0) + 1; });
     nd.innerHTML = '<div class="tools"><b>Học kỳ</b> ' + chonHK('f-hk') + '<button class="btn o sm" id="b-hk">+ Học kỳ</button><button class="btn sm" id="b-tkb">Nhập thời khóa biểu (file "TH & Phòng học")</button>' + (ds.length ? '<button class="btn o sm" id="b-xoa-tkb">Xóa thời khóa biểu học kỳ</button>' : '') + '</div>' +
       (chua.length ? '<div class="card" style="border-color:#E7B4B0"><h2 style="color:var(--bad)">' + chua.length + ' ca chưa khớp môn có định mức</h2>' + Object.keys(nhomChua).map(t => '<div class="btns" style="margin-bottom:6px"><span>• ' + esc(t) + ' (' + nhomChua[t] + ' ca)</span><button class="btn o sm" data-gan="' + esc(t) + '">Gán môn…</button></div>').join('') + '<p class="note">Ca chưa khớp sẽ không được tính dự trù và không có biên bản.</p></div>' : '') +
-      (ds.length ? '<p class="note">' + ds.length + ' ca thực hành · ' + ds.reduce((a, l) => a + (+l.si_so || 0), 0) + ' lượt SV</p><div class="tbl-wrap"><table><thead><tr><th>Mã LHP</th><th>Môn (TKB)</th><th>Môn định mức</th><th>Lớp</th><th>Nhóm</th><th class="num">Sĩ số</th><th>Thứ – tiết</th><th>Thời gian</th><th>Phòng</th><th>Giảng viên</th></tr></thead><tbody>' +
-        ds.map(l => '<tr><td class="mono">' + esc(l.ma_lhp) + '</td><td>' + esc(l.ten_mon) + '</td><td>' + (l.mon ? '<a href="#/hoa-chat/mon/' + esc(l.mon) + '">' + esc(tenMon[l.mon] || l.mon) + '</a>' : '<span class="tag t-bad">chưa khớp</span>') + '</td><td>' + esc(l.lop) + '</td><td>' + esc(l.nhom) + '</td><td class="num">' + esc(l.si_so) +
-          '</td><td>' + esc(l.thu ? 'T' + l.thu + (l.tiet ? ' · ' + l.tiet : '') : '') + '</td><td style="white-space:nowrap">' + ngayVN(l.bat_dau) + ' → ' + ngayVN(l.ket_thuc) + '</td><td>' + esc(l.phong) + '</td><td>' + esc(l.gv) + '</td></tr>').join('') + '</tbody></table></div>'
-        : '<div class="card empty">Học kỳ này chưa có thời khóa biểu. Bấm "Nhập thời khóa biểu".</div>');
+      (ds.length ? bangTheoMon(ds, tenMon) : '<div class="card empty">Học kỳ này chưa có thời khóa biểu. Bấm "Nhập thời khóa biểu".</div>');
+    // bấm một môn → hiện / ẩn các lớp học phần, nhóm, dòng lịch của môn
+    nd.querySelectorAll('tr[data-mon]').forEach(tr => { tr.onclick = (e) => { if (e.target.closest('a')) return; const ct = tr.nextElementSibling; ct.hidden = !ct.hidden; tr.querySelector('.mui').textContent = ct.hidden ? '▸' : '▾'; }; });
+    if ($('b-mo-mon')) $('b-mo-mon').onclick = () => { const mo = [...nd.querySelectorAll('tr.ct-mon')].some(t => t.hidden);
+      nd.querySelectorAll('tr.ct-mon').forEach(t => { t.hidden = !mo; t.previousElementSibling.querySelector('.mui').textContent = mo ? '▾' : '▸'; }); $('b-mo-mon').textContent = mo ? 'Thu gọn tất cả' : 'Mở tất cả các môn'; };
     $('f-hk').onchange = (e) => { S.hk = e.target.value; dieuHuong(); };
     $('b-hk').onclick = hopHocKy;
     if ($('b-xoa-tkb')) $('b-xoa-tkb').onclick = async (e) => {
@@ -563,7 +583,7 @@
       $('x-ok').onclick = async (e) => { const r = await chay(e.target, () => api('lop_nhap', { hk, ds: l, dong_bo: true })); dongHop();
         const tao = r.bien_ban ? r.bien_ban.reduce((a, b) => a + b.tao.length, 0) : 0, cn = r.bien_ban ? r.bien_ban.reduce((a, b) => a + b.cap_nhat.length, 0) : 0;
         toast('Đã nhập ' + r.them + ' ca' + (r.khong_khop_mon.length ? '; ' + r.khong_khop_mon.length + ' môn chưa khớp' : '') + (tao || cn ? ' · biên bản: ' + tao + ' tạo mới, ' + cn + ' cập nhật' : '')); dieuHuong(); };
-    }, /ph[oò]ng/i);
+    }, /ph[oò]ng|th[ựu]c h[àa]nh/i);
     nd.querySelectorAll('[data-gan]').forEach(b => { b.onclick = () => {
       moHop('<h2>Gán môn cho "' + esc(b.dataset.gan) + '"</h2><form id="f">' + o('mon', 'Môn có định mức', { select: [['', '— Chọn môn —']].concat(mons.map(m => [m.ma, m.ten + ' (' + m.so_hc + ' dòng HC)'])) }) +
         '<label class="check"><input type="checkbox" name="ma_lhp_vao_mon" checked> Ghi nhớ mã học phần cho các học kỳ sau</label><p class="note">Môn chưa có trong danh sách: tạo ở thẻ "Môn & định mức".</p><div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Gán</button></div></form>');
@@ -1067,11 +1087,14 @@
   function docTKB(rows) {
     const h = rows.findIndex(r => r.some(c => /ma lhp/.test(boDau(chu(c)))) && r.some(c => /ten mon/.test(boDau(chu(c)))));
     if (h < 0) throw new Error('Không thấy dòng tiêu đề (cần cột "MÃ LHP", "TÊN MÔN HỌC")');
-    const H = rows[h], C = { lhp: tim(H, /ma lhp/), mon: tim(H, /ten mon/), lop: tim(H, /^lop hoc$/), lopdk: tim(H, /lop du kien/), thu: tim(H, /^thu$/),
-      tu: tim(H, /tu tiet/), den: tim(H, /den tiet/), nhom: tim(H, /^nhom$/), ss: tim(H, /si so/), bd: tim(H, /bat dau/), kt: tim(H, /ket thuc/), phong: tim(H, /phong/), gv: tim(H, /giang vien/) };
-    return rows.slice(h + 1).filter(r => r && /^\d{6,}/.test(chu(r[C.lhp]))).map(r => ({
+    // file TKB của Trường: tiêu đề 2 tầng ("Lịch học" → Thứ, Từ tiết, Đến tiết, Loại lịch, Nhóm, Sĩ số; "Thời gian học" → Bắt đầu, Kết thúc) → tìm ở cả dòng dưới
+    const H = rows[h], H2 = rows[h + 1] || [], t2 = (re) => { const i = tim(H, re); return i >= 0 ? i : tim(H2, re); };
+    const C = { lhp: t2(/ma lhp/), mon: t2(/ten mon/), lop: t2(/^lop hoc$/), lopdk: t2(/lop du kien/), thu: t2(/^thu$/), loai: t2(/loai lich/),
+      tu: t2(/tu tiet/), den: t2(/den tiet/), nhom: t2(/^nhom$/), ss: t2(/^si so|^sy so/), bd: t2(/bat dau/), kt: t2(/ket thuc/), phong: t2(/phong/), gv: t2(/giang vien/) };
+    const gv = (v) => chu(v).replace(/^[A-Z]{0,3}\d{5,}\s*-\s*/, '').replace(/[,;\s]+$/, ''); // "01140029 - Lâm Khắc Kỷ," → "Lâm Khắc Kỷ"
+    return rows.slice(h + 1).filter(r => r && /^\d{6,}/.test(chu(r[C.lhp])) && (C.loai < 0 || !chu(r[C.loai]) || /th/i.test(chu(r[C.loai])))).map(r => ({
       ma_lhp: chu(r[C.lhp]), ten_mon: chu(r[C.mon]), lop: chu(r[C.lopdk]) || chu(r[C.lop]), nhom: chu(r[C.nhom]), si_so: so1(r[C.ss]), thu: chu(r[C.thu]),
-      tiet: [chu(r[C.tu]), chu(r[C.den])].filter(Boolean).join('–'), bat_dau: chuanNgay(r[C.bd]), ket_thuc: chuanNgay(r[C.kt]), phong: chu(r[C.phong]), gv: chu(r[C.gv]) }));
+      tiet: [chu(r[C.tu]), chu(r[C.den])].filter(Boolean).join('–'), bat_dau: chuanNgay(r[C.bd]), ket_thuc: chuanNgay(r[C.kt]), phong: chu(r[C.phong]), gv: gv(r[C.gv]) }));
   }
   // File danh mục mã vật tư của Trường
   function docMaVT(rows) {
