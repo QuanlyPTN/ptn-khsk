@@ -64,8 +64,12 @@
     DEM.set(k, { t: Date.now(), v: JSON.stringify(r) });
     return r;
   }
+  // tên file vừa chọn ở hộp tải file (ô #x-file) → gửi kèm lệnh nhập để ghi vào Lịch sử tải file
+  const LENH_TAI_FILE = /^(lop_nhap|dm_nhap|vt_nhap|dtm_nhap|dt_nhap_cap|kho_nhap_ds|tb_nhap)$/;
+  document.addEventListener('change', (e) => { if (e.target && e.target.id === 'x-file' && e.target.files && e.target.files[0]) S.tepTai = e.target.files[0].name; });
   async function goiMayChu(act, data) {
     const body = Object.assign({ act, tk: S.tk }, data || {});
+    if (LENH_TAI_FILE.test(act) && S.tepTai && !body.tep) body.tep = S.tepTai;
     let j;
     if (DEMO) j = window.PTN_DEMO(body);
     else {
@@ -132,6 +136,7 @@
     'so': '<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/><path d="M8 7h8M8 11h8"/>',
     'bieu-mau': '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/>',
     'giang-vien': '<path d="M3 4h18v12H3z"/><path d="M7 20h10M12 16v4"/><circle cx="8.5" cy="9" r="2"/><path d="M5.5 14c.6-1.6 1.7-2.5 3-2.5s2.4.9 3 2.5M14 8h4M14 11h3"/>',
+    'lich-su-tai': '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/>',
     'don-qr': '<rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
     'cai-dat': '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
     'can-bo': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
@@ -203,7 +208,7 @@
     ['tong-quan', '◧', 'Hôm nay'], ['don', '✉', 'Đơn đăng ký QR1 – QR8'], ['de-tai', '✎', 'Hồ sơ đề tài KLTN – NCKH'], ['phong', '▦', 'Phòng thí nghiệm'], ['tai-san', '⚙', 'Tài sản'],
     ['kiem-dinh', '✓', 'Kiểm định – bảo dưỡng'], ['hoa-chat', '⚗', 'Hóa chất – vật tư'], ['kho', '▣', 'Kho hóa chất D11.01'], ['kho-dl', '❀', 'Kho dược liệu D11'],
     ['bien-ban', '▤', 'Biên bản bàn giao'], ['bao-cao', '▥', 'Báo cáo – thống kê'], ['so', '☷', 'Sổ theo dõi – in ấn'], ['bieu-mau', '⎙', 'Biểu mẫu PTN'],
-    ['giang-vien', '☺', 'Giảng viên'], ['don-qr', '✉', 'Đơn cũ (Google Form)'], ['cai-dat', '⚑', 'Cài đặt – mã QR tổng', 1], ['can-bo', '☺', 'Cán bộ', 1], ['nhat-ky', '☰', 'Nhật ký', 1], ['tai-khoan', '⚿', 'Tài khoản']
+    ['giang-vien', '☺', 'Giảng viên'], ['lich-su-tai', '↺', 'Lịch sử tải file'], ['don-qr', '✉', 'Đơn cũ (Google Form)'], ['cai-dat', '⚑', 'Cài đặt – mã QR tổng', 1], ['can-bo', '☺', 'Cán bộ', 1], ['nhat-ky', '☰', 'Nhật ký', 1], ['tai-khoan', '⚿', 'Tài khoản']
   ];
   const NHOM_MENU = { 'tong-quan': 'Vận hành', 'hoa-chat': 'Hóa chất – kho', 'bao-cao': 'Báo cáo – tài liệu', 'giang-vien': 'Hệ thống' };
   const TUYEN = {}; // trang do app-mo-rong.js đăng ký: { 'kho': (p) => … }
@@ -538,7 +543,7 @@
     const hk = hkMacDinh(), [ds, mons] = await Promise.all([api('lop_ds', { hk }), api('mon_ds')]);
     const tenMon = {}; mons.forEach(m => { tenMon[m.ma] = m.ten; });
     const chua = ds.filter(l => !l.mon), nhomChua = {}; chua.forEach(l => { nhomChua[l.ten_mon] = (nhomChua[l.ten_mon] || 0) + 1; });
-    nd.innerHTML = '<div class="tools"><b>Học kỳ</b> ' + chonHK('f-hk') + '<button class="btn o sm" id="b-hk">+ Học kỳ</button><button class="btn sm" id="b-tkb">Nhập thời khóa biểu (file "TH & Phòng học")</button></div>' +
+    nd.innerHTML = '<div class="tools"><b>Học kỳ</b> ' + chonHK('f-hk') + '<button class="btn o sm" id="b-hk">+ Học kỳ</button><button class="btn sm" id="b-tkb">Nhập thời khóa biểu (file "TH & Phòng học")</button>' + (ds.length ? '<button class="btn o sm" id="b-xoa-tkb">Xóa thời khóa biểu học kỳ</button>' : '') + '</div>' +
       (chua.length ? '<div class="card" style="border-color:#E7B4B0"><h2 style="color:var(--bad)">' + chua.length + ' ca chưa khớp môn có định mức</h2>' + Object.keys(nhomChua).map(t => '<div class="btns" style="margin-bottom:6px"><span>• ' + esc(t) + ' (' + nhomChua[t] + ' ca)</span><button class="btn o sm" data-gan="' + esc(t) + '">Gán môn…</button></div>').join('') + '<p class="note">Ca chưa khớp sẽ không được tính dự trù và không có biên bản.</p></div>' : '') +
       (ds.length ? '<p class="note">' + ds.length + ' ca thực hành · ' + ds.reduce((a, l) => a + (+l.si_so || 0), 0) + ' lượt SV</p><div class="tbl-wrap"><table><thead><tr><th>Mã LHP</th><th>Môn (TKB)</th><th>Môn định mức</th><th>Lớp</th><th>Nhóm</th><th class="num">Sĩ số</th><th>Thứ – tiết</th><th>Thời gian</th><th>Phòng</th><th>Giảng viên</th></tr></thead><tbody>' +
         ds.map(l => '<tr><td class="mono">' + esc(l.ma_lhp) + '</td><td>' + esc(l.ten_mon) + '</td><td>' + (l.mon ? '<a href="#/hoa-chat/mon/' + esc(l.mon) + '">' + esc(tenMon[l.mon] || l.mon) + '</a>' : '<span class="tag t-bad">chưa khớp</span>') + '</td><td>' + esc(l.lop) + '</td><td>' + esc(l.nhom) + '</td><td class="num">' + esc(l.si_so) +
@@ -546,6 +551,10 @@
         : '<div class="card empty">Học kỳ này chưa có thời khóa biểu. Bấm "Nhập thời khóa biểu".</div>');
     $('f-hk').onchange = (e) => { S.hk = e.target.value; dieuHuong(); };
     $('b-hk').onclick = hopHocKy;
+    if ($('b-xoa-tkb')) $('b-xoa-tkb').onclick = async (e) => {
+      if (!confirm('Xóa toàn bộ ' + ds.length + ' ca thực hành của ' + hk + '?\n(Biên bản đã tạo không bị xóa. Thu hồi lại được ở Hệ thống › Lịch sử tải file.)')) return;
+      const r = await chay(e.target, () => api('lop_xoa_hk', { hk })); toast('Đã xóa ' + r.xoa + ' ca – thu hồi được ở Lịch sử tải file'); dieuHuong();
+    };
     $('b-tkb').onclick = () => hopFileExcel('Nhập thời khóa biểu thực hành – ' + hk, 'Chọn file có trang "TH & Phòng học" (ví dụ "BBBG hoc chat HKI 26-27.xlsm"). Thời khóa biểu cũ của học kỳ này sẽ được thay.', (rows, ten, all) => {
       const l = docTKB(rows);
       $('x-kq').innerHTML = hopFileExcel.chonSheet(ten) + '<p>Đọc được <b>' + l.length + '</b> ca thực hành, ' + l.reduce((a, x) => a + x.si_so, 0) + ' lượt SV, ' + new Set(l.map(x => x.ma_lhp.slice(0, 10))).size + ' học phần.</p>' +

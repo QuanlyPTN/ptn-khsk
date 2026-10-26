@@ -420,7 +420,8 @@
     const nd = trang('Lô ' + esc(id), '', '<a href="#/' + K.duong + '">' + K.ten + '</a> ›');
     $('main').querySelector('h1').innerHTML = esc(l.ten) + ' <span class="tag t-info">tồn ' + fmt(r.ton) + ' ' + esc(l.dvt) + '</span>';
     nd.innerHTML = '<div class="btns" style="margin-bottom:12px"><button class="btn sm" id="b-x">Xuất từ lô</button><button class="btn o sm" id="b-kk">Kiểm kê (điều chỉnh tồn)</button><button class="btn o sm" id="b-sua">Sửa lô</button>' +
-      '<label class="btn o sm">Đính kèm chứng từ<input type="file" id="tep-lo" hidden></label><button class="btn o sm" id="b-tem">In tem</button></div>' +
+      '<label class="btn o sm">Đính kèm chứng từ<input type="file" id="tep-lo" hidden></label><button class="btn o sm" id="b-tem">In tem</button>' +
+      (r.gd.every(g => g.loai === 'nhap') ? '<button class="btn red sm" id="b-xoa-lo" title="Chỉ xóa được khi lô chưa xuất / chưa điều chỉnh">Xóa lô (nhập nhầm)</button>' : '') + '</div>' +
       '<div class="grid g2"><div class="card"><dl class="kv">' + [['Mã lô', l.id], ['Kho', K.ten], ['Mã VT', l.ma_vt], ['Tên khoa học', l.ten_kh], ['Bộ phận dùng', l.bo_phan], ['Xuất xứ', l.xuat_xu], ['NSX', l.nsx], ['Số lô', l.so_lo], ['Hạn dùng', ngayVN(l.han_dung)],
         ['Ngày nhập', ngayVN(l.ngay_nhap)], ['SL nhập', fmt(l.sl_nhap) + ' ' + l.dvt], ['Nguồn', l.nguon], ['Kệ số', l.ke], ['Tầng', l.tang], ['Tủ mát', l.tu_mat], ['Vị trí khác', l.vi_tri], ['Ghi chú', l.ghi_chu]]
         .filter(x => x[1]).map(x => '<dt>' + x[0] + '</dt><dd>' + esc(x[1]) + '</dd>').join('') + '</dl></div>' +
@@ -430,6 +431,10 @@
     nd.querySelectorAll('[data-tai]').forEach(b => { b.onclick = (e) => chay(e.target, () => taiVe(b.dataset.tai)); });
     $('b-x').onclick = () => hopXuatKho(r);
     $('b-tem').onclick = () => Q.inTem([l], 'lo');
+    if ($('b-xoa-lo')) $('b-xoa-lo').onclick = async (e) => {
+      if (!confirm('Xóa lô ' + l.id + ' – ' + l.ten + ' (' + fmt(l.sl_nhap) + ' ' + l.dvt + ')? Lô chưa xuất nên xóa hẳn khỏi kho.\n(Thu hồi lại được ở Hệ thống › Lịch sử tải file.)')) return;
+      await chay(e.target, () => api('kho_xoa_lo', { id: l.id })); toast('Đã xóa lô ' + l.id); location.hash = '#/' + K.duong;
+    };
     $('tep-lo').onchange = async (e) => { const f = e.target.files[0]; if (!f) return; await chay(null, () => guiTep(l.id, f, 'Chứng từ lô ' + (l.so_lo || l.id))); toast('Đã tải lên'); dieuHuong(); };
     $('b-kk').onclick = () => {
       moHop('<h2>Kiểm kê lô ' + esc(l.so_lo || l.id) + '</h2><form id="f"><p>Tồn trên hệ thống: <b>' + fmt(r.ton) + ' ' + esc(l.dvt) + '</b></p><div class="form-grid">' + o('ton_thuc', 'Tồn thực tế', { type: 'number', req: 1, extra: ' step="any" min="0"' }) +
