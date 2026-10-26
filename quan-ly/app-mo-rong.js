@@ -1003,51 +1003,67 @@
   }
 
   // ---------------- Dự trù vật tư theo đợt (mục Hóa chất – vật tư, chỉ admin) ----------------
+  // Mỗi học kỳ 2 đợt: đợt 1 tối thiểu 70% nhu cầu cả học kỳ; đợt 2 = nhu cầu cả học kỳ (cộng môn chưa dự trù) − đã nhận đợt 1; thêm đợt 3, 4 khi chưa nhận đủ
   const thangVN = (t) => t ? t.slice(5) + '/' + t.slice(0, 4) : '';
+  const tenDot = (d) => d === 'HK' ? 'cả học kỳ' : 'đợt ' + d;
   Q.manDuTru = async (nd) => {
     if (!(S.dm.hoc_ky || []).length) { nd.innerHTML = '<div class="card empty">Chưa có học kỳ – tạo ở thẻ "Học kỳ & thời khóa biểu".</div>'; return; }
     const hk = Q.S.hk || S.dm.hoc_ky[0], [bd, cap] = await Promise.all([api('dt_dot', { hk }), api('dt_cap_ds', { hk })]);
     const capDot = {}; cap.forEach(c => { capDot[c.dot] = c; });
-    const dotTruoc = (t) => bd.dots.map(d => d.dot).filter(d => d <= t);
+    const moTa = (n) => n === 1 ? 'Tối thiểu ' + bd.ty_le + '% nhu cầu cả học kỳ của mỗi môn; môn học giai đoạn 1 nhiều hơn thì lấy theo lớp giai đoạn 1.'
+      : n === 2 ? 'Nhu cầu cả học kỳ (cộng các môn chưa dự trù ở đợt 1) trừ danh sách nhận hàng đợt 1.'
+      : 'Nhu cầu cả học kỳ trừ tổng đã nhận đợt ' + Array.from({ length: n - 1 }, (_, i) => i + 1).join(', ') + ' – dùng khi các đợt trước chưa nhận đủ.';
     nd.innerHTML = '<div class="tools"><b>Học kỳ</b> <select id="f-hk">' + S.dm.hoc_ky.map(h => '<option' + (h === hk ? ' selected' : '') + '>' + esc(h) + '</option>').join('') + '</select></div>' +
-      '<div class="grid g2"><div class="card"><h2>Xếp lớp thực hành vào đợt dự trù</h2><p class="note">Lớp bắt đầu học trong tháng nào thì dự trù ở đợt nào. Mặc định: 2 tháng đầu học kỳ → đợt đầu; các tháng sau → đợt thứ hai. Đợt tháng T nộp P.KHĐT ngày 15 tháng trước.</p>' +
-      '<table><thead><tr><th>Tháng bắt đầu học</th><th class="num">Số ca TH</th><th>Dự trù ở đợt</th></tr></thead><tbody>' +
+      '<div class="grid g2"><div class="card"><h2>Cách chia đợt dự trù</h2><p class="note">Mỗi học kỳ dự trù 2 đợt, căn cứ thời gian học: lớp bắt đầu học trong tháng nào thì thuộc giai đoạn 1 hoặc 2 (mặc định 2 tháng đầu học kỳ → giai đoạn 1). ' +
+      'Đợt 1 luôn được ưu tiên: dù giai đoạn 2 có nhiều lớp, đợt 1 vẫn dự trù tối thiểu tỷ lệ bên dưới của nhu cầu cả học kỳ. Đợt 2 lấy phần còn lại và căn cứ danh sách nhận hàng của đợt 1 để trừ.</p>' +
+      '<table><thead><tr><th>Tháng bắt đầu học</th><th class="num">Số nhóm TH</th><th>Giai đoạn</th></tr></thead><tbody>' +
       Object.keys(bd.map).map(t => '<tr><td>Tháng ' + thangVN(t) + '</td><td class="num">' + bd.so_lop[t] + '</td><td><select data-thang="' + t + '">' +
-        [bd.m0, bd.dots.map(d => d.dot)].flat().concat(Object.keys(bd.map)).filter((x, i, a) => a.indexOf(x) === i && x <= t).sort().map(d => '<option value="' + d + '"' + (bd.map[t] === d ? ' selected' : '') + '>Đợt tháng ' + thangVN(d) + '</option>').join('') + '</select></td></tr>').join('') +
-      '</tbody></table><button class="btn o sm" id="b-luu-dot" style="margin-top:10px">Lưu cách xếp đợt</button></div>' +
-      '<div class="card"><h2>Các đợt dự trù ' + esc(hk) + '</h2>' + bd.dots.map(d => { const c = capDot[d.dot];
-        return '<div class="dot-dt"><div><b>Đợt tháng ' + thangVN(d.dot) + '</b> · nộp ngày ' + ngayVN(d.ngay_nop) + ' · ' + d.so_lop + ' ca TH<div class="note">' + (dotTruoc(d.dot).length > 1 ? 'Đã trừ danh sách được cấp của đợt ' + dotTruoc(d.dot).slice(0, -1).map(thangVN).join(', ') + '. ' : '') +
-          'Danh sách được cấp của đợt này: ' + (c ? '<b>' + esc(c.loai) + '</b> ' + ngayVN(c.ngay) + ' · ' + c.so_dong + ' dòng' : 'chưa nhập') + '</div></div><div class="btns">' +
-          '<button class="btn sm" data-xem="' + d.dot + '">Xem dự trù</button><button class="btn o sm" data-in="' + d.dot + '" title="3 sheet: tổng dự trù học kỳ theo lớp · dự trù tháng · tổng hợp HC – VT – DL tháng">Xem trước – in / Excel (3 sheet)</button><button class="btn o sm" data-cap="' + d.dot + '">' + (c ? 'Nhập lại' : 'Nhập') + ' DS được cấp</button>' +
-          (c ? '<button class="btn red sm" data-xoa-cap="' + d.dot + '">Xóa DS cấp</button>' : '') + '</div></div>'; }).join('') +
-      '<div class="dot-dt"><div><b>Cả học kỳ</b><div class="note">Tổng dự trù mọi lớp (chưa trừ được cấp).</div></div><div class="btns"><button class="btn sm" data-xem="HK">Xem</button><button class="btn o sm" data-in="HK">Xem trước – in / Excel</button></div></div></div></div>' +
+        [1, 2].map(g => '<option value="' + g + '"' + (bd.map[t] === g ? ' selected' : '') + '>Giai đoạn ' + g + '</option>').join('') + '</select></td></tr>').join('') +
+      '</tbody></table><div class="form-grid" style="margin-top:10px"><label class="f"><span>Đợt 1 dự trù tối thiểu (% nhu cầu cả học kỳ)</span><input type="number" id="dt-ty-le" min="50" max="100" step="5" value="' + bd.ty_le + '"></label></div>' +
+      '<button class="btn o sm" id="b-luu-dot" style="margin-top:6px">Lưu cách chia đợt</button></div>' +
+      '<div class="card"><h2>Các đợt dự trù ' + esc(hk) + '</h2>' + bd.dots.map(d => { const c = capDot[d.dot], n = +d.dot;
+        return '<div class="dot-dt"><div><b>' + esc(d.ten) + '</b>' + (n <= 2 ? ' · ' + d.so_lop + ' nhóm TH học giai đoạn ' + n : ' <span class="tag t-gray">tùy chọn</span>') +
+          '<div class="note">' + moTa(n) + '</div><div class="note">Nộp P.KHĐT ngày <input type="date" data-ngay="' + d.dot + '" value="' + esc(d.ngay_nop) + '" style="width:auto;padding:2px 4px"> · Danh sách nhận hàng: ' +
+          (c ? '<b>' + esc(c.loai) + '</b> ' + ngayVN(c.ngay) + ' · ' + c.so_dong + ' dòng' : 'chưa nhập') + '</div></div><div class="btns">' +
+          '<button class="btn sm" data-xem="' + d.dot + '">Xem dự trù</button><button class="btn o sm" data-in="' + d.dot + '" title="3 trang tính: tổng dự trù học kỳ theo lớp · dự trù đợt · tổng hợp HC – VT – DL của đợt">Xem trước – in / Excel (3 sheet)</button><button class="btn o sm" data-cap="' + d.dot + '">' + (c ? 'Nhập lại' : 'Nhập') + ' DS nhận hàng</button>' +
+          (c ? '<button class="btn red sm" data-xoa-cap="' + d.dot + '">Xóa DS nhận hàng</button>' : '') + (n > 2 && n === bd.so_dot && !c ? '<button class="btn red o sm" data-bo-dot="' + n + '">Bỏ đợt ' + n + '</button>' : '') + '</div></div>'; }).join('') +
+      (bd.so_dot < 4 ? '<div class="dot-dt"><div><b>Thêm đợt ' + (bd.so_dot + 1) + '</b><div class="note">Khi đợt 1' + (bd.so_dot > 2 ? ' – ' + bd.so_dot : ', 2') + ' chưa nhận đủ hàng: dự trù tiếp phần còn thiếu.</div></div><div class="btns"><button class="btn o sm" id="b-them-dot">+ Thêm đợt ' + (bd.so_dot + 1) + '</button></div></div>' : '') +
+      '<div class="dot-dt"><div><b>Cả học kỳ</b><div class="note">Tổng nhu cầu mọi lớp (chưa trừ đã nhận).</div></div><div class="btns"><button class="btn sm" data-xem="HK">Xem</button><button class="btn o sm" data-in="HK">Xem trước – in / Excel</button></div></div></div></div>' +
       '<div id="kq"></div>';
+    const luu = (btn, them) => { const map = {}, ngay = {}; nd.querySelectorAll('[data-thang]').forEach(s2 => { map[s2.dataset.thang] = +s2.value; }); nd.querySelectorAll('[data-ngay]').forEach(x => { ngay[x.dataset.ngay] = x.value; });
+      return chay(btn, () => api('dt_luu_dot', Object.assign({ hk, map, ngay, ty_le: +$('dt-ty-le').value }, them))); };
     $('f-hk').onchange = (e) => { Q.S.hk = e.target.value; dieuHuong(); };
-    $('b-luu-dot').onclick = async (e) => { const map = {}; nd.querySelectorAll('[data-thang]').forEach(s2 => { map[s2.dataset.thang] = s2.value; }); await chay(e.target, () => api('dt_luu_dot', { hk, map })); toast('Đã lưu cách xếp đợt'); dieuHuong(); };
+    $('b-luu-dot').onclick = async (e) => { await luu(e.target); toast('Đã lưu cách chia đợt'); dieuHuong(); };
+    nd.querySelectorAll('[data-ngay]').forEach(x => { x.onchange = async () => { await luu(null); toast('Đã lưu ngày nộp ' + tenDot(x.dataset.ngay)); }; });
+    if ($('b-them-dot')) $('b-them-dot').onclick = async (e) => { await luu(e.target, { so_dot: bd.so_dot + 1 }); toast('Đã thêm đợt ' + (bd.so_dot + 1)); dieuHuong(); };
+    nd.querySelectorAll('[data-bo-dot]').forEach(b => { b.onclick = async (e) => { if (!confirm('Bỏ đợt ' + b.dataset.boDot + '?')) return; await luu(e.target, { so_dot: +b.dataset.boDot - 1 }); dieuHuong(); }; });
     nd.querySelectorAll('[data-xem]').forEach(b => { b.onclick = (e) => chay(e.target, async () => veDuTru(await api('dt_tinh', { hk, dot: b.dataset.xem }))); });
     nd.querySelectorAll('[data-in]').forEach(b => { b.onclick = (e) => chay(e.target, async () => window.PTN_IN.xemTruoc(await fileDuTru(hk, b.dataset.in))); });
-    nd.querySelectorAll('[data-xoa-cap]').forEach(b => { b.onclick = async (e) => { if (!confirm('Xóa danh sách được cấp của đợt ' + thangVN(b.dataset.xoaCap) + '?')) return; await chay(e.target, () => api('dt_xoa_cap', { hk, dot: b.dataset.xoaCap })); dieuHuong(); }; });
+    nd.querySelectorAll('[data-xoa-cap]').forEach(b => { b.onclick = async (e) => { if (!confirm('Xóa danh sách nhận hàng của ' + tenDot(b.dataset.xoaCap) + '?')) return; await chay(e.target, () => api('dt_xoa_cap', { hk, dot: b.dataset.xoaCap })); dieuHuong(); }; });
     nd.querySelectorAll('[data-cap]').forEach(b => { b.onclick = () => hopNhapCap(hk, b.dataset.cap); });
   };
-  // đợt tháng → 3 sheet (tổng học kỳ theo lớp · dự trù tháng · tổng hợp tháng); cả học kỳ → tổng hợp + kế hoạch theo môn
+  // một đợt → 3 sheet (tổng học kỳ theo lớp · dự trù đợt · tổng hợp đợt); cả học kỳ → tổng hợp + kế hoạch theo môn
   async function fileDuTru(hk, dot, rSan) {
     if (dot === 'HK') return window.PTN_MAU.duTru(rSan || await api('dt_tinh', { hk, dot }));
-    const [rHK, rThang] = await Promise.all([api('dt_tinh', { hk, dot: 'HK' }), rSan || api('dt_tinh', { hk, dot })]);
-    return window.PTN_MAU.duTruThang(rHK, rThang);
+    const [rHK, rDot] = await Promise.all([api('dt_tinh', { hk, dot: 'HK' }), rSan || api('dt_tinh', { hk, dot })]);
+    return window.PTN_MAU.duTruThang(rHK, rDot);
   }
   function veDuTru(r) {
-    const caHK = r.dot === 'HK', tru = r.tong.reduce((a, t) => a + (t.tru > 0 ? 1 : 0), 0);
-    $('kq').innerHTML = '<div class="card"><div class="btns" style="justify-content:space-between"><h2 style="margin:0">' + (caHK ? 'Tổng dự trù ' + esc(r.hk) : 'Dự trù đợt tháng ' + thangVN(r.dot) + ' · nộp ' + ngayVN(r.ngay_nop)) + '</h2><button class="btn o sm" id="b-in-kq">Xem trước – in / Excel</button></div>' +
-      '<p class="note">' + r.khoi.length + ' khối môn' + (r.khoi.some(k => k.chuyen) ? ' (gồm ' + r.khoi.filter(k => k.chuyen).length + ' khối chuyển từ đợt trước vì chưa được cấp đủ)' : '') + ' · ' + r.tong.length + ' vật tư' + (tru ? ' · ' + tru + ' vật tư đã trừ phần được cấp' : '') + '</p>' +
-      '<div class="tbl-wrap" style="max-height:460px"><table><thead><tr><th>Mã VT</th><th>Tên vật tư – hóa chất</th><th>ĐVT</th><th class="num">Nhu cầu</th><th class="num">Trừ được cấp</th><th class="num">Dự trù</th><th>Môn</th></tr></thead><tbody>' +
-      r.tong.map((t, i) => (i === 0 || r.tong[i - 1].nhom_in !== t.nhom_in ? '<tr><td colspan="7" class="nhom-dong">' + esc(t.nhom_in) + '</td></tr>' : '') + '<tr><td class="mono">' + esc(t.ma_vt || 'Chưa MVT') + '</td><td>' + esc(t.ten) + '</td><td>' + esc(t.dvt) + '</td><td class="num">' + fmt(t.can) + '</td><td class="num">' + (fmt(t.tru) || '') + '</td><td class="num"><b>' + (fmt(t.sl) || 0) + '</b></td><td class="note">' + esc(t.mon.join(', ')) + '</td></tr>').join('') +
-      '</tbody></table></div>' + (r.con_du.length ? '<p class="note">Còn ' + r.con_du.length + ' vật tư được cấp dư so với nhu cầu (chưa dùng hết).</p>' : '') + '</div>';
+    const caHK = r.dot === 'HK', tru = r.tong.reduce((a, t) => a + (t.tru > 0 ? 1 : 0), 0), moi = r.khoi.filter(k => k.moi).length;
+    $('kq').innerHTML = '<div class="card"><div class="btns" style="justify-content:space-between"><h2 style="margin:0">' + (caHK ? 'Tổng dự trù ' + esc(r.hk) : 'Dự trù ' + esc(r.ten_dot) + ' – ' + esc(r.hk) + (r.ngay_nop ? ' · nộp ' + ngayVN(r.ngay_nop) : '')) + '</h2><button class="btn o sm" id="b-in-kq">Xem trước – in / Excel</button></div>' +
+      '<p class="note">' + r.khoi.length + ' môn' + (moi ? ' (gồm ' + moi + ' môn chưa dự trù ở đợt trước)' : '') + ' · ' + r.tong.length + ' vật tư' + (tru ? ' · ' + tru + ' vật tư đã trừ phần đã nhận' : '') +
+      (r.dot === '1' ? ' · đợt 1 tối thiểu ' + r.ty_le + '% nhu cầu cả học kỳ' : '') + '</p>' +
+      ((r.tam_tinh || []).length ? '<p class="err">Đợt ' + r.tam_tinh.join(', ') + ' chưa nhập danh sách nhận hàng – đang tạm trừ đúng số đã dự trù của đợt đó. Nhập danh sách nhận hàng để trừ theo số thực nhận.</p>' : '') +
+      '<div class="tbl-wrap" style="max-height:460px"><table><thead><tr><th>Mã VT</th><th>Tên vật tư – hóa chất</th><th>ĐVT</th><th class="num">Nhu cầu HK</th>' + (caHK ? '' : '<th class="num">Trừ đã nhận</th>') + '<th class="num">Dự trù</th><th>Môn</th></tr></thead><tbody>' +
+      r.tong.map((t, i) => (i === 0 || r.tong[i - 1].nhom_in !== t.nhom_in ? '<tr><td colspan="' + (caHK ? 6 : 7) + '" class="nhom-dong">' + esc(t.nhom_in) + '</td></tr>' : '') + '<tr><td class="mono">' + esc(t.ma_vt || 'Chưa MVT') + '</td><td>' + esc(t.ten) + '</td><td>' + esc(t.dvt) + '</td><td class="num">' + fmt(t.can_hk) + '</td>' +
+        (caHK ? '' : '<td class="num">' + (fmt(t.tru) || '') + '</td>') + '<td class="num"><b>' + (fmt(t.sl) || 0) + '</b></td><td class="note">' + esc(t.mon.join(', ')) + '</td></tr>').join('') +
+      '</tbody></table></div>' + (r.con_du.length ? '<p class="note">Còn ' + r.con_du.length + ' vật tư đã nhận dư so với nhu cầu (chưa dùng hết).</p>' : '') + '</div>';
     $('b-in-kq').onclick = (e) => chay(e.target, async () => window.PTN_IN.xemTruoc(await fileDuTru(r.hk, r.dot, r)));
     $('kq').scrollIntoView({ behavior: 'smooth' });
   }
   // Nhập danh sách được cấp (Excel): tự nhận cột, cho chọn lại
   function hopNhapCap(hk, dot) {
-    moHop('<h2>Danh sách được cấp – đợt tháng ' + thangVN(dot) + '</h2><p class="note">Chọn file Excel danh sách vật tư – hóa chất được cấp (dự kiến hoặc thực tế). Hệ thống trừ số này vào dự trù các đợt sau. Nhập lại sẽ thay danh sách cũ của đợt này.' + (window.PTN_MAU_FILE ? window.PTN_MAU_FILE.link('cap_dot') : '') + '</p>' +
+    moHop('<h2>Danh sách nhận hàng – ' + tenDot(dot) + '</h2><p class="note">Chọn file Excel danh sách vật tư – hóa chất được cấp / đã nhận (dự kiến hoặc thực tế). Hệ thống trừ số này vào dự trù các đợt sau. Nhập lại sẽ thay danh sách cũ của đợt này.' + (window.PTN_MAU_FILE ? window.PTN_MAU_FILE.link('cap_dot') : '') + '</p>' +
       '<div class="form-grid">' + o('loai', 'Loại danh sách', { select: [['du_kien', 'Dự kiến'], ['thuc_te', 'Thực tế (đã cấp)']] }) + o('ngay', 'Ngày', { type: 'date', v: homNay() }) + '</div><label class="f"><span>File Excel</span><input type="file" id="x-file" accept=".xlsx,.xls,.xlsm,.csv"></label><div id="x-kq"></div>');
     if (window.PTN_MAU_FILE) window.PTN_MAU_FILE.ganLink($('modal-body'));
     $('x-file').onchange = async (e) => {
