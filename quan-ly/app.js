@@ -136,6 +136,7 @@
     'so': '<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/><path d="M8 7h8M8 11h8"/>',
     'bieu-mau': '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/>',
     'giang-vien': '<path d="M3 4h18v12H3z"/><path d="M7 20h10M12 16v4"/><circle cx="8.5" cy="9" r="2"/><path d="M5.5 14c.6-1.6 1.7-2.5 3-2.5s2.4.9 3 2.5M14 8h4M14 11h3"/>',
+    'lich-phong-th': '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/><path d="M8 13h3v3H8z"/>',
     'lich-su-tai': '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/>',
     'don-qr': '<rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
     'cai-dat': '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
@@ -205,7 +206,7 @@
 
   // ---------------- Khung trang ----------------
   const MENU = [
-    ['tong-quan', '◧', 'Hôm nay'], ['don', '✉', 'Đơn đăng ký QR1 – QR8'], ['de-tai', '✎', 'Hồ sơ đề tài KLTN – NCKH'], ['phong', '▦', 'Phòng thí nghiệm'], ['tai-san', '⚙', 'Tài sản'],
+    ['tong-quan', '◧', 'Hôm nay'], ['don', '✉', 'Đơn đăng ký QR1 – QR8'], ['de-tai', '✎', 'Hồ sơ đề tài KLTN – NCKH'], ['phong', '▦', 'Phòng thí nghiệm'], ['lich-phong-th', '▦', 'Lịch phòng thực hành'], ['tai-san', '⚙', 'Tài sản'],
     ['kiem-dinh', '✓', 'Kiểm định – bảo dưỡng'], ['hoa-chat', '⚗', 'Hóa chất – vật tư'], ['kho', '▣', 'Kho hóa chất D11.01'], ['kho-dl', '❀', 'Kho dược liệu D11'],
     ['bien-ban', '▤', 'Biên bản bàn giao'], ['bao-cao', '▥', 'Báo cáo – thống kê'], ['so', '☷', 'Sổ theo dõi – in ấn'], ['bieu-mau', '⎙', 'Biểu mẫu PTN'],
     ['giang-vien', '☺', 'Giảng viên'], ['lich-su-tai', '↺', 'Lịch sử tải file'], ['don-qr', '✉', 'Đơn cũ (Google Form)'], ['cai-dat', '⚑', 'Cài đặt – mã QR tổng', 1], ['can-bo', '☺', 'Cán bộ', 1], ['nhat-ky', '☰', 'Nhật ký', 1], ['tai-khoan', '⚿', 'Tài khoản']
@@ -227,14 +228,14 @@
     return q[muc] || '';
   }
   function coQuyen(muc, md) { const v = quyen(muc); return md === 'xu_ly' ? v === 'xu_ly' : !!v; }
-  const MUC_TRANG = { 'ts-tong-quan': 'tai-san' }; // trang con → mục phân quyền
+  const MUC_TRANG = { 'ts-tong-quan': 'tai-san', 'lich-phong-th': 'phong' }; // trang con → mục phân quyền
   function khung() {
     document.body.classList.add('in');
     const n = S.toi.nguoi;
     $('app').innerHTML = (DEMO ? '<div class="demo-bar">' + thanhDemo() + '</div>' : '') +
       '<div class="layout' + (menuTuAn() ? ' tu-an' : '') + '" id="layout"><aside class="side" id="side"><button class="tab-menu" id="b-tab-menu" title="Hiện menu" aria-label="Hiện menu">☰</button>' +
       '<div class="brand co-logo">' + logo() + '<b>Quản lý PTN</b><button class="ghim-menu" id="b-ghim-menu"></button></div>' +
-      '<nav class="nav" id="nav">' + MENU.filter(m => m[3] ? laAdmin() : coQuyen(m[0], 'xem')).map(m => (NHOM_MENU[m[0]] ? '<div class="nav-nhom"><span data-t="' + NHOM_MENU[m[0]] + '">' + NHOM_MENU[m[0]] + '</span></div>' : '') +
+      '<nav class="nav" id="nav">' + MENU.filter(m => m[3] ? laAdmin() : coQuyen(MUC_TRANG[m[0]] || m[0], 'xem')).map(m => (NHOM_MENU[m[0]] ? '<div class="nav-nhom"><span data-t="' + NHOM_MENU[m[0]] + '">' + NHOM_MENU[m[0]] + '</span></div>' : '') +
         '<a href="#/' + m[0] + '" data-m="' + m[0] + '" title="' + esc(m[2]) + '"><span class="ico">' + icon(m[0]) + '</span>' + m[2] + '</a>').join('') + '</nav>' +
       (coQuyen('don', 'xem') && 'Notification' in window && Notification.permission === 'default' ? '<button class="bat-tb" id="b-bat-tb">🔔 Bật thông báo đơn mới trên máy này</button>' : '') +
       '<div class="side-foot"><div class="av">' + esc((n.ten || '?').trim().split(' ').pop().charAt(0)) + '</div><div class="ai"><div class="who">' + esc(n.ten) + '</div><div class="role">' + esc(n.vai_tro) + ' · ' + esc(n.email) + '</div></div>' +

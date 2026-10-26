@@ -59,6 +59,10 @@
       '<span>' + h.dang_dung.filter(d => d.phong === p.ma && (d.qr === 'QR5' || d.qr === 'QR1')).length + ' đang sử dụng</span></div></div>').join('') + '</div>' +
       '<p class="note">Hôm nay có ' + h.hom_nay + ' đơn mới.</p>';
     nd.innerHTML = x; ganLink(nd);
+    if (window.PTN_LICH_TH && coQuyen('phong', 'xem')) window.PTN_LICH_TH.dangHoc().then(l => { const c = document.createElement('div'); c.className = 'card'; c.id = 'hn-lich-th';
+      c.innerHTML = '<h2>Phòng đang học thực hành lúc này (' + new Set(l.dang.map(b => b.phong)).size + ')</h2>' + (l.dang.length ? '<div class="lpt-luoi">' + l.dang.map(b => '<div><b>' + esc(b.phong) + '</b>' + window.PTN_LICH_TH.theBuoi(b) + '</div>').join('') + '</div>' : '<div class="note">Không có phòng nào đang học thực hành.</div>') +
+        '<p class="note">Hôm nay ' + l.tat.length + ' buổi thực hành' + (l.sap.length ? ', còn ' + l.sap.length + ' buổi sắp tới' : '') + ' · <a href="#/lich-phong-th">Xem lịch phòng thực hành ›</a></p>';
+      const cu = nd.querySelector('.card'); if (cu) nd.insertBefore(c, cu); else nd.appendChild(c); }).catch(() => { /* chưa có thời khóa biểu / không có quyền */ });
     nd.querySelectorAll('[data-mo]').forEach(b => { b.onclick = () => hopDon(b.dataset.mo); });
     nd.querySelectorAll('[data-q1]').forEach(b => { b.onclick = async (e) => {
       const [id, hd] = b.dataset.q1.split(':');
