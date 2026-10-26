@@ -114,6 +114,9 @@
     });
     return '<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><title>' + esc(tl.ten) + '</title><style>' +
       kieuTrang.join('') +
+      // không để trình duyệt tự in tiêu đề / ngày giờ / đường dẫn ở đầu – chân trang; tự in "Trang x / y" như file Excel
+      '@page{@top-left{content:""}@top-center{content:""}@top-right{content:""}@bottom-left{content:""}@bottom-right{content:""}' +
+      '@bottom-center{content:"Trang " counter(page) " / " counter(pages);font:9pt "Times New Roman",serif}}' +
       'body{margin:0;background:#E9ECF2;font-family:"Times New Roman",serif;color:#000}.to{position:relative;background:#fff;margin:14px auto;box-shadow:0 2px 10px rgba(0,0,0,.18);box-sizing:border-box;min-height:297mm}.to.ngang{min-height:210mm}' +
       '.noi{position:relative;margin:0 auto}.to.doc{width:210mm}.to.ngang{width:297mm}table{width:100%;border-collapse:collapse;table-layout:fixed}td{padding:1px 2px;overflow-wrap:anywhere;line-height:1.2}' +
       '@media print{body{background:#fff}.to{margin:0;padding:0!important;box-shadow:none;width:auto!important;min-height:0;break-after:page}.to:last-child{break-after:auto}thead{display:table-header-group}tr{break-inside:avoid}}' +
