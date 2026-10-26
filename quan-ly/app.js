@@ -497,8 +497,13 @@
   function chonHK(id) { return '<select id="' + id + '">' + (S.dm.hoc_ky || []).map(h => '<option' + (h === hkMacDinh() ? ' selected' : '') + '>' + esc(h) + '</option>').join('') + '</select>'; }
   async function capNhatDanhMuc() { const r = await api('toi'); S.toi = r; S.dm = r.danh_muc; luuToi(r); }
   // chọn file Excel → chọn trang tính → hàm xử lý nhận mảng hàng
+  // hộp tải file Excel: tự gắn link "Tải file mẫu" chuẩn (mau-file.js) theo loại file
+  const MAU_FILE_THEO_HOP = [[/^Nhập thời khóa biểu/, 'tkb'], [/^Tải file định mức hóa chất/, 'dinh_muc_hc'], [/^Tải file dụng cụ/, 'dung_cu'], [/^Nhập danh mục mã vật tư/, 'ma_vt'], [/^Tải file dự trù/, 'du_tru_mon']];
+  const linkMau = (ma) => window.PTN_MAU_FILE ? window.PTN_MAU_FILE.link(ma) : '';
   function hopFileExcel(tieuDe, huongDan, xuLy, sheetGoiY) {
-    moHop('<h2>' + esc(tieuDe) + '</h2><p class="note">' + huongDan + '</p><label class="f"><span>File Excel</span><input type="file" id="x-file" accept=".xlsx,.xls,.xlsm"></label><div id="x-kq"></div>');
+    const mau = (MAU_FILE_THEO_HOP.find(x => x[0].test(tieuDe)) || [])[1];
+    moHop('<h2>' + esc(tieuDe) + '</h2><p class="note">' + huongDan + (mau ? linkMau(mau) : '') + '</p><label class="f"><span>File Excel</span><input type="file" id="x-file" accept=".xlsx,.xls,.xlsm"></label><div id="x-kq"></div>');
+    if (window.PTN_MAU_FILE) window.PTN_MAU_FILE.ganLink($('modal-body'));
     $('x-file').onchange = async (e) => {
       const file = e.target.files[0]; if (!file) return;
       $('x-kq').innerHTML = '<div class="loading"><div class="spin"></div></div>';
@@ -1082,8 +1087,9 @@
   window.__PTN_TEST = { ghepCot, chuanNgay, chuanPhong, boDau, docKeHoachVatTu, docPhieuDuTru, docTKB, docMaVT, docDungCu };
 
   function hopNhapExcel() {
-    moHop('<h2>Nhập thiết bị từ Excel</h2><p class="note">Chọn file Excel danh mục thiết bị (ví dụ "Danh muc thiet bi - K.KHSK.xlsx"). Hệ thống tự nhận cột theo tiêu đề; anh/chị kiểm tra lại trước khi nhập. Dòng trùng mã tài sản sẽ bị bỏ qua.</p>' +
+    moHop('<h2>Nhập thiết bị từ Excel</h2><p class="note">Chọn file Excel danh mục thiết bị (ví dụ "Danh muc thiet bi - K.KHSK.xlsx"). Hệ thống tự nhận cột theo tiêu đề; anh/chị kiểm tra lại trước khi nhập. Dòng trùng mã tài sản sẽ bị bỏ qua.' + linkMau('thiet_bi') + '</p>' +
       '<label class="f"><span>File Excel (.xlsx, .xls)</span><input type="file" id="x-file" accept=".xlsx,.xls,.xlsm,.csv"></label><div id="x-kq"></div>');
+    if (window.PTN_MAU_FILE) window.PTN_MAU_FILE.ganLink($('modal-body'));
     $('x-file').onchange = async (e) => {
       const file = e.target.files[0]; if (!file) return;
       $('x-kq').innerHTML = '<div class="loading"><div class="spin"></div></div>';

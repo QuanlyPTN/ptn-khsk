@@ -1038,8 +1038,9 @@
   }
   // Nhập danh sách được cấp (Excel): tự nhận cột, cho chọn lại
   function hopNhapCap(hk, dot) {
-    moHop('<h2>Danh sách được cấp – đợt tháng ' + thangVN(dot) + '</h2><p class="note">Chọn file Excel danh sách vật tư – hóa chất được cấp (dự kiến hoặc thực tế). Hệ thống trừ số này vào dự trù các đợt sau. Nhập lại sẽ thay danh sách cũ của đợt này.</p>' +
+    moHop('<h2>Danh sách được cấp – đợt tháng ' + thangVN(dot) + '</h2><p class="note">Chọn file Excel danh sách vật tư – hóa chất được cấp (dự kiến hoặc thực tế). Hệ thống trừ số này vào dự trù các đợt sau. Nhập lại sẽ thay danh sách cũ của đợt này.' + (window.PTN_MAU_FILE ? window.PTN_MAU_FILE.link('cap_dot') : '') + '</p>' +
       '<div class="form-grid">' + o('loai', 'Loại danh sách', { select: [['du_kien', 'Dự kiến'], ['thuc_te', 'Thực tế (đã cấp)']] }) + o('ngay', 'Ngày', { type: 'date', v: homNay() }) + '</div><label class="f"><span>File Excel</span><input type="file" id="x-file" accept=".xlsx,.xls,.xlsm,.csv"></label><div id="x-kq"></div>');
+    if (window.PTN_MAU_FILE) window.PTN_MAU_FILE.ganLink($('modal-body'));
     $('x-file').onchange = async (e) => {
       const file = e.target.files[0]; if (!file) return;
       $('x-kq').innerHTML = '<div class="loading"><div class="spin"></div></div>';
@@ -1243,6 +1244,7 @@
   }
 
   // ---------------- Đăng ký trang ----------------
+  Q.taiMauKho = taiMauKho; // tạo bộ file mẫu (kiem-thu)
   Object.assign(Q.TUYEN, {
     'tong-quan': manHomNay, 'don': manDon, 'de-tai': manDeTai, 'kho': (p) => manKho(p, 'HC'), 'kho-dl': manKhoDL, 'bao-cao': manBaoCao, 'so': manSo, 'cai-dat': manCaiDat, 'bien-ban': manBB
   });
