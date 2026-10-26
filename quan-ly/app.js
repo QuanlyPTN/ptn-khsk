@@ -547,7 +547,7 @@
     return '<p class="note"><b>' + ks.length + '</b> môn thực hành · <b>' + new Set(ds.map(l => l.ma_lhp)).size + '</b> lớp học phần · <b>' + soNhom(ds) + '</b> nhóm · ' + ds.length + ' dòng lịch · ' + siSo(ds) + ' lượt SV' +
       ' <button class="btn o sm" id="b-mo-mon" style="margin-left:8px">Mở tất cả các môn</button></p><div class="tbl-wrap"><table class="tkb-mon"><thead><tr><th style="width:24px"></th><th>Môn thực hành</th><th class="num">Lớp HP</th><th class="num">Nhóm</th><th>Lớp</th><th class="num">Sĩ số</th><th>Giảng viên</th><th>Phòng</th><th>Thời gian</th></tr></thead>' +
       ks.map(k => { const a = g[k].slice().sort((x, y) => (x.ma_lhp + x.nhom + x.bat_dau).localeCompare(y.ma_lhp + y.nhom + y.bat_dau)), khop = k.charAt(0) !== '~', tenTKB = uniq(a.map(l => l.ten_mon));
-        return '<tbody><tr class="click" data-mon="' + esc(k) + '"><td class="mui">▸</td><td><b>' + esc(tenM(k)) + '</b>' + (khop ? ' <a class="note" href="#/hoa-chat/mon/' + esc(k) + '">định mức ›</a>' : ' <span class="tag t-bad">chưa khớp môn định mức</span>') +
+        return '<tbody><tr class="click" data-mon="' + esc(k) + '"><td class="mui">▸</td><td><b>' + esc(tenM(k)) + '</b>' + (khop ? ' <a class="note" href="#/hoa-chat/mon/' + esc(k) + '">định mức ›</a>' : a[0].khong_du_tru ? ' <span class="tag t-gray">không cần dự trù</span>' : ' <span class="tag t-bad">chưa khớp môn định mức</span>') +
           (khop && tenTKB.join('') !== tenM(k) ? '<div class="note">TKB: ' + esc(tenTKB.join('; ')) + '</div>' : '') + '</td><td class="num">' + new Set(a.map(l => l.ma_lhp)).size + '</td><td class="num">' + soNhom(a) + '</td><td>' + esc(uniq(a.map(l => l.lop)).join(', ')) + '</td>' +
           '<td class="num">' + siSo(a) + '</td><td>' + esc(uniq(a.map(l => l.gv)).join('; ')) + '</td><td>' + esc(uniq(a.map(l => l.phong)).join(', ')) + '</td><td style="white-space:nowrap">' + ngay(a) + '</td></tr>' +
           '<tr class="ct-mon" hidden><td></td><td colspan="8"><table class="tkb-ca"><thead><tr><th>Mã LHP</th><th>Lớp</th><th>Nhóm</th><th class="num">Sĩ số</th><th>Thứ – tiết</th><th>Thời gian</th><th>Phòng</th><th>Giảng viên</th></tr></thead><tbody>' +
@@ -561,9 +561,10 @@
     }
     const hk = hkMacDinh(), [ds, mons] = await Promise.all([api('lop_ds', { hk }), api('mon_ds')]);
     const tenMon = {}; mons.forEach(m => { tenMon[m.ma] = m.ten; });
-    const chua = ds.filter(l => !l.mon), nhomChua = {}; chua.forEach(l => { nhomChua[l.ten_mon] = (nhomChua[l.ten_mon] || 0) + 1; });
+    const chua = ds.filter(l => !l.mon && !l.khong_du_tru), nhomChua = {}, khongDT = [...new Set(ds.filter(l => l.khong_du_tru).map(l => l.ten_mon))]; chua.forEach(l => { nhomChua[l.ten_mon] = (nhomChua[l.ten_mon] || 0) + 1; });
     nd.innerHTML = '<div class="tools"><b>Học kỳ</b> ' + chonHK('f-hk') + '<button class="btn o sm" id="b-hk">+ Học kỳ</button><button class="btn sm" id="b-tkb">Nhập thời khóa biểu (file "TH & Phòng học")</button>' + (ds.length ? '<button class="btn o sm" id="b-xoa-tkb">Xóa thời khóa biểu học kỳ</button>' : '') + '</div>' +
-      (chua.length ? '<div class="card" style="border-color:#E7B4B0"><h2 style="color:var(--bad)">' + chua.length + ' ca chưa khớp môn có định mức</h2>' + Object.keys(nhomChua).map(t => '<div class="btns" style="margin-bottom:6px"><span>• ' + esc(t) + ' (' + nhomChua[t] + ' ca)</span><button class="btn o sm" data-gan="' + esc(t) + '">Gán môn…</button></div>').join('') + '<p class="note">Ca chưa khớp sẽ không được tính dự trù và không có biên bản.</p></div>' : '') +
+      (chua.length ? '<div class="card" style="border-color:#E7B4B0"><h2 style="color:var(--bad)">' + chua.length + ' ca chưa khớp môn có định mức</h2>' + Object.keys(nhomChua).map(t => '<div class="btns" style="margin-bottom:6px"><span>• ' + esc(t) + ' (' + nhomChua[t] + ' ca)</span><button class="btn o sm" data-gan="' + esc(t) + '">Gán môn…</button></div>').join('') + '<p class="note">Ca chưa khớp sẽ không được tính dự trù và không có biên bản. Môn không dùng hóa chất – dụng cụ (Yoga, lý thuyết…): bấm "Gán môn…" → chọn "Môn không cần dự trù".</p></div>' : '') +
+      (khongDT.length ? '<div class="card note" style="margin-bottom:12px"><b>Môn không cần dự trù hóa chất – dụng cụ (' + khongDT.length + '):</b> ' + khongDT.map(t => esc(t) + ' <button class="lnk" data-bo-kdt="' + esc(t) + '">bỏ đánh dấu</button>').join(' · ') + '</div>' : '') +
       (ds.length ? bangTheoMon(ds, tenMon) : '<div class="card empty">Học kỳ này chưa có thời khóa biểu. Bấm "Nhập thời khóa biểu".</div>');
     // bấm một môn → hiện / ẩn các lớp học phần, nhóm, dòng lịch của môn
     nd.querySelectorAll('tr[data-mon]').forEach(tr => { tr.onclick = (e) => { if (e.target.closest('a')) return; const ct = tr.nextElementSibling; ct.hidden = !ct.hidden; tr.querySelector('.mui').textContent = ct.hidden ? '▸' : '▾'; }; });
@@ -586,10 +587,13 @@
         toast('Đã nhập ' + r.them + ' ca' + (r.khong_khop_mon.length ? '; ' + r.khong_khop_mon.length + ' môn chưa khớp' : '') + (tao || cn ? ' · biên bản: ' + tao + ' tạo mới, ' + cn + ' cập nhật' : '')); dieuHuong(); };
     }, /ph[oò]ng|th[ựu]c h[àa]nh/i);
     nd.querySelectorAll('[data-gan]').forEach(b => { b.onclick = () => {
-      moHop('<h2>Gán môn cho "' + esc(b.dataset.gan) + '"</h2><form id="f">' + o('mon', 'Môn có định mức', { select: [['', '— Chọn môn —']].concat(mons.map(m => [m.ma, m.ten + ' (' + m.so_hc + ' dòng HC)'])) }) +
+      moHop('<h2>Gán môn cho "' + esc(b.dataset.gan) + '"</h2><form id="f">' + o('mon', 'Môn có định mức', { select: [['', '— Chọn môn —'], ['~khong', '⊘ Môn không cần dự trù hóa chất – dụng cụ']].concat(mons.map(m => [m.ma, m.ten + ' (' + m.so_hc + ' dòng HC)'])),
+        help: 'Chọn "Môn không cần dự trù" cho môn không dùng hóa chất – dụng cụ (VD: Yoga): hệ thống không báo "chưa khớp", không tính dự trù, không tạo biên bản – áp dụng cho môn này ở mọi học kỳ.' }) +
         '<label class="check"><input type="checkbox" name="ma_lhp_vao_mon" checked> Ghi nhớ mã học phần cho các học kỳ sau</label><p class="note">Môn chưa có trong danh sách: tạo ở thẻ "Môn & định mức".</p><div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Gán</button></div></form>');
-      $('f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target); if (!v.mon) return toast('Chọn môn', true); await chay(e.submitter, () => api('lop_gan_mon', { hk, ten_mon: b.dataset.gan, mon: v.mon, ma_lhp_vao_mon: v.ma_lhp_vao_mon })); dongHop(); toast('Đã gán'); dieuHuong(); };
+      $('f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target); if (!v.mon) return toast('Chọn môn', true); await chay(e.submitter, () => api('lop_gan_mon', { hk, ten_mon: b.dataset.gan, mon: v.mon, ma_lhp_vao_mon: v.ma_lhp_vao_mon })); dongHop(); toast(v.mon === '~khong' ? 'Đã đánh dấu môn không cần dự trù' : 'Đã gán'); dieuHuong(); };
     }; });
+    nd.querySelectorAll('[data-bo-kdt]').forEach(b => { b.onclick = async (e) => { if (!confirm('Bỏ đánh dấu "' + b.dataset.boKdt + '"? Môn sẽ hiện lại trong danh sách chưa khớp để gán môn định mức.')) return;
+      await chay(e.target, () => api('lop_gan_mon', { hk, ten_mon: b.dataset.boKdt, mon: '~co' })); toast('Đã bỏ đánh dấu'); dieuHuong(); }; });
   }
   function hopHocKy() {
     const y = new Date().getFullYear();
