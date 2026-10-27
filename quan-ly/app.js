@@ -656,7 +656,7 @@
     nd.querySelectorAll('tr[data-ma]').forEach(tr => { tr.onclick = () => { location.hash = '#/hoa-chat/mon/' + tr.dataset.ma; }; });
     $('b-mon').onclick = () => hopMon(null);
     if ($('b-chuan-nhom')) $('b-chuan-nhom').onclick = async (e) => { if (!confirm('Xếp lại định mức hóa chất của mọi môn về 3 nhóm (1. Hóa chất · 2. Dược liệu · 3. Vật tư tiêu hao), đánh lại STT?\nDự trù "lấy từ định mức" và biên bản cập nhật theo; thu hồi được ở Lịch sử tải file.')) return;
-      const r = await chay(e.target, () => api('dm_chuan_nhom')); toast(r.so_dong ? 'Đã xếp lại ' + r.so_dong + ' dòng của ' + r.so_mon + ' môn' + (r.bien_ban ? ' · cập nhật ' + r.bien_ban + ' biên bản' : '') : 'Định mức đã đúng 3 nhóm – không có gì thay đổi'); dieuHuong(); };
+      const r = await chay(e.target, () => api('dm_chuan_nhom')); toast(r.so_dong || r.ten_nhom ? 'Đã xếp lại ' + r.so_dong + ' dòng định mức của ' + r.so_mon + ' môn' + (r.ten_nhom ? ' · sửa tên nhóm ' + r.ten_nhom + ' dòng dự trù / biên bản' : '') + (r.bien_ban ? ' · cập nhật ' + r.bien_ban + ' biên bản' : '') : 'Định mức, dự trù, biên bản đã đúng 3 nhóm – không có gì thay đổi'); dieuHuong(); };
     $('b-kh').onclick = () => nhapFileHC();
     $('b-dc').onclick = () => nhapFileDC(ds);
   }
