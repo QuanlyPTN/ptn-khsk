@@ -748,7 +748,7 @@
     const coTKB = l.filter(m => coLop[m.ma]), xuLy = coQuyen('hoa-chat', 'xu_ly');
     nd.innerHTML = '<div class="card" style="border-color:#F2D58A;background:#FFFBEA;margin-bottom:12px"><b>📌 Dụng cụ các môn = dữ liệu gốc</b> (giống dự trù hóa chất): mỗi môn một danh sách dụng cụ cho <b>1 bộ giao 1 lớp thực hành</b>. ' +
       'Tải file / sửa ở đây; <a href="#/bien-ban/dc">Biên bản bàn giao dụng cụ</a> ' + esc(hk) + ' tự tạo và cập nhật theo danh sách gốc – ở trang biên bản chỉ chọn môn theo lịch để in / tải. Lớp nhận thêm bộ 2, 3: nút "Xuất bộ 2, 3…" trong biên bản.</div>' +
-      '<div class="tools">' + (xuLy ? '<button class="btn sm" id="b-dc-nhieu">⇪ Tải file dụng cụ (một hoặc nhiều môn)</button>' : '') + '<span class="note">' + linkMau('dung_cu') + '</span></div>' +
+      '<div class="tools">' + (xuLy ? '<button class="btn sm" id="b-dc-nhieu">⇪ Tải file dụng cụ (một hoặc nhiều môn)</button><button class="btn o sm" id="b-dc-dong-bo" title="Cập nhật / tạo biên bản dụng cụ ' + esc(hk) + ' của mọi môn theo danh sách gốc hiện có">↻ Cập nhật biên bản theo danh sách gốc</button>' : '') + '<span class="note">' + linkMau('dung_cu') + '</span></div>' +
       '<div class="grid g4" style="margin-bottom:14px">' + [[coTKB.length, 'Môn có lớp TH ' + hk, ''], [coTKB.filter(m => m.so_dc).length, 'Có danh sách dụng cụ', 'ok'], [coTKB.filter(m => !m.so_dc).length, 'Chưa có danh sách', coTKB.some(m => !m.so_dc) ? 'bad' : 'ok'],
         [coTKB.filter(m => bbDC[m.ma]).length, 'Đã có biên bản dụng cụ', '']].map(x => '<div class="stat ' + x[2] + '"><div class="n">' + x[0] + '</div><div class="l">' + esc(x[1]) + '</div></div>').join('') + '</div>' +
       (!l.length ? '<div class="card empty">Chưa có môn nào có lớp thực hành trong thời khóa biểu ' + esc(hk) + '.</div>' :
@@ -760,6 +760,8 @@
             '<td class="btns"><a class="btn o sm" href="#/hoa-chat/mon/' + esc(m.ma) + '">Xem / sửa</a>' + (xuLy ? '<button class="btn o sm" data-tai-dc="' + esc(m.ma) + '">⇪ Tải file</button>' : '') + '</td></tr>'; }).join('') + '</tbody></table></div>');
     if (window.PTN_MAU_FILE) window.PTN_MAU_FILE.ganLink(nd);
     if ($('b-dc-nhieu')) $('b-dc-nhieu').onclick = () => nhapFileDC(ds);
+    if ($('b-dc-dong-bo')) $('b-dc-dong-bo').onclick = async (e) => { if (!confirm('Cập nhật biên bản dụng cụ ' + hk + ' của mọi môn theo danh sách gốc?\nDòng đã giao được giữ (⚠ nếu không còn trong danh sách); thu hồi được ở Lịch sử tải file.')) return;
+      const b = await chay(e.target, () => api('dc_dong_bo_bb', { hk })); toast('Biên bản dụng cụ: ' + b.tao.length + ' tạo mới, ' + b.cap_nhat.length + ' cập nhật theo danh sách gốc'); dieuHuong(); };
     nd.querySelectorAll('[data-tai-dc]').forEach(b => { b.onclick = () => nhapFileDC(ds, b.dataset.taiDc); });
   }
   function hopMon(m) {
@@ -786,9 +788,11 @@
     $('b-sua-mon').onclick = () => hopMon(m);
     $('b-them-dm').onclick = () => hopDinhMuc({ mon: ma, loai: 'HC' }, r.dinh_muc);
     nd.querySelectorAll('[data-sua]').forEach(b => { b.onclick = () => hopDinhMuc(r.dinh_muc.find(d => d.id === b.dataset.sua), r.dinh_muc); });
-    nd.querySelectorAll('[data-xoa]').forEach(b => { b.onclick = async (e) => { if (!confirm('Xóa dòng định mức này?')) return; await chay(e.target, () => api('dm_xoa', { id: b.dataset.xoa })); toast('Đã xóa'); dieuHuong(); }; });
+    nd.querySelectorAll('[data-xoa]').forEach(b => { b.onclick = async (e) => { if (!confirm('Xóa dòng định mức này?')) return; const r = await chay(e.target, () => api('dm_xoa', { id: b.dataset.xoa })); toast('Đã xóa' + ttBBDM(r)); dieuHuong(); }; });
   }
   const tenSo = (s) => boDau(s).replace(/[^a-z0-9]+/g, ' ').trim(); // so tên hóa chất: bỏ dấu, hoa thường, ký tự lạ
+  // sửa định mức từng dòng → biên bản lớp thực hành của môn đã cập nhật bao nhiêu
+  const ttBBDM = (r) => { const l = (r && r.bien_ban) || [], n = l.reduce((a, b) => a + b.tao.length + b.cap_nhat.length, 0); return n ? ' · đã cập nhật ' + n + ' biên bản bàn giao' : ''; };
   function hopDinhMuc(d, ds) {
     moHop('<h2>' + (d.id ? 'Sửa định mức' : 'Thêm định mức') + '</h2><form id="f"><div class="form-grid">' + o('loai', 'Loại', { select: [['HC', 'Hóa chất – vật tư (/1 SV)'], ['DC', 'Dụng cụ (1 bộ / 1 lớp)']], v: d.loai }) + o('nhom', 'Nhóm', { v: d.nhom || 'Hóa chất', ph: 'Hóa chất, Dược liệu khô…' }) +
       o('ten', 'Tên – quy cách', { v: d.ten, req: 1, full: 1 }) + o('ma_vt', 'Mã VT', { v: d.ma_vt }) + o('nsx', 'NSX', { v: d.nsx }) + o('dvt', 'ĐVT', { v: d.dvt }) + o('dm', 'Định mức', { v: d.dm, req: 1 }) +
@@ -800,7 +804,7 @@
     const kiem = () => { const t = trung(); bao.classList.toggle('hide', !t); bao.innerHTML = t ? '⚠ "' + esc(t.ten) + '" đã có trong định mức của môn (STT ' + esc(t.stt) + ', ' + fmt(t.dm) + ' ' + esc(t.dvt) + ') – bấm "Sửa" ở dòng đó để đổi số lượng.' : ''; return t; };
     oTen.addEventListener('input', kiem); f.querySelector('[name=loai]').onchange = kiem;
     f.querySelector('[name=stt]').closest('label').remove(); // STT tự đánh theo tên A → Z
-    f.onsubmit = async (e) => { e.preventDefault(); if (kiem()) return toast('Hóa chất đã có trong định mức', true); const v = giaTri(e.target); v.id = d.id; v.mon = d.mon; const r = await chay(e.submitter, () => api('dm_luu', { dm: v })); dongHop(); toast('Đã lưu · STT ' + r.stt + (r.ma_vt ? ' · mã VT ' + r.ma_vt : ' · Chưa MVT')); dieuHuong(); };
+    f.onsubmit = async (e) => { e.preventDefault(); if (kiem()) return toast('Hóa chất đã có trong định mức', true); const v = giaTri(e.target); v.id = d.id; v.mon = d.mon; const r = await chay(e.submitter, () => api('dm_luu', { dm: v })); dongHop(); toast('Đã lưu · STT ' + r.stt + ttBBDM(r) + (r.ma_vt ? ' · mã VT ' + r.ma_vt : ' · Chưa MVT')); dieuHuong(); };
   }
 
   async function manVatTu(nd) {
