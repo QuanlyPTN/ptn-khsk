@@ -667,7 +667,7 @@
         (b.khop_lop ? '<p class="note">Đã khớp thêm ' + b.khop_lop + ' ca thực hành với môn.</p>' : '') +
         (b.tao.length ? '<p>✓ Tạo mới ' + b.tao.length + ' biên bản: ' + b.tao.map(id => '<a href="#/bien-ban/' + encodeURIComponent(id) + '" data-dong>' + esc(id) + '</a>').join(', ') + '</p>' : '') +
         (cn.length ? '<p>✓ Cập nhật ' + cn.length + ' biên bản:</p><ul>' + cn.map(c => '<li><a href="#/bien-ban/' + encodeURIComponent(c.id) + '" data-dong>' + esc(c.id) + '</a> ' + esc(c.ten_mon) + ': ' +
-          [c.them && '+' + c.them + ' dòng mới', c.sua && c.sua + ' dòng đổi định mức / dự trù', c.xoa && c.xoa + ' dòng bỏ (chưa giao)', c.giu && c.giu + ' dòng đã giao nhưng không còn trong định mức (giữ lại, ⚠)'].filter(Boolean).join(' · ') + '</li>').join('') + '</ul>' : '') +
+          [c.them && '+' + c.them + ' dòng mới', c.sua && c.sua + ' dòng đổi định mức / dự trù', c.xoa && c.xoa + ' dòng bỏ (chưa giao)', c.giu && c.giu + ' dòng đã giao nhưng không còn trong định mức (giữ lại, ⚠)', c.so_lai && 'xếp lại STT ' + c.so_lai + ' dòng'].filter(Boolean).join(' · ') + '</li>').join('') + '</ul>' : '') +
         ((b.khong_lop || []).length ? '<div class="err" style="margin-top:8px">⚠ Chưa tạo được biên bản cho: <b>' + esc(b.khong_lop.join(', ')) + '</b> – môn chưa có lớp thực hành nào trong thời khóa biểu ' + esc(b.hk) + '.<br>' +
           'Cách xử lý: vào <a href="#/hoa-chat/hoc-ky" data-dong>Học kỳ & thời khóa biểu</a> → "Gán môn" cho các lớp của môn này (hoặc tải lại file và chọn đúng môn có lớp trong TKB). Định mức đã lưu, biên bản sẽ tự tạo khi môn có lớp.</div>' : '') +
         ((b.bo_qua || []).length ? '<div class="err" style="margin-top:8px">⚠ Chưa tạo biên bản: ' + b.bo_qua.map(esc).join('; ') + '</div>' : '') +
