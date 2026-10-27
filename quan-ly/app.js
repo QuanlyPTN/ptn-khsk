@@ -547,7 +547,7 @@
 
   async function manHoaChat(tab, phu) {
     if (!coQuyen('hoa-chat', 'xem')) { location.hash = '#/tong-quan'; return; }
-    const TAB = [['hoc-ky', 'Học kỳ & thời khóa biểu'], ['mon', 'Môn & định mức'], ['vat-tu', 'Danh mục vật tư'], ['du-tru-mon', 'Dự trù hóa chất ' + (hkMacDinh() || 'HK')], ['du-tru', 'Dự trù theo đợt']];
+    const TAB = [['hoc-ky', 'Học kỳ & thời khóa biểu'], ['mon', 'Môn & định mức'], ['vat-tu', 'Tra cứu mã vật tư'], ['du-tru-mon', 'Dự trù hóa chất ' + (hkMacDinh() || 'HK')], ['du-tru', 'Dự trù theo đợt']];
     const nd = trang('Hóa chất – vật tư', '', '<span class="btns">' + TAB.map(t => '<a class="btn sm ' + (t[0] === tab ? 'chon' : 'o') + '" href="#/hoa-chat/' + t[0] + '">' + t[1] + '</a>').join('') + '</span>');
     if (tab === 'mon') return phu ? manMon(nd, phu) : manDsMon(nd);
     if (tab === 'vat-tu') return manVatTu(nd);

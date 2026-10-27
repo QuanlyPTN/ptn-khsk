@@ -1131,18 +1131,19 @@
       '<div class="tools"><b>Học kỳ</b> <select id="f-hk">' + S.dm.hoc_ky.map(h => '<option' + (h === hk ? ' selected' : '') + '>' + esc(h) + '</option>').join('') + '</select>' +
       '<button class="btn sm" id="b-lay-dm"' + (coLop.length ? '' : ' disabled') + ' title="Lấy dự trù của các môn đã chọn từ Môn & định mức (định mức / 1 SV × sĩ số theo TKB)">⤵ Lấy dự trù từ định mức (môn đã chọn)</button>' +
       '<button class="btn sm" id="b-lay-dm-het"' + (coLop.length ? '' : ' disabled') + ' title="Lấy (lại) dự trù của TẤT CẢ môn có lớp trong thời khóa biểu học kỳ từ Môn & định mức">⤵ Lấy lại từ định mức – tất cả ' + coLop.length + ' môn</button>' +
-      '<button class="btn o sm" id="b-phieu-dtm">📄 Phiếu dự trù tất cả môn (điền sẵn)</button><button class="btn o sm" id="b-them-dtm">+ Thêm môn khác</button><button class="btn o sm" id="b-nhap-dtm">⇪ Tải file dự trù của môn (nếu có)</button><button class="btn o sm" id="b-in-dtm"' + (ds.length ? '' : ' disabled') + '>🖨 In / tải Excel (tổng hợp + đối chiếu)</button></div>' +
+      '<button class="btn o sm" id="b-phieu-dtm">📄 Phiếu dự trù tất cả môn (điền sẵn)</button><button class="btn o sm" id="b-them-dtm">+ Thêm môn khác</button><button class="btn o sm" id="b-nhap-dtm">⇪ Tải file dự trù của môn (nếu có)</button><button class="btn o sm" id="b-dong-bo-bb"' + (da.length ? '' : ' disabled') + ' title="Cập nhật dòng + số dự trù của biên bản bàn giao hóa chất theo dự trù hiện có của các môn (không đổi dự trù)">↻ Cập nhật biên bản theo dự trù</button><button class="btn o sm" id="b-in-dtm"' + (ds.length ? '' : ' disabled') + '>🖨 In / tải Excel (tổng hợp + đối chiếu)</button></div>' +
       '<p class="note"><b>Cách làm nhanh (không cần file):</b> chọn các môn ở cột ☐ (môn có lớp thực hành trong thời khóa biểu ' + esc(hk) + ') → bấm <b>"Lấy dự trù từ định mức"</b>: dự trù = định mức hóa chất / 1 SV (thẻ "Môn & định mức") × tổng sĩ số các nhóm của môn trong TKB. ' +
       'Sau đó có thể "Sửa trên web" từng môn nếu kỳ này khác định mức. Vẫn dùng được cách cũ: phiếu dự trù gửi môn → tải file đã điền. Mọi lần lấy / tải đều thu hồi được ở Lịch sử tải file. ' +
-      'Hệ thống đối chiếu từng dòng với <b>biên bản bàn giao hóa chất</b> của môn (thực nhận + bổ sung, hoàn trả).</p>' +
+      '<b>Dự trù là chuẩn:</b> mỗi lần lấy / sửa / tải dự trù, <b>biên bản bàn giao hóa chất</b> của môn tự cập nhật dòng và số dự trù theo dự trù (dòng đã giao được giữ). ' +
+      'Đối chiếu: <span class="tag t-gray">chưa giao</span> = biên bản chưa ghi số bàn giao (chưa phải lệch) · <span class="tag t-warn">lệch</span> = đã giao thiếu / vượt / ngoài dự trù · <span class="tag t-ok">khớp</span> = giao đúng dự trù.</p>' +
       '<div class="grid g4" style="margin-bottom:14px">' + st(ds.filter(x => x.so_lop).length, 'Môn có lớp thực hành') + st(da.length, 'Đã có dự trù', 'ok') + st(chua.length, 'Chưa có dự trù', chua.length ? 'bad' : 'ok') +
-      st(da.filter(x => x.lech).length, 'Môn có dòng lệch với biên bản', da.some(x => x.lech) ? 'warn' : 'ok') + '</div>' +
+      st(da.filter(x => x.lech).length, 'Môn giao lệch dự trù (thiếu / vượt / ngoài dự trù)', da.some(x => x.lech) ? 'warn' : 'ok') + '</div>' +
       (!ds.length ? '<div class="card empty">Học kỳ ' + esc(hk) + ' chưa có lớp thực hành (tải thời khóa biểu ở thẻ "Học kỳ & thời khóa biểu").</div>' :
         '<div class="tbl-wrap"><table><thead><tr><th style="width:64px"><label style="display:flex;gap:4px;align-items:center;cursor:pointer;font-weight:600"><input type="checkbox" id="chon-het-dtm" title="Chọn tất cả môn có lớp"> Tất cả</label></th><th>Môn thực hành</th><th>Mã HP</th><th class="num">Nhóm / sĩ số (TKB)</th><th>Dự trù của môn</th><th>Biên bản hóa chất</th><th>Đối chiếu</th><th></th></tr></thead><tbody>' +
         ds.map(x => '<tr class="click" data-mon="' + esc(x.mon) + '"><td>' + (x.so_lop ? '<input type="checkbox" data-chon-dtm="' + esc(x.mon) + '"' + (x.co_du_tru ? '' : ' checked') + '>' : '') + '</td><td><b>' + esc(x.ten) + '</b></td><td class="mono">' + esc(x.ma_hp) + '</td><td class="num">' + x.so_lop + ' / ' + x.si_so + '</td><td>' +
           (x.co_du_tru ? '<span class="tag t-ok">' + (x.tep === 'Lấy từ Môn & định mức' ? 'Lấy từ định mức' : 'Đã nộp') + ' · ' + x.so_dong + ' dòng</span><div class="note">' + esc(x.tep) + ' · ' + esc(ngayVN(x.ngay)) + '</div>' : '<span class="tag t-bad">Chưa có</span>') + '</td><td>' +
           (x.bien_ban.length ? x.bien_ban.map(b => '<a href="#/bien-ban/' + encodeURIComponent(b) + '">' + esc(b) + '</a>').join('<br>') : '<span class="note">Chưa có</span>') + '</td><td>' +
-          (x.co_du_tru ? (x.lech ? '<span class="tag t-warn">' + x.lech + ' dòng lệch</span> ' : '') + '<span class="tag t-ok">' + x.khop + ' khớp</span>' : '') + '</td><td class="btns">' +
+          (x.co_du_tru ? (x.chua_giao ? '<span class="tag t-gray">' + x.chua_giao + ' chưa giao</span> ' : '') + (x.lech ? '<span class="tag t-warn">' + x.lech + ' lệch</span> ' : '') + '<span class="tag t-ok">' + x.khop + ' khớp</span>' : '') + '</td><td class="btns">' +
           (x.so_lop ? '<button class="btn sm" data-lay-dm="' + esc(x.mon) + '" title="Lấy dự trù của môn từ Môn & định mức">' + (x.co_du_tru ? 'Lấy lại từ định mức' : 'Lấy từ định mức') + '</button>' : '') + '<button class="btn o sm" data-sua-dtm="' + esc(x.mon) + '" title="Nhập / sửa dự trù của môn ngay trên web">Sửa trên web</button><button class="btn o sm" data-phieu="' + esc(x.mon) + '" title="Phiếu dự trù điền sẵn của môn">Phiếu dự trù</button>' +
           (x.co_du_tru ? '<button class="btn o sm" data-dc="' + esc(x.mon) + '">Đối chiếu</button><button class="btn red sm" data-xoa-dtm="' + esc(x.mon) + '">Xóa</button>' : '') + '</td></tr>').join('') + '</tbody></table></div>') +
       '<div id="kq"></div>';
@@ -1154,8 +1155,10 @@
       const daCo = ds.filter(x => mons.indexOf(x.mon) >= 0 && x.co_du_tru);
       if (daCo.length && !confirm(daCo.length + ' môn đã có dự trù (' + daCo.map(x => x.ten).join(', ') + ') – thay bằng số tính từ định mức?\n(Thu hồi lại được ở Lịch sử tải file.)')) return;
       const r = await chay(btn, () => api('dtm_tu_dinh_muc', { hk, mons }));
-      toast('Đã lấy dự trù từ định mức: ' + r.mon.length + ' môn, ' + r.so_dong + ' dòng' + (r.khong_dinh_muc.length ? ' · chưa có định mức: ' + r.khong_dinh_muc.join(', ') : ''), !!r.khong_dinh_muc.length); dieuHuong();
+      toast('Đã lấy dự trù từ định mức: ' + r.mon.length + ' môn, ' + r.so_dong + ' dòng' + ttBB(r) + (r.khong_dinh_muc.length ? ' · chưa có định mức: ' + r.khong_dinh_muc.join(', ') : ''), !!r.khong_dinh_muc.length); dieuHuong();
     };
+    $('b-dong-bo-bb').onclick = async (e) => { if (!confirm('Cập nhật biên bản bàn giao hóa chất của ' + da.length + ' môn theo dự trù hiện có?\nDòng đã giao được giữ (đánh dấu ⚠ nếu không còn trong dự trù); thu hồi được ở Lịch sử tải file.')) return;
+      const b = await chay(e.target, () => api('dtm_dong_bo_bb', { hk })); toast('Biên bản hóa chất: ' + b.tao.length + ' tạo mới, ' + b.cap_nhat.length + ' cập nhật theo dự trù'); dieuHuong(); };
     if ($('chon-het-dtm')) $('chon-het-dtm').onchange = (e) => nd.querySelectorAll('[data-chon-dtm]').forEach(c => { c.checked = e.target.checked; });
     $('b-lay-dm').onclick = (e) => layDM(e.target, [...nd.querySelectorAll('[data-chon-dtm]:checked')].map(c => c.dataset.chonDtm));
     $('b-lay-dm-het').onclick = (e) => layDM(e.target, coLop.map(x => x.mon));
@@ -1222,7 +1225,7 @@
         const dm = dongIn();
         if (!dm.length) { if (r.nguon === 'du_tru' && confirm('Không còn dòng nào – xóa dự trù đã lưu của môn?')) { await api('dtm_xoa', { hk, mon }); toast('Đã xóa dự trù'); dieuHuong(); } else toast('Chưa có dòng dự trù nào', true); return; }
         const kq = await api('dtm_nhap', { hk, tep: 'Nhập / sửa trên web', ds: [{ mon, ten: r.mon.ten, ma_hp: [], lop: [{ lop: '', ma_lhp: '', si_so: ss }], dm }] });
-        toast('Đã lưu dự trù ' + r.mon.ten + ' · ' + kq.so_dong + ' dòng'); doi = false; dieuHuong();
+        toast('Đã lưu dự trù ' + r.mon.ten + ' · ' + kq.so_dong + ' dòng' + ttBB(kq)); doi = false; dieuHuong();
       });
     };
     // gợi ý tên từ danh mục vật tư (gõ ≥ 2 ký tự)
@@ -1261,21 +1264,23 @@
         if (!ds.length) return toast('Chọn môn trên web cho ít nhất một môn trong file', true);
         const tep = (($('x-file').files || [])[0] || {}).name || '';
         const r = await chay(e.target, () => api('dtm_nhap', { hk, ds, tep }));
-        dongHop(); toast('Đã lưu dự trù ' + r.mon.length + ' môn · ' + r.so_dong + ' dòng'); dieuHuong();
+        dongHop(); toast('Đã lưu dự trù ' + r.mon.length + ' môn · ' + r.so_dong + ' dòng' + ttBB(r)); dieuHuong();
       };
     }, /du tru|DUOC|KH|HK/i);
   }
   const fmtO = (v) => v === '' || v == null ? '' : fmt(v);
+  // biên bản hóa chất cập nhật theo dự trù vừa lưu
+  const ttBB = (r) => { const b = r.bien_ban || {}, n = (b.tao || []).length + (b.cap_nhat || []).length; return n ? ' · biên bản hóa chất: ' + (b.tao || []).length + ' tạo mới, ' + (b.cap_nhat || []).length + ' cập nhật theo dự trù' : ''; };
   function veDoiChieuDTM(r) {
-    const lech = r.dong.filter(x => x.danh_gia !== 'Khớp');
+    const lech = r.dong.filter(x => x.danh_gia !== 'Khớp' && x.danh_gia !== 'Chưa bàn giao');
     $('kq').innerHTML = '<div class="card"><div class="btns" style="justify-content:space-between"><h2 style="margin:0">Đối chiếu dự trù – bàn giao: ' + esc(r.ten) + '</h2>' +
-      '<span class="btns"><label class="check" style="margin:0"><input type="checkbox" id="chi-lech"> Chỉ dòng lệch (' + lech.length + ')</label><button class="btn o sm" id="b-in-dc">🖨 In / tải Excel</button></span></div>' +
+      '<span class="btns"><label class="check" style="margin:0"><input type="checkbox" id="chi-lech"> Chỉ dòng lệch – giao thiếu / vượt / ngoài dự trù (' + lech.length + ')</label><button class="btn o sm" id="b-in-dc">🖨 In / tải Excel</button></span></div>' +
       '<p class="note">Dự trù: ' + esc(r.tep || '') + ' · ' + esc(ngayVN(r.ngay)) + ' · lớp ' + esc(r.lop.map(l => l.lop + ' (' + l.si_so + ')').join(', ')) + '<br>Biên bản: ' +
         (r.bien_ban.length ? r.bien_ban.map(b => '<a href="#/bien-ban/' + encodeURIComponent(b.id) + '">' + esc(b.id) + '</a> (' + esc(b.trang_thai) + ')').join(', ') : 'chưa có biên bản hóa chất của môn trong học kỳ') + '</p>' +
       '<div class="tbl-wrap"><table id="bang-dc"><thead><tr><th>STT</th><th>Tên – quy cách</th><th>Mã VT</th><th>ĐVT</th><th class="num">Dự trù</th><th class="num">Đã bàn giao</th><th class="num">Hoàn trả</th><th class="num">Chênh lệch</th><th>Đánh giá</th></tr></thead><tbody>' +
       r.dong.map(x => '<tr data-dg="' + esc(x.danh_gia) + '"><td>' + esc(x.stt) + '</td><td>' + esc(x.ten) + '</td><td class="mono">' + esc(x.ma_vt) + '</td><td>' + esc(x.dvt) + '</td><td class="num">' + fmtO(x.du_tru) + '</td><td class="num">' + fmtO(x.ban_giao) +
         '</td><td class="num">' + fmtO(x.tra) + '</td><td class="num">' + (x.chenh ? '<b style="color:' + (x.chenh > 0 ? 'var(--warn,#B7791F)' : 'var(--bad)') + '">' + (x.chenh > 0 ? '+' : '') + fmt(x.chenh) + '</b>' : '') + '</td><td><span class="tag ' + (MAU_DG[x.danh_gia] || 't-gray') + '">' + esc(x.danh_gia) + '</span></td></tr>').join('') + '</tbody></table></div></div>';
-    $('chi-lech').onchange = (e) => $('bang-dc').querySelectorAll('tr[data-dg]').forEach(tr => { tr.style.display = e.target.checked && tr.dataset.dg === 'Khớp' ? 'none' : ''; });
+    $('chi-lech').onchange = (e) => $('bang-dc').querySelectorAll('tr[data-dg]').forEach(tr => { tr.style.display = e.target.checked && (tr.dataset.dg === 'Khớp' || tr.dataset.dg === 'Chưa bàn giao') ? 'none' : ''; });
     $('b-in-dc').onclick = () => window.PTN_IN.xemTruoc({ ten: 'Doi chieu du tru ' + r.mon + ' ' + homNay(), trang: [trangDoiChieu(r)] });
   }
   // Biểu mẫu đối chiếu một môn
@@ -1291,8 +1296,8 @@
   function fileDTM(x) {
     const IN = window.PTN_IN, dung = {};
     const t1 = IN.bieuMau({ ten: 'Tổng hợp thu thập', tieuDe: 'TÌNH HÌNH THU THẬP DỰ TRÙ HÓA CHẤT – VẬT TƯ CÁC MÔN THỰC HÀNH', phuDe: 'Khoa Khoa học Sức khỏe – ' + x.hk + ', lập ngày ' + ngayVN(homNay()), nguoiLap: S.toi.nguoi.ten, huong: 'ngang',
-      cot: ['Môn thực hành', 'Mã học phần', { ten: 'Số lớp', so: 1 }, { ten: 'Sĩ số', so: 1 }, 'Dự trù', { ten: 'Số dòng', so: 1 }, 'Ngày nộp', 'Biên bản hóa chất', { ten: 'Dòng khớp', so: 1 }, { ten: 'Dòng lệch', so: 1 }],
-      dong: x.tong.map(t => [t.ten, t.ma_hp, t.so_lop, t.si_so, t.co_du_tru ? 'Đã nộp' : 'Chưa nộp', t.so_dong || '', ngayVN((t.ngay || '').slice(0, 10)), t.bien_ban.join(', '), t.co_du_tru ? t.khop : '', t.co_du_tru ? t.lech : '']),
+      cot: ['Môn thực hành', 'Mã học phần', { ten: 'Số lớp', so: 1 }, { ten: 'Sĩ số', so: 1 }, 'Dự trù', { ten: 'Số dòng', so: 1 }, 'Ngày nộp', 'Biên bản hóa chất', { ten: 'Dòng khớp', so: 1 }, { ten: 'Chưa giao', so: 1 }, { ten: 'Dòng lệch', so: 1 }],
+      dong: x.tong.map(t => [t.ten, t.ma_hp, t.so_lop, t.si_so, t.co_du_tru ? 'Đã nộp' : 'Chưa nộp', t.so_dong || '', ngayVN((t.ngay || '').slice(0, 10)), t.bien_ban.join(', '), t.co_du_tru ? t.khop : '', t.co_du_tru ? t.chua_giao : '', t.co_du_tru ? t.lech : '']),
       tong: undefined });
     const trang = [t1];
     if (x.doi_chieu.length) {
