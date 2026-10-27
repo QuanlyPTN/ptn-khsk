@@ -132,26 +132,29 @@
       { cao: 22, o: [{ v: kltn ? 'BIÊN BẢN BÀN GIAO DỤNG CỤ ĐỒ ÁN – KLTN – NCKH' : 'BIÊN BẢN BÀN GIAO DỤNG CỤ HỆ ĐẠI HỌC' + (boThem ? ' – BỘ ' + bo : ''), cs: n, can: 'c', b: 1, co: 16 }] },
       { cao: 20, o: [{ v: 'HỌC KỲ ' + (h.ky || '......').toUpperCase() + ' NĂM HỌC ' + (h.nam || '......'), cs: n, can: 'c', b: 1, co: 14 }] }];
     if (kltn) {
-      const tn = ((hs && hs.nhom) || [])[0] || {};
-      hang.push(trai('ĐỀ TÀI: ' + b.ten_mon, 'Mã hồ sơ: ' + b.lop), trai('TRƯỞNG NHÓM: ' + [tn.ho_ten, tn.ma_so, tn.sdt].filter(Boolean).join(' – '), 'Phòng: ' + b.phong),
-        trai('GVHD: ' + b.gv, 'Thời gian: ' + tg(b.thoi_gian)));
-    } else hang.push(trai('MÔN: ' + b.ten_mon, 'Thời gian: ' + tg(b.thoi_gian)), trai('TỔNG SỐ SV THỰC HÀNH: ' + (b.si_so || ''), 'Phòng: ' + b.phong), trai('GVHD: ' + b.gv, 'Lớp: ' + b.lop));
-    hang.push({ cao: 112, o: [{ v: 'Lưu ý:\n- Khi bàn giao sinh viên kiểm tra kỹ dụng cụ có bị nứt, mẻ, gãy, vỡ,…. hay có bất cứ vấn đề gì thì báo cho phòng thí nghiệm để xác nhận tình trạng.\n- Sau khi bàn giao phòng thí nghiệm sẽ không chịu trách nhiệm về các vấn đề xảy ra trong quá trình sử dụng. Kết thúc đợt học, sinh viên vệ sinh sạch sẽ và sấy khô trước khi trả lại cho phòng thí nghiệm.\n- Phòng thí nghiệm sẽ không nhận dụng cụ trả lại khác với tình trạng lúc bàn giao cho sinh viên.\n- Trước khi nhận và trả phải báo trước phòng thí nghiệm 1 ngày để PTN bố trí người và thời gian nhận.', cs: n, co: 12, doc: 't' }] },
-      { cao: 10, o: [{ v: '', cs: n }] },
-      { cao: 16, o: ['STT', 'TÊN DỤNG CỤ', 'NSX', 'ĐVT'].map(v => ({ v, rs: 2, b: 1, can: 'c', vien: 1 })).concat([{ v: 'SỐ LƯỢNG', cs: 3, b: 1, can: 'c', vien: 1 }, { v: 'GHI CHÚ', rs: 2, b: 1, can: 'c', vien: 1 }]) },
-      { cao: 16, o: ['MƯỢN', 'TRẢ', 'NỢ'].map(v => ({ v, b: 1, can: 'c', vien: 1 })) });
-    const dau = hang.length - 1;
-    r.dong.forEach((d, i) => {
-      const muon = (+d.ban_giao || 0) + (+d.bo_sung || 0), ten = d.ten + (d.canh_bao ? ' (*)' : ''), gc = [d.ghi_chu, +d.bo_sung ? 'Mượn thêm ' + r3(d.bo_sung) : ''].filter(Boolean).join('; ');
-      const so = (v, b2) => ({ v, can: 'c', vien: 1, b: b2, co: 12 });
-      hang.push({ cao: Math.max(caoChu(ten, 29.3, 12, 18), caoChu(d.nsx, 8.7, 11, 18), caoChu(gc, 16, 10, 18)), o: [so(i + 1), { v: ten, vien: 1, co: 12 }, { v: d.nsx || '', can: 'c', vien: 1, co: 11 }, so(d.dvt || ''),
-        so(muon ? r3(muon) : (d.ke_hoach ? r3(d.ke_hoach) : ''), 1), so(+d.tra ? r3(d.tra) : ''), so(muon && no(d) > 0 ? no(d) : ''), { v: gc, vien: 1, co: 10 }] });
-    });
-    hang.push({ cao: 10, o: [{ v: '', cs: n }] }, { cao: 17, o: [{ v: '2. Thiết bị cần mượn sử dụng', cs: n, b: 1, co: 13, vien: 1 }] },
-      { cao: 16, o: [{ v: 'STT', rs: 2, b: 1, can: 'c', vien: 1 }, { v: 'TÊN THIẾT BỊ', rs: 2, b: 1, can: 'c', vien: 1 }, { v: 'NSX', rs: 2, b: 1, can: 'c', vien: 1 }, { v: '', rs: 2, vien: 1 }, { v: 'SỐ LƯỢNG', cs: 3, b: 1, can: 'c', vien: 1 }, { v: 'GHI CHÚ', rs: 2, b: 1, can: 'c', vien: 1 }] },
-      { cao: 16, o: ['MƯỢN', 'NHẬN', 'TRẢ'].map(v => ({ v, b: 1, can: 'c', vien: 1 })) });
-    const tb = ((hs && hs.ten_tb) || []);
-    for (let i = 0; i < Math.max(5, tb.length); i++) hang.push({ cao: Math.max(18, caoChu(tb[i], 29.3, 12, 18)), o: [{ v: i + 1, can: 'c', vien: 1, co: 12 }, { v: tb[i] || '', vien: 1, co: 12 }].concat([0, 1, 2, 3, 4, 5].map(() => ({ v: '', vien: 1 }))) });
+        const tn = ((hs && hs.nhom) || [])[0] || {};
+        hang.push(trai('ĐỀ TÀI: ' + b.ten_mon, 'Mã hồ sơ: ' + b.lop), trai('TRƯỞNG NHÓM: ' + [tn.ho_ten, tn.ma_so, tn.sdt].filter(Boolean).join(' – '), 'Phòng: ' + b.phong),
+          trai('GVHD: ' + b.gv, 'Thời gian: ' + tg(b.thoi_gian)));
+      } else hang.push(trai('MÔN: ' + b.ten_mon, 'Thời gian: ' + tg(b.thoi_gian)), trai('TỔNG SỐ SV THỰC HÀNH: ' + (b.si_so || ''), 'Phòng: ' + b.phong), trai('GVHD: ' + b.gv, 'Lớp: ' + b.lop));
+      hang.push({ cao: 112, o: [{ v: 'Lưu ý:\n- Khi bàn giao sinh viên kiểm tra kỹ dụng cụ có bị nứt, mẻ, gãy, vỡ,…. hay có bất cứ vấn đề gì thì báo cho phòng thí nghiệm để xác nhận tình trạng.\n- Sau khi bàn giao phòng thí nghiệm sẽ không chịu trách nhiệm về các vấn đề xảy ra trong quá trình sử dụng. Kết thúc đợt học, sinh viên vệ sinh sạch sẽ và sấy khô trước khi trả lại cho phòng thí nghiệm.\n- Phòng thí nghiệm sẽ không nhận dụng cụ trả lại khác với tình trạng lúc bàn giao cho sinh viên.\n- Trước khi nhận và trả phải báo trước phòng thí nghiệm 1 ngày để PTN bố trí người và thời gian nhận.', cs: n, co: 12, doc: 't' }] },
+        { cao: 10, o: [{ v: '', cs: n }] },
+        { cao: 16, o: ['STT', 'TÊN DỤNG CỤ', 'NSX', 'ĐVT'].map(v => ({ v, rs: 2, b: 1, can: 'c', vien: 1 })).concat([{ v: 'SỐ LƯỢNG', cs: 3, b: 1, can: 'c', vien: 1 }, { v: 'GHI CHÚ', rs: 2, b: 1, can: 'c', vien: 1 }]) },
+        { cao: 16, o: ['MƯỢN', 'TRẢ', 'NỢ'].map(v => ({ v, b: 1, can: 'c', vien: 1 })) });
+      const dau = hang.length - 1;
+      r.dong.forEach((d, i) => {
+        const muon = (+d.ban_giao || 0) + (+d.bo_sung || 0), ten = d.ten + (d.canh_bao ? ' (*)' : ''), gc = [d.ghi_chu, +d.bo_sung ? 'Mượn thêm ' + r3(d.bo_sung) : ''].filter(Boolean).join('; ');
+        const so = (v, b2) => ({ v, can: 'c', vien: 1, b: b2, co: 12 });
+        hang.push({ cao: Math.max(caoChu(ten, 29.3, 12, 18), caoChu(d.nsx, 8.7, 11, 18), caoChu(gc, 16, 10, 18)), o: [so(i + 1), { v: ten, vien: 1, co: 12 }, { v: d.nsx || '', can: 'c', vien: 1, co: 11 }, so(d.dvt || ''),
+          so(muon ? r3(muon) : (d.ke_hoach ? r3(d.ke_hoach) : ''), 1), so(+d.tra ? r3(d.tra) : ''), so(muon && no(d) > 0 ? no(d) : ''), { v: gc, vien: 1, co: 10 }] });
+      });
+      // bảng thiết bị: chỉ biên bản đồ án – KLTN – NCKH (thiết bị đăng ký trong hồ sơ QR7); lớp thực hành: GV mượn thiết bị bằng QR2, không in ở đây
+      if (kltn) {
+      hang.push({ cao: 10, o: [{ v: '', cs: n }] }, { cao: 17, o: [{ v: '2. Thiết bị cần mượn sử dụng', cs: n, b: 1, co: 13, vien: 1 }] },
+        { cao: 16, o: [{ v: 'STT', rs: 2, b: 1, can: 'c', vien: 1 }, { v: 'TÊN THIẾT BỊ', rs: 2, b: 1, can: 'c', vien: 1 }, { v: 'NSX', rs: 2, b: 1, can: 'c', vien: 1 }, { v: '', rs: 2, vien: 1 }, { v: 'SỐ LƯỢNG', cs: 3, b: 1, can: 'c', vien: 1 }, { v: 'GHI CHÚ', rs: 2, b: 1, can: 'c', vien: 1 }] },
+        { cao: 16, o: ['MƯỢN', 'NHẬN', 'TRẢ'].map(v => ({ v, b: 1, can: 'c', vien: 1 })) });
+      const tb = ((hs && hs.ten_tb) || []);
+      for (let i = 0; i < Math.max(5, tb.length); i++) hang.push({ cao: Math.max(18, caoChu(tb[i], 29.3, 12, 18)), o: [{ v: i + 1, can: 'c', vien: 1, co: 12 }, { v: tb[i] || '', vien: 1, co: 12 }].concat([0, 1, 2, 3, 4, 5].map(() => ({ v: '', vien: 1 }))) });
+    } else hang.push({ cao: 10, o: [{ v: '', cs: n }] });
     hang.push({ cao: 17, o: [{ v: '', cs: 4 }, { v: 'Ngày …….. Tháng …… năm 20……', cs: 4, can: 'c', i: 1, co: 12 }] },
       { cao: 25.25, o: [{ v: 'BÊN NHẬN', cs: 2, can: 'c', b: 1 }, { v: 'GIẢNG VIÊN HƯỚNG DẪN', cs: 3, can: 'c', b: 1 }, { v: 'BÊN GIAO', cs: 3, can: 'c', b: 1 }] },
       { cao: 30, o: [{ v: kltn ? '(Trưởng nhóm - ký, ghi rõ họ tên, MSSV, SĐT)' : '(Đại diện lớp - ký, ghi rõ họ tên, MSSV, SĐT)', cs: 2, can: 'c', i: 1, co: 10 }, { v: '(Ký, ghi rõ họ tên)', cs: 3, can: 'c', i: 1, co: 10 }, { v: '(Cán bộ PTN - ký, ghi rõ họ tên)', cs: 3, can: 'c', i: 1, co: 10 }] });
