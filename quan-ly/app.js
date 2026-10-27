@@ -699,35 +699,43 @@
     const monTen = (ma) => (ds.find(m => m.ma === ma) || {}).ten || '';
     moHop('<h2>Tải file dụng cụ các môn</h2><p class="note">Chọn <b>một hoặc nhiều file</b> (mỗi file danh sách dụng cụ của một môn – 1 bộ giao 1 lớp thực hành; cột "Tên dụng cụ", "Số lượng" hoặc "SL dự trù"). ' +
       'Hệ thống tự khớp môn theo dòng "MÔN: …"; kiểm tra cột "Gắn vào môn" rồi bấm cập nhật. Danh sách gốc của môn được thay; biên bản dụng cụ ' + esc(hk) + ' tự tạo / cập nhật.' + linkMau('dung_cu') + '</p>' +
-      '<label class="f"><span>File Excel (chọn được nhiều file)</span><input type="file" id="x-file" multiple accept=".xlsx,.xls,.xlsm"></label><div id="x-kq"></div>');
+      '<p class="note">Mỗi <b>sheet</b> có cột "Tên dụng cụ" được đọc thành một dòng (file nhiều sheet / nhiều môn cũng được) – bỏ chọn sheet không muốn nhập (nháp, bản cũ).</p><label class="f"><span>File Excel (chọn được nhiều file)</span><input type="file" id="x-file" multiple accept=".xlsx,.xls,.xlsm"></label><div id="x-kq"></div>');
     if (window.PTN_MAU_FILE) window.PTN_MAU_FILE.ganLink($('modal-body'));
     $('x-file').onchange = async (e) => {
       const files = [...e.target.files]; if (!files.length) return;
       $('x-kq').innerHTML = '<div class="loading"><div class="spin"></div></div>';
-      const X = await napXlsx(), ds2 = [];
+      // mọi sheet của mọi file: sheet đọc được = một dòng (chọn / bỏ, gắn môn); sheet không đọc được → liệt kê kèm lý do
+      const X = await napXlsx(), ds2 = [], boQua = [];
       for (const f of files) {
-        const x = { tep: f.name };
-        try {
-          const wb = X.read(await f.arrayBuffer(), { cellDates: true }); let loi1 = '';
-          for (const ten of wb.SheetNames) { try { x.dc = docDungCu(X.utils.sheet_to_json(wb.Sheets[ten], { header: 1, raw: true, defval: '' })); break; } catch (err) { loi1 = loi1 || err.message; } }
-          if (!x.dc) throw new Error(loi1);
-          const g = monChon && files.length === 1 ? { ma: monChon } : goiYMon(x.dc.ten || f.name.replace(/\.[^.]+$/, '')); x.mon = g ? g.ma : '';
-        } catch (err) { x.loi = err.message; }
-        ds2.push(x);
+        let wb; try { wb = X.read(await f.arrayBuffer(), { cellDates: true }); } catch (err) { boQua.push({ tep: f.name, sheet: '', loi: 'Không mở được file: ' + err.message }); continue; }
+        wb.SheetNames.forEach(ten => {
+          try { const dc = docDungCu(X.utils.sheet_to_json(wb.Sheets[ten], { header: 1, raw: true, defval: '' })); ds2.push({ tep: f.name, sheet: ten, dc }); }
+          catch (err) { boQua.push({ tep: f.name, sheet: ten, loi: err.message }); }
+        });
       }
+      const mot = ds2.length === 1 && monChon;
+      ds2.forEach(x => { const g = mot ? { ma: monChon } : goiYMon(x.dc.ten) || goiYMon(x.sheet) || (files.length === 1 ? null : goiYMon(x.tep.replace(/\.[^.]+$/, ''))); x.mon = g ? g.ma : ''; x.chon = true; });
+      // nhiều sheet cùng khớp một môn (sheet nháp / bản cũ) → chỉ chọn sẵn sheet đầu
+      ds2.forEach((x, i) => { if (x.mon && ds2.slice(0, i).some(y => y.chon && y.mon === x.mon)) { x.chon = false; x.trung = 1; } });
       const chonMon = (x, i) => '<select data-i="' + i + '"><option value="">— Chọn môn —</option>' + ds.map(m => '<option value="' + esc(m.ma) + '"' + (m.ma === x.mon ? ' selected' : '') + '>' + esc(m.ten + (coLop[m.ma] ? ' ✓' : ' (chưa có lớp trong TKB)')) + '</option>').join('') +
-        (x.dc && x.dc.ten ? '<option value="~moi">+ Tạo môn mới: ' + esc(x.dc.ten) + '</option>' : '') + '</select>';
-      $('x-kq').innerHTML = '<div class="tbl-wrap" style="max-height:340px"><table><thead><tr><th>File</th><th>Môn trong file</th><th class="num">Dụng cụ</th><th>Gắn vào môn (✓ có lớp TH ' + esc(hk) + ')</th></tr></thead><tbody>' +
-        ds2.map((x, i) => '<tr><td class="note">' + esc(x.tep) + '</td>' + (x.loi ? '<td colspan="3" class="err">' + esc(x.loi) + '</td>' :
-          '<td>' + esc(x.dc.ten || '(không ghi)') + '</td><td class="num">' + x.dc.dm.length + '</td><td>' + chonMon(x, i) + '</td>') + '</tr>').join('') + '</tbody></table></div>' +
-        '<p class="note" id="x-nhac"></p><div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn" id="x-ok">Cập nhật danh sách gốc + biên bản</button></div>';
-      const nhac = () => { const ok = ds2.filter(x => x.dc), chua = ok.filter(x => !x.mon).length, k = ok.filter(x => x.mon && x.mon !== '~moi' && !coLop[x.mon]).length;
-        $('x-nhac').innerHTML = ok.length + ' file đọc được' + (chua ? ' · <b style="color:var(--bad)">' + chua + ' file chưa chọn môn</b>' : '') + (k ? ' · ' + k + ' môn chưa có lớp trong TKB ' + esc(hk) + ' (chỉ lưu danh sách, chưa tạo biên bản)' : ''); };
-      $('x-kq').querySelectorAll('select[data-i]').forEach(sl => { sl.onchange = () => { ds2[+sl.dataset.i].mon = sl.value; nhac(); }; }); nhac();
+        (x.dc.ten ? '<option value="~moi">+ Tạo môn mới: ' + esc(x.dc.ten) + '</option>' : '') + '</select>';
+      $('x-kq').innerHTML = (!ds2.length ? '<p class="err">Không có sheet nào đọc được danh sách dụng cụ.</p>' :
+        '<div class="tbl-wrap" style="max-height:340px"><table><thead><tr><th><input type="checkbox" id="x-chon-het" checked title="Chọn tất cả"></th><th>File › sheet</th><th>Môn trong sheet</th><th class="num">Dụng cụ</th><th>Gắn vào môn (✓ có lớp TH ' + esc(hk) + ')</th></tr></thead><tbody>' +
+        ds2.map((x, i) => '<tr><td><input type="checkbox" data-chon="' + i + '"' + (x.chon ? ' checked' : '') + '></td><td><span class="note">' + esc(x.tep) + ' ›</span> <b>' + esc(x.sheet) + '</b>' + (x.trung ? '<div class="note" style="color:var(--bad)">trùng môn với sheet trên – bỏ chọn sẵn</div>' : '') + '</td>' +
+          '<td>' + esc(x.dc.ten || '(không ghi)') + '</td><td class="num">' + x.dc.dm.length + '</td><td>' + chonMon(x, i) + '</td></tr>').join('') + '</tbody></table></div>') +
+        (boQua.length ? '<details style="margin-top:6px"><summary class="note">' + boQua.length + ' sheet không đọc được (bỏ qua)</summary><ul class="note" style="margin:4px 0 0 18px;padding:0">' +
+          boQua.map(x => '<li>' + esc(x.tep) + (x.sheet ? ' › <b>' + esc(x.sheet) + '</b>' : '') + ': ' + esc(x.loi) + '</li>').join('') + '</ul></details>' : '') +
+        '<p class="note" id="x-nhac"></p><div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn" id="x-ok"' + (ds2.length ? '' : ' disabled') + '>Cập nhật danh sách gốc + biên bản</button></div>';
+      const nhac = () => { const ok = ds2.filter(x => x.chon), chua = ok.filter(x => !x.mon).length, k = ok.filter(x => x.mon && x.mon !== '~moi' && !coLop[x.mon]).length;
+        $('x-nhac').innerHTML = ds2.length + ' sheet đọc được · <b>' + ok.length + '</b> sheet đã chọn' + (chua ? ' · <b style="color:var(--bad)">' + chua + ' sheet chưa chọn môn</b>' : '') + (k ? ' · ' + k + ' môn chưa có lớp trong TKB ' + esc(hk) + ' (chỉ lưu danh sách, chưa tạo biên bản)' : ''); };
+      $('x-kq').querySelectorAll('select[data-i]').forEach(sl => { sl.onchange = () => { ds2[+sl.dataset.i].mon = sl.value; nhac(); }; });
+      $('x-kq').querySelectorAll('[data-chon]').forEach(c => { c.onchange = () => { ds2[+c.dataset.chon].chon = c.checked; nhac(); }; });
+      if ($('x-chon-het')) $('x-chon-het').onchange = (ev) => { ds2.forEach(x => { x.chon = ev.target.checked; }); $('x-kq').querySelectorAll('[data-chon]').forEach(c => { c.checked = ev.target.checked; }); nhac(); };
+      nhac();
       $('x-ok').onclick = async (ev) => {
-        const ok = ds2.filter(x => x.dc); if (!ok.length) return toast('Không có file nào đọc được', true);
-        if (ok.some(x => !x.mon)) return toast('Chọn môn cho mọi file', true);
-        const trung = ok.map(x => x.mon).filter((m, i, a) => m !== '~moi' && a.indexOf(m) !== i); if (trung.length) return toast('Hai file cùng gắn vào môn ' + monTen(trung[0]), true);
+        const ok = ds2.filter(x => x.chon); if (!ok.length) return toast('Chọn ít nhất một sheet', true);
+        if (ok.some(x => !x.mon)) return toast('Chọn môn cho mọi sheet đã chọn', true);
+        const trung = ok.map(x => x.mon).filter((m, i, a) => m !== '~moi' && a.indexOf(m) !== i); if (trung.length) return toast('Hai sheet cùng gắn vào môn ' + monTen(trung[0]) + ' – bỏ chọn một sheet', true);
         const r = await chay(ev.target, () => api('dm_nhap', { loai: 'DC', hk, dong_bo: true, ds: ok.map(x => ({ mon: x.mon === '~moi' ? '' : x.mon, ten: x.mon === '~moi' ? x.dc.ten : monTen(x.mon), ma_hp: [], dm: x.dc.dm })) }));
         ketQuaDongBo(r, 'Đã cập nhật danh sách dụng cụ gốc');
       };
