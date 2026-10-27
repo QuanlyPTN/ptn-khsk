@@ -118,16 +118,18 @@
     return { ten: b.id, huong: 'doc', cot, lapLai: [dau, dau + 1], hang, le: [0.6, 0.5, 0.6, 0.5],
       anh: qr ? [{ dataUrl: qr.dataUrl, cot: 9 + (pxCot(cot[9]) - QR_PX - 2) / pxCot(cot[9]), hang: 4 + 1 / 32, rong: QR_PX, cao: QR_PX, vi_tri: 'top:' + tren + 'pt;right:2px' }] : [] };
   }
-  function bienBanDC(r, qr, hs) {
-    const b = r.bb, h = hk2(b.hk), n = 8, kltn = b.nhanh === 'KLTN – NCKH';
+  // bo ≥ 2: biên bản bộ dụng cụ thứ bo giao thêm cho lớp – cùng danh mục, số lượng = 1 bộ (dự trù), cột trả / nợ để trống ghi tay
+  function bienBanDC(r, qr, hs, bo) {
+    const b = r.bb, h = hk2(b.hk), n = 8, kltn = b.nhanh === 'KLTN – NCKH', boThem = bo > 1;
+    if (boThem) r = Object.assign({}, r, { dong: r.dong.map(d => Object.assign({}, d, { ban_giao: d.ke_hoach, bo_sung: '', tra: '' })) });
     const cot = [5.3, 29.3, 8.7, 8.3, 12.5, 8.7, 9, 16];
     const no = (d) => r3((+d.ban_giao || 0) + (+d.bo_sung || 0) - (+d.tra || 0)), tongNo = r.dong.reduce((a, d) => a + Math.max(0, no(d)), 0);
     const trai = (v, k) => ({ cao: Math.max(15, caoChu(v, 63.8, 12, 15), caoChu(k, 33.7, 12, 15)), o: [{ v, cs: 5, b: 1, co: 12 }, { v: k, cs: 3, b: 1, co: 12, vien: 'tb' }] });
     // khung Người soạn / Tủ soạn (E–H) – mã QR nằm trong khung, ô H1:H3
     const hang = [{ cao: 18, o: [{ v: 'ĐẠI HỌC CÔNG NGHIỆP TP. HỒ CHÍ MINH', cs: 4, co: 11 }, { v: 'Người soạn:', cs: 3, co: 12, gach: 1, vien: 'tl' }, { v: '', rs: 3, vien: 'trb' }] },
       { cao: 18, o: [{ v: 'KHOA KHOA HỌC SỨC KHỎE', cs: 4, b: 1, co: 11 }, { v: 'Tủ soạn:', co: 12, gach: 1, vien: 'l' }, { v: 'Tủ bàn giao:', cs: 2, co: 12, gach: 1 }] },
-      { cao: 18, o: [{ v: 'Số: ' + b.id, cs: 4, i: 1, co: 10 }, { v: 'Thời gian trả:', co: 12, gach: 1, vien: 'lb' }, { v: 'Còn nợ: ' + (r.dong.some(d => +d.tra) ? tongNo : ''), cs: 2, co: 12, gach: 1, vien: 'b' }] },
-      { cao: 22, o: [{ v: kltn ? 'BIÊN BẢN BÀN GIAO DỤNG CỤ ĐỒ ÁN – KLTN – NCKH' : 'BIÊN BẢN BÀN GIAO DỤNG CỤ HỆ ĐẠI HỌC', cs: n, can: 'c', b: 1, co: 16 }] },
+      { cao: 18, o: [{ v: 'Số: ' + b.id + (boThem ? '/B' + bo : ''), cs: 4, i: 1, co: 10 }, { v: 'Thời gian trả:', co: 12, gach: 1, vien: 'lb' }, { v: 'Còn nợ: ' + (r.dong.some(d => +d.tra) ? tongNo : ''), cs: 2, co: 12, gach: 1, vien: 'b' }] },
+      { cao: 22, o: [{ v: kltn ? 'BIÊN BẢN BÀN GIAO DỤNG CỤ ĐỒ ÁN – KLTN – NCKH' : 'BIÊN BẢN BÀN GIAO DỤNG CỤ HỆ ĐẠI HỌC' + (boThem ? ' – BỘ ' + bo : ''), cs: n, can: 'c', b: 1, co: 16 }] },
       { cao: 20, o: [{ v: 'HỌC KỲ ' + (h.ky || '......').toUpperCase() + ' NĂM HỌC ' + (h.nam || '......'), cs: n, can: 'c', b: 1, co: 14 }] }];
     if (kltn) {
       const tn = ((hs && hs.nhom) || [])[0] || {};
@@ -162,7 +164,7 @@
       { cao: 15, o: [{ v: '(Ký, ghi rõ họ tên)', cs: 2, can: 'c', i: 1, co: 10 }, { v: '', cs: 3 }, { v: '(Ký, ghi rõ họ tên)', cs: 3, can: 'c', i: 1, co: 10 }] });
     for (let i = 0; i < 3; i++) hang.push({ cao: 15, o: [{ v: '', cs: n }] }); // chỗ ký hoàn trả (3 dòng: vừa một trang A4, không dư trang trắng)
     const q = 64, caoKhung = 54 * 4 / 3; // px
-    return { ten: b.id, huong: 'doc', cot, lapLai: [dau, dau + 1], hang, le: [0.33, 0.17, 0.3, 0.17],
+    return { ten: (b.id + (boThem ? ' bo ' + bo : '')).slice(0, 31), huong: 'doc', cot, lapLai: [dau, dau + 1], hang, le: [0.33, 0.17, 0.3, 0.17],
       anh: qr ? [{ dataUrl: qr.dataUrl, cot: 7 + (pxCot(cot[7]) - q - 6) / pxCot(cot[7]), hang: (caoKhung - q) / 2 / 24, rong: q, cao: q, vi_tri: 'top:' + (caoKhung - q) / 2 * 0.75 + 'pt;right:6px' }] : [] };
   }
   // ---------------- Phiếu dự trù hóa chất – vật tư của một môn (bám bố cục biên bản bàn giao hóa chất để đối chiếu) ----------------

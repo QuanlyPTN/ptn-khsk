@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   const Q = window.PTN_QL;
-  const { S, $, api, chay, trang, moHop, dongHop, o, giaTri, esc, toast, ngayVN, homNay, boDau, tien, fmt, tag, hanTag, laAdmin, coQuyen, dieuHuong, napXlsx, napQR, guiTep, taiVe, dsPhongChon, lienKet, trangCongKhai } = Q;
+  const { S, $, api, chay, trang, moHop, dongHop, o, giaTri, esc, toast, ngayVN, homNay, boDau, tien, fmt, tag, hanTag, laAdmin, coQuyen, dieuHuong, napXlsx, napQR, guiTep, taiVe, dsPhongChon, lienKet, trangCongKhai, ganGoiYVT } = Q;
   const QR_TEN = { QR1: 'Mượn phòng, TB – DC trong ngày', QR2: 'GV mượn TB dài ngày', QR3: 'Cấp hóa chất bổ sung', QR4: 'Mượn chìa khóa (Bảo vệ)',
     QR5: 'Nhật ký sử dụng', QR6: 'Đăng ký tủ', QR7: 'Hồ sơ đề tài', QR8: 'Mượn thêm dụng cụ' };
   const MAU = { 'Chờ duyệt': 't-info', 'Đã duyệt': 't-info', 'Đang mượn': 't-warn', 'Đang dùng': 't-warn', 'Đã trả – hoàn tất': 't-ok', 'Đã cấp phát': 't-ok', 'Từ chối': 't-gray',
@@ -866,6 +866,11 @@
       const t = window.PTN_MAU.bienBan({ bb: b, dong: dong.filter(d => d.bb === b.id), cap_phat: r.cap_phat.filter(c => c.bb === b.id), tep: r.tep.filter(f => f.lien_ket === b.id) }, await anhQR(lienKet('bien-ban/' + b.id)), hs).trang[0];
       t.ten = b.id.slice(0, 31); trangTinh.push(t);
     }
+    // bộ dụng cụ thứ 2, 3… giao thêm cho lớp (biên bản dụng cụ lớp thực hành)
+    if ((chon.bo || []).length) for (const b of bb.filter(x => x.loai === 'DC' && x.nhanh !== 'KLTN – NCKH')) {
+      const qr = await anhQR(lienKet('bien-ban/' + b.id)), r1 = { bb: b, dong: dong.filter(d => d.bb === b.id), cap_phat: [], tep: [] };
+      chon.bo.forEach(k => trangTinh.push(window.PTN_MAU.bienBanDC(r1, qr, null, k)));
+    }
     if (chon.soLieu) trangTinh.push(S1, S2, S3, S4);
     return { ten: tenTep, trang: trangTinh, so_bb: bb.length };
   }
@@ -940,7 +945,7 @@
     const no = (d) => Math.round(((+d.ban_giao || 0) + (+d.bo_sung || 0) - (+d.tra || 0)) * 1000) / 1000;
     const o2 = (d, k, w) => '<input class="o-sua" type="' + (k === 'ghi_chu' ? 'text' : 'number') + '"' + (k === 'ghi_chu' ? '' : ' step="any" min="0" inputmode="decimal"') + ' data-d="' + esc(d.id) + '" data-k="' + k + '" value="' + esc(k === 'ghi_chu' ? d[k] : so(d[k])) + '" data-goc="' + esc(k === 'ghi_chu' ? d[k] : so(d[k])) + '" style="width:' + w + '">';
     let h = '<div class="btns" style="margin-bottom:12px"><button class="btn sm" id="b-in">🖨 Xem trước – in / tải Excel</button><button class="btn sm" id="b-giay">⇪ Cập nhật từ bản giấy</button><button class="btn o sm" id="b-ky">Đính kèm bản ký</button>' +
-      '<button class="btn o sm" id="b-dien">Điền bàn giao = ' + (kltn ? 'SL đăng ký' : 'dự trù') + '</button><button class="btn o sm" id="b-them">+ Thêm dòng</button><button class="btn o sm" id="b-sua-bb">Sửa thông tin</button>' +
+      '<button class="btn o sm" id="b-dien">Điền bàn giao = ' + (kltn ? 'SL đăng ký' : 'dự trù') + '</button><button class="btn o sm" id="b-them">+ Thêm dòng</button>' + (dc && !kltn ? '<button class="btn o sm" id="b-in-bo" title="Lớp nhận thêm bộ dụng cụ thứ 2, 3…">🖨 Xuất bộ 2, 3…</button>' : '') + '<button class="btn o sm" id="b-sua-bb">Sửa thông tin</button>' +
       '<select id="f-tt">' + S.dm.trang_thai_bb.map(t => '<option' + (t === b.trang_thai ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select><button class="btn o sm" id="b-tt">Đổi trạng thái</button>' +
       (laAdmin() ? '<button class="btn red sm" id="b-xoa">Xóa</button>' : '') + '</div>';
     h += '<div class="grid g2"><div class="card"><dl class="kv"><dt>Số biên bản</dt><dd class="mono">' + esc(b.id) + '</dd><dt>Loại</dt><dd>' + esc(N.ten) + '</dd><dt>Học kỳ</dt><dd>' + esc(b.hk) + '</dd>' +
@@ -951,7 +956,7 @@
       '<h2 style="margin-top:14px">Lịch sử cấp phát – chỉnh sửa (' + r.cap_phat.length + ')</h2>' + (r.cap_phat.length ? '<div style="max-height:240px;overflow:auto">' + r.cap_phat.map(c => { const d = r.dong.find(x => x.id === c.dong) || {};
         return '<div class="note" style="padding:2px 0"><b>' + esc(TEN_CP[c.loai] || c.loai) + '</b> · ' + esc(d.ten || '') + (c.sl !== '' && !/^sua_/.test(c.loai) ? ' · ' + fmt(c.sl) : '') + (c.ghi_chu ? ' · ' + esc(c.ghi_chu) : '') + (c.nguoi_nhan ? ' · ' + esc(c.nguoi_nhan) : '') + '<br>' + esc(ngayVN(c.tao) + ' · ' + c.nguoi + ' · ' + c.nguon) + '</div>'; }).join('') + '</div>' : '<div class="note">Chưa có.</div>') + '</div></div>';
     h += '<div class="card"><div class="btns" style="justify-content:space-between"><h2 style="margin:0">Danh mục ' + (dc ? 'dụng cụ' : 'vật tư – hóa chất') + ' (' + r.dong.length + ')</h2><span class="note">Nhập trực tiếp vào ô trắng rồi bấm "Lưu thay đổi". Mọi thay đổi được lưu vết.</span></div>' +
-      '<div class="tbl-wrap"><table class="bb-sua"><thead><tr><th>STT</th><th>' + (dc ? 'Tên dụng cụ' : 'Tên nguyên liệu – quy cách') + '</th><th>' + (dc ? 'NSX' : 'Mã VT') + '</th><th>ĐVT</th>' + (kltn ? '' : '<th class="num">' + (dc ? 'ĐM/nhóm' : 'ĐM 1SV') + '</th>') +
+      '<div class="tbl-wrap"><table class="bb-sua"><thead><tr><th>STT</th><th>' + (dc ? 'Tên dụng cụ' : 'Tên nguyên liệu – quy cách') + '</th><th>' + (dc ? 'NSX' : 'Mã VT') + '</th><th>ĐVT</th>' + (kltn ? '' : '<th class="num">' + (dc ? 'ĐM/1 bộ' : 'ĐM 1SV') + '</th>') +
       '<th class="num">' + (kltn ? 'SL đăng ký' : 'Dự trù') + '</th><th>' + (dc ? 'Mượn (bàn giao)' : 'Bàn giao (thực nhận)') + '</th><th>' + (dc ? 'Mượn thêm' : 'Bổ sung') + '</th><th>' + (dc ? 'Trả' : 'Hoàn trả') + '</th>' + (dc ? '<th class="num">Còn nợ</th>' : '') + '<th>Ghi chú</th></tr></thead><tbody>';
     let nhomDong = '';
     r.dong.forEach(d => {
@@ -975,6 +980,14 @@
     };
     $('b-dien').onclick = () => { r.dong.forEach(d => { const i = nd.querySelector('.o-sua[data-d="' + d.id + '"][data-k="ban_giao"]'); if (i && !i.value && +d.ke_hoach) i.value = so(d.ke_hoach); }); capNhat(); };
     $('b-in').onclick = (e) => chay(e.target, () => moInBB([id]));
+    if ($('b-in-bo')) $('b-in-bo').onclick = () => {
+      moHop('<h2>Xuất biên bản bộ dụng cụ giao thêm</h2><p class="note">Định mức dụng cụ là <b>1 bộ cho 1 lớp thực hành</b>. Lớp nhận thêm bộ 2, 3… thì không cần tải thêm file: hệ thống xuất biên bản cho từng bộ (cùng danh mục, số lượng = 1 bộ, số biên bản ' + esc(id) + '/B2, /B3…) để in, ký bàn giao.</p>' +
+        '<form id="f"><div class="form-grid"><label class="f"><span>Xuất đến bộ số</span><select name="den">' + [2, 3, 4, 5].map(k => '<option value="' + k + '">Bộ ' + k + '</option>').join('') + '</select></label></div>' +
+        '<label class="check"><input type="checkbox" name="bo1"> Kèm biên bản bộ 1 (biên bản gốc, số liệu đã ghi)</label>' +
+        '<div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Xem trước – in / Excel</button></div></form>');
+      $('f').onsubmit = async (e) => { e.preventDefault(); const f = $('f'), den = +f.querySelector('[name=den]').value, bo = []; for (let k = 2; k <= den; k++) bo.push(k);
+        await chay(e.submitter, async () => { const kq = await bbTheoMau({ ids: [id] }, { mau: f.querySelector('[name=bo1]').checked, bo }, 'BBBG ' + id + ' bo ' + (f.querySelector('[name=bo1]').checked ? 1 : 2) + '-' + den); dongHop(); window.PTN_IN.xemTruoc(kq); }); };
+    };
     $('b-giay').onclick = () => Q.capNhatTuGiay(r);
     $('b-ky').onclick = () => {
       moHop('<h2>Đính kèm bản ký – ' + esc(b.id) + '</h2><form id="f"><label class="f"><span>Ảnh chụp / file scan biên bản đã ký (PDF, ảnh – tối đa 15 MB) <em>*</em></span><input type="file" name="tep" accept=".pdf,image/*" required></label>' +
@@ -989,6 +1002,7 @@
     $('b-them').onclick = () => {
       moHop('<h2>Thêm dòng ngoài định mức</h2><form id="f"><div class="form-grid">' + o('ten', 'Tên – quy cách', { req: 1, full: 1 }) + o('ma_vt', 'Mã VT') + o('dvt', 'ĐVT') + o('nsx', 'NSX') + o('ghi_chu', 'Ghi chú') +
         '</div><p class="note">Dòng thêm ngoài định mức được đánh dấu ⚠ để kiểm tra. Nhập số lượng trực tiếp trên bảng sau khi thêm.</p><div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Thêm</button></div></form>');
+      ganGoiYVT($('f'));
       $('f').onsubmit = async (e) => { e.preventDefault(); await chay(e.submitter, () => api('bb_them_dong', { id, dong: giaTri(e.target) })); dongHop(); toast('Đã thêm dòng'); dieuHuong(); };
     };
     $('b-tt').onclick = async (e) => { await chay(e.target, () => api('bb_sua', { id, trang_thai: $('f-tt').value })); toast('Đã đổi trạng thái'); dieuHuong(); };
@@ -1163,7 +1177,7 @@
     const r = await api('dtm_ct', { hk, mon }), M = window.PTN_MAU, NH = ['Hóa chất', 'Dược liệu', 'Vật tư tiêu hao'], r3 = (n) => Math.round((+n || 0) * 1000) / 1000;
     let ds = r.dm.map(d => ({ nhom: M.nhomDuTru(d), ten: d.ten, cong_thuc: d.cong_thuc || '', ma_vt: /^\d+$/.test(d.ma_vt || '') ? d.ma_vt : '', nsx: d.nsx || '', dvt: d.dvt || '', dm: d.dm === '' || d.dm == null ? '' : +d.dm, sl: +d.sl || '', ghi_chu: d.ghi_chu || '' }));
     let ss = +r.si_so || 0, doi = false;
-    const box = $('kq'), oN = (i, k, w, kieu) => '<input class="o-sua" data-i="' + i + '" data-k="' + k + '"' + (kieu === 'so' ? ' type="number" step="any" min="0" inputmode="decimal"' : ' type="text"') + (k === 'ten' ? ' list="dt-goi-y"' : '') +
+    const box = $('kq'), oN = (i, k, w, kieu) => '<input class="o-sua" data-i="' + i + '" data-k="' + k + '"' + (kieu === 'so' ? ' type="number" step="any" min="0" inputmode="decimal"' : ' type="text"') + (k === 'ten' ? ' list="dt-goi-y"' : k === 'ma_vt' ? ' placeholder="Chưa MVT"' : '') +
       ' value="' + esc(ds[i][k] === '' || ds[i][k] == null ? '' : ds[i][k]) + '" style="width:' + w + '">';
     const slCua = (d) => d.dm === '' ? (+d.sl || '') : r3(d.dm * ss);
     const ve = () => {
@@ -1187,7 +1201,7 @@
         if (k === 'ten') goiY(el.value); });
       bang.addEventListener('change', (e) => { const el = e.target, i = el.dataset.i, k = el.dataset.k; if (i === undefined) return;
         if (k === 'nhom') { ds[i].nhom = +el.value; doi = true; ve(); }
-        else if (k === 'ten') { const v = (goiY.ds || []).find(x => x.ten === el.value); if (v) { const d = ds[i]; d.ma_vt = d.ma_vt || v.ma_vt; d.dvt = d.dvt || v.dvt; d.nsx = d.nsx || v.nsx; ve(); } }
+        else if (k === 'ten') { const v = (goiY.ds || []).find(x => x.ten === el.value), d = ds[i]; if (v) { d.ma_vt = v.ma_vt || ''; d.dvt = d.dvt || v.dvt; d.nsx = d.nsx || v.nsx; ve(); } }
         else if (k === 'dm' && el.value === '') ve(); });
       box.querySelectorAll('[data-them]').forEach(b => { b.onclick = () => { ds.push({ nhom: +b.dataset.them, ten: '', cong_thuc: '', ma_vt: '', nsx: '', dvt: '', dm: '', sl: '', ghi_chu: '' }); doi = true; ve();
         const oTen = box.querySelector('input[data-k="ten"][data-i="' + (ds.length - 1) + '"]'); if (oTen) oTen.focus(); }; });
@@ -1205,7 +1219,7 @@
       });
     };
     // gợi ý tên từ danh mục vật tư (gõ ≥ 2 ký tự)
-    const goiY = (q) => { clearTimeout(goiY.t); if (String(q).trim().length < 2) return; goiY.t = setTimeout(async () => { try { goiY.ds = await api('vt_goi_y', { q }); const dl = $('dt-goi-y'); if (dl) dl.innerHTML = goiY.ds.map(v => '<option value="' + esc(v.ten) + '">' + esc((v.ma_vt ? 'MVT ' + v.ma_vt + ' · ' : '') + (v.dvt || '') + (v.nsx ? ' · ' + v.nsx : '')) + '</option>').join(''); } catch (err) { /* bỏ qua gợi ý */ } }, 250); };
+    const goiY = (q) => { clearTimeout(goiY.t); if (String(q).trim().length < 2) return; goiY.t = setTimeout(async () => { try { goiY.ds = await api('vt_goi_y', { q }); const dl = $('dt-goi-y'); if (dl) dl.innerHTML = goiY.ds.map(v => '<option value="' + esc(v.ten) + '">' + esc((v.ma_vt ? 'MVT ' + v.ma_vt : 'Chưa MVT') + ' · ' + (v.dvt || '') + (v.nsx ? ' · ' + v.nsx : '')) + '</option>').join(''); } catch (err) { /* bỏ qua gợi ý */ } }, 250); };
     ve(); box.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   // Thêm dự trù cho môn thực hành khác (môn chưa có lớp trong TKB học kỳ này, hoặc môn mới)

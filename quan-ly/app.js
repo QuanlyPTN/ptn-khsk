@@ -120,6 +120,26 @@
     return '<label class="f' + (opts.full ? ' full' : '') + '"><span>' + esc(label) + req + '</span>' + input + (opts.help ? '<span class="note">' + esc(opts.help) + '</span>' : '') + '</label>';
   }
 
+  // Gợi ý tên khi nhập tay hóa chất – vật tư (ô name="ten" trong root): chọn tên có sẵn → tự điền mã VT (và ĐVT, NSX nếu trống);
+  // tên chưa có trong danh mục → ô mã để trống, hiện "Chưa MVT" (máy chủ vẫn tra lại theo tên khi lưu)
+  function ganGoiYVT(root) {
+    const ten = root.querySelector('[name=ten]'), ma = root.querySelector('[name=ma_vt]'); if (!ten) return;
+    const id = 'goi-y-vt-' + Math.random().toString(36).slice(2, 8), dl = document.createElement('datalist'); dl.id = id; ten.setAttribute('list', id); ten.after(dl);
+    if (ma) ma.placeholder = 'Chưa MVT – chọn tên gợi ý để tự điền';
+    let ds = [], t = null, tuDien = false;
+    ten.addEventListener('input', () => {
+      const q = ten.value.trim(), v = ds.find(x => x.ten === ten.value);
+      if (v) return dien(v);
+      if (ma && tuDien) { ma.value = ''; tuDien = false; } // đổi sang tên khác → bỏ mã đã tự điền
+      clearTimeout(t); if (q.length < 2) return;
+      t = setTimeout(async () => { try { ds = await api('vt_goi_y', { q }); dl.innerHTML = ds.map(x => '<option value="' + esc(x.ten) + '">' + esc((x.ma_vt ? 'MVT ' + x.ma_vt : 'Chưa MVT') + (x.dvt ? ' · ' + x.dvt : '') + (x.nsx ? ' · ' + x.nsx : '')) + '</option>').join(''); } catch (e) { /* bỏ qua gợi ý */ } }, 250);
+    });
+    function dien(v) {
+      if (ma) { ma.value = v.ma_vt || ''; tuDien = true; }
+      [['dvt', v.dvt], ['nsx', v.nsx]].forEach(([k, g]) => { const el = root.querySelector('[name=' + k + ']'); if (el && !el.value.trim() && g) el.value = g; });
+    }
+  }
+
   // ---------------- Biểu tượng (nét mảnh, 24×24) ----------------
   const ICON = {
     'tong-quan': '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
@@ -624,11 +644,11 @@
   async function manDsMon(nd) {
     const ds = await api('mon_ds');
     nd.innerHTML = '<div class="card" style="border-color:#F2D58A;background:#FFFBEA;margin-bottom:12px"><b>📌 Môn & định mức = định mức CHUẨN của từng môn, không phải dự trù của một học kỳ.</b>' +
-      '<ul style="margin:6px 0 0 18px;padding:0"><li>Hóa chất, vật tư tiêu hao tính cho <b>1 sinh viên</b>; dụng cụ tính cho <b>1 nhóm</b> – nhập một lần, dùng lại mọi học kỳ, chỉ sửa khi môn đổi bài.</li>' +
+      '<ul style="margin:6px 0 0 18px;padding:0"><li>Hóa chất, vật tư tiêu hao tính cho <b>1 sinh viên</b>; dụng cụ tính cho <b>1 bộ giao 1 lớp thực hành</b> (gồm các nhóm của lớp; lớp nhận thêm bộ 2, 3 thì xuất biên bản bộ 2, 3 ở trang biên bản dụng cụ) – nhập một lần, dùng lại mọi học kỳ, chỉ sửa khi môn đổi bài.</li>' +
       '<li>Số cần cho từng học kỳ = định mức × sĩ số theo thời khóa biểu: xem / lấy ở thẻ <a href="#/hoa-chat/du-tru-mon"><b>Dự trù hóa chất ' + esc(hkMacDinh() || 'HK') + '</b></a> (chọn môn → "Lấy dự trù từ định mức", không cần tải file).</li>' +
       '<li>Biên bản bàn giao và dự trù theo đợt cũng tự tính từ định mức này.</li></ul></div>' +
       '<div class="tools"><button class="btn sm" id="b-kh">⇪ Tải file định mức hóa chất (một hay nhiều môn)</button><button class="btn sm" id="b-dc">⇪ Tải file dụng cụ của một môn</button><button class="btn o sm" id="b-mon">+ Môn</button></div>' +
-      '<p class="note">Định mức hóa chất tính cho <b>1 sinh viên</b>; định mức dụng cụ tính cho <b>1 nhóm thực hành</b>. Đây là dữ liệu cốt lõi, dùng lại cho mọi học kỳ. Môn nào có file thì tải lên môn đó – biên bản bàn giao và dự trù của học kỳ đang chọn tự cập nhật.</p>' +
+      '<p class="note">Định mức hóa chất tính cho <b>1 sinh viên</b>; định mức dụng cụ tính cho <b>1 bộ / 1 lớp thực hành</b>. Đây là dữ liệu cốt lõi, dùng lại cho mọi học kỳ. Môn nào có file thì tải lên môn đó – biên bản bàn giao và dự trù của học kỳ đang chọn tự cập nhật.</p>' +
       (ds.length ? '<div class="tbl-wrap"><table><thead><tr><th>Mã</th><th>Môn thực hành</th><th>Mã học phần</th><th class="num">Dòng hóa chất</th><th class="num">Dòng dụng cụ</th></tr></thead><tbody>' +
         ds.map(m => '<tr class="click" data-ma="' + esc(m.ma) + '"><td class="mono">' + esc(m.ma) + '</td><td><b>' + esc(m.ten) + '</b></td><td class="mono">' + esc(m.ma_hp) + '</td><td class="num">' + (m.so_hc || '<span class="tag t-warn">0</span>') + '</td><td class="num">' + (m.so_dc || '—') + '</td></tr>').join('') + '</tbody></table></div>'
         : '<div class="card empty">Chưa có môn. Bấm "Nhập định mức hóa chất" và chọn file kế hoạch vật tư (ví dụ "KSK. KH vat HKI 2026.xlsm").</div>');
@@ -666,11 +686,11 @@
   async function nhapFileDC(ds) {
     ds = ds || await api('mon_ds');
     const hk = hkMacDinh();
-    hopFileExcel('Tải file dụng cụ của một môn', 'Chọn biên bản / danh sách dụng cụ của môn (cột "Tên dụng cụ", "Số lượng" – nếu tiêu đề ghi "/ 2 nhóm" hệ thống tự chia ra 1 nhóm). Định mức dụng cụ của môn được thay; biên bản dụng cụ ' + esc(hk) + ' của môn tự tạo / cập nhật.', (rows, ten) => {
+    hopFileExcel('Tải file dụng cụ của một môn', 'Chọn biên bản / danh sách dụng cụ của môn (cột "Tên dụng cụ", "Số lượng" – số lượng của 1 bộ dụng cụ giao 1 lớp thực hành; mỗi môn chỉ cần 1 file). Định mức dụng cụ của môn được thay; biên bản dụng cụ ' + esc(hk) + ' của môn tự tạo / cập nhật.', (rows, ten) => {
       const dc = docDungCu(rows), goiY = ds.find(m => boDau(m.ten).replace(/^th\s+/, '') === boDau(dc.ten).replace(/^th\s+/, ''));
-      $('x-kq').innerHTML = hopFileExcel.chonSheet(ten) + '<p>Môn trong file: <b>' + esc(dc.ten || '(không ghi)') + '</b> · ' + dc.dm.length + ' dụng cụ' + (dc.chia > 1 ? ' (số lượng / ' + dc.chia + ' nhóm → quy về 1 nhóm)' : '') + '</p>' +
+      $('x-kq').innerHTML = hopFileExcel.chonSheet(ten) + '<p>Môn trong file: <b>' + esc(dc.ten || '(không ghi)') + '</b> · ' + dc.dm.length + ' dụng cụ' + (dc.chia > 1 ? ' (số lượng / ' + dc.chia + ' bộ → quy về 1 bộ)' : '') + '</p>' +
         o('mon', 'Gắn vào môn', { select: [['', '— Chọn môn —']].concat(dc.ten && !goiY ? [['~moi', '+ Tạo môn mới: ' + dc.ten]] : []).concat(ds.map(m => [m.ma, m.ten])), v: goiY ? goiY.ma : dc.ten ? '~moi' : '' }) +
-        '<div class="tbl-wrap" style="max-height:220px"><table><thead><tr><th>Dụng cụ</th><th class="num">Định mức / nhóm</th></tr></thead><tbody>' + dc.dm.map(d => '<tr><td>' + esc(d.ten) + '</td><td class="num">' + fmt(d.dm) + '</td></tr>').join('') + '</tbody></table></div>' +
+        '<div class="tbl-wrap" style="max-height:220px"><table><thead><tr><th>Dụng cụ</th><th class="num">Số lượng / 1 bộ</th></tr></thead><tbody>' + dc.dm.map(d => '<tr><td>' + esc(d.ten) + '</td><td class="num">' + fmt(d.dm) + '</td></tr>').join('') + '</tbody></table></div>' +
         '<div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn" id="x-ok">Cập nhật định mức + biên bản</button></div>';
       hopFileExcel.ganSheet();
       $('x-ok').onclick = async (e) => {
@@ -693,29 +713,31 @@
       const l = r.dinh_muc.filter(d => d.loai === loai);
       if (!l.length) return '<div class="note">Chưa có.</div>';
       let nhom = '';
-      return '<div class="tbl-wrap"><table><thead><tr><th>STT</th><th>Tên – quy cách</th><th>Mã VT</th><th>NSX</th><th>ĐVT</th><th class="num">' + (loai === 'HC' ? 'ĐM / 1 SV' : 'ĐM / 1 nhóm') + '</th><th>Ghi chú</th><th></th></tr></thead><tbody>' +
+      return '<div class="tbl-wrap"><table><thead><tr><th>STT</th><th>Tên – quy cách</th><th>Mã VT</th><th>NSX</th><th>ĐVT</th><th class="num">' + (loai === 'HC' ? 'ĐM / 1 SV' : 'SL / 1 bộ (1 lớp)') + '</th><th>Ghi chú</th><th></th></tr></thead><tbody>' +
         l.map(d => (d.nhom !== nhom ? (nhom = d.nhom, '<tr><td colspan="8" style="background:#F6F8FD;font-weight:600">' + esc(d.nhom) + '</td></tr>') : '') +
           '<tr><td>' + esc(d.stt) + '</td><td>' + esc(d.ten) + (d.kiem_soat ? ' <span class="tag t-bad">kiểm soát</span>' : '') + '</td><td class="mono">' + (d.ma_vt ? esc(d.ma_vt) : '<span class="tag t-warn">chưa MVT</span>') + '</td><td>' + esc(d.nsx) + '</td><td>' + esc(d.dvt) + '</td><td class="num">' + fmt(d.dm) + '</td><td class="note">' + esc(d.ghi_chu) + '</td>' +
           '<td class="btns"><button class="btn o sm" data-sua="' + esc(d.id) + '">Sửa</button><button class="btn red sm" data-xoa="' + esc(d.id) + '">Xóa</button></td></tr>').join('') + '</tbody></table></div>';
     };
     nd.innerHTML = '<div class="crumb" style="margin-top:-8px"><a href="#/hoa-chat/mon">Môn & định mức</a> ›</div><div class="card"><dl class="kv"><dt>Mã môn</dt><dd>' + esc(m.ma) + '</dd><dt>Mã học phần</dt><dd class="mono">' + esc(m.ma_hp || '—') + '</dd><dt>Bộ môn</dt><dd>' + esc(m.bo_mon || '—') + '</dd></dl>' +
       '<div class="btns" style="margin-top:10px"><button class="btn o sm" id="b-sua-mon">Sửa môn</button><button class="btn sm" id="b-them-dm">+ Thêm dòng định mức</button></div></div>' +
-      '<div class="card"><h2>Hóa chất – vật tư (định mức / 1 sinh viên)</h2>' + bang('HC') + '</div><div class="card"><h2>Dụng cụ (định mức / 1 nhóm)</h2>' + bang('DC') + '</div>';
+      '<div class="card"><h2>Hóa chất – vật tư (định mức / 1 sinh viên)</h2>' + bang('HC') + '</div><div class="card"><h2>Dụng cụ (1 bộ / 1 lớp thực hành)</h2>' + bang('DC') + '</div>';
     $('b-sua-mon').onclick = () => hopMon(m);
     $('b-them-dm').onclick = () => hopDinhMuc({ mon: ma, loai: 'HC' });
     nd.querySelectorAll('[data-sua]').forEach(b => { b.onclick = () => hopDinhMuc(r.dinh_muc.find(d => d.id === b.dataset.sua)); });
     nd.querySelectorAll('[data-xoa]').forEach(b => { b.onclick = async (e) => { if (!confirm('Xóa dòng định mức này?')) return; await chay(e.target, () => api('dm_xoa', { id: b.dataset.xoa })); toast('Đã xóa'); dieuHuong(); }; });
   }
   function hopDinhMuc(d) {
-    moHop('<h2>' + (d.id ? 'Sửa định mức' : 'Thêm định mức') + '</h2><form id="f"><div class="form-grid">' + o('loai', 'Loại', { select: [['HC', 'Hóa chất – vật tư (/1 SV)'], ['DC', 'Dụng cụ (/1 nhóm)']], v: d.loai }) + o('nhom', 'Nhóm', { v: d.nhom || 'Hóa chất', ph: 'Hóa chất, Dược liệu khô…' }) +
-      o('ten', 'Tên – quy cách', { v: d.ten, req: 1, full: 1 }) + o('ma_vt', 'Mã VT', { v: d.ma_vt, ph: 'Để trống nếu chưa có mã' }) + o('nsx', 'NSX', { v: d.nsx }) + o('dvt', 'ĐVT', { v: d.dvt }) + o('dm', 'Định mức', { v: d.dm, req: 1 }) +
+    moHop('<h2>' + (d.id ? 'Sửa định mức' : 'Thêm định mức') + '</h2><form id="f"><div class="form-grid">' + o('loai', 'Loại', { select: [['HC', 'Hóa chất – vật tư (/1 SV)'], ['DC', 'Dụng cụ (1 bộ / 1 lớp)']], v: d.loai }) + o('nhom', 'Nhóm', { v: d.nhom || 'Hóa chất', ph: 'Hóa chất, Dược liệu khô…' }) +
+      o('ten', 'Tên – quy cách', { v: d.ten, req: 1, full: 1 }) + o('ma_vt', 'Mã VT', { v: d.ma_vt }) + o('nsx', 'NSX', { v: d.nsx }) + o('dvt', 'ĐVT', { v: d.dvt }) + o('dm', 'Định mức', { v: d.dm, req: 1 }) +
       o('stt', 'STT', { v: d.stt }) + o('ghi_chu', 'Ghi chú', { v: d.ghi_chu }) + '</div><div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>');
-    $('f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target); v.id = d.id; v.mon = d.mon; await chay(e.submitter, () => api('dm_luu', { dm: v })); dongHop(); toast('Đã lưu'); dieuHuong(); };
+    ganGoiYVT($('f'));
+    $('f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target); v.id = d.id; v.mon = d.mon; const r = await chay(e.submitter, () => api('dm_luu', { dm: v })); dongHop(); toast('Đã lưu' + (r.ma_vt ? ' · mã VT ' + r.ma_vt : ' · Chưa MVT')); dieuHuong(); };
   }
 
   async function manVatTu(nd) {
     const ds = await api('vt_ds');
-    nd.innerHTML = '<div class="tools"><input type="search" id="q" placeholder="Tìm mã VT, tên hóa chất – vật tư…"><label class="check" style="margin:0"><input type="checkbox" id="f-ks"> Chỉ hóa chất kiểm soát đặc biệt</label><button class="btn sm" id="b-nhap-vt">Nhập danh mục mã VT</button></div><div id="kq"></div>';
+    nd.innerHTML = '<div class="tools"><input type="search" id="q" placeholder="Tìm mã VT, tên hóa chất – vật tư…"><label class="check" style="margin:0"><input type="checkbox" id="f-ks"> Chỉ hóa chất kiểm soát đặc biệt</label><button class="btn sm" id="b-nhap-vt">Nhập danh mục mã VT</button><button class="btn o sm" id="b-cap-ma" title="Điền mã VT theo tên cho các dòng định mức, dự trù, biên bản, danh sách được cấp còn Chưa MVT">↻ Cập nhật mã VT cho định mức – dự trù</button></div>' +
+      '<p class="note">Danh mục mã vật tư của Trường. Khi tải danh mục lên (hoặc bấm "Cập nhật mã VT…"), hệ thống tự điền mã cho các dòng định mức, dự trù, biên bản đang "Chưa MVT" có tên trùng danh mục. Hóa chất – vật tư nhập tay: gõ tên để chọn từ gợi ý, mã tự điền; tên không có trong danh mục giữ "Chưa MVT".</p><div id="kq"></div>';
     const ve = () => {
       const q = boDau($('q').value), ks = $('f-ks').checked;
       const l = ds.filter(v => (!q || boDau(v.ma_vt + ' ' + v.ten).indexOf(q) >= 0) && (!ks || v.kiem_soat));
@@ -725,11 +747,12 @@
       $('kq').querySelectorAll('[data-ks]').forEach(c => { c.onchange = async () => { try { const r = await api('vt_sua', { vt: { ma_vt: c.dataset.ks, kiem_soat: c.checked } }); ds.find(v => v.ma_vt === r.ma_vt).kiem_soat = r.kiem_soat; toast(c.checked ? 'Đã đánh dấu kiểm soát đặc biệt' : 'Đã bỏ đánh dấu'); ve(); } catch (e) { toast(e.message, true); } }; });
     };
     $('q').oninput = ve; $('f-ks').onchange = ve; ve();
+    $('b-cap-ma').onclick = async (e) => { const r = await chay(e.target, () => api('vt_cap_nhat_ma')); toast(r.tong ? 'Đã điền mã VT cho ' + r.tong + ' dòng (định mức ' + r.DINH_MUC + ', dự trù ' + r.DU_TRU_MON + ', biên bản ' + r.BB_DONG + ', được cấp ' + r.CAP_DU_TRU + ')' : 'Không còn dòng nào tra được mã theo tên'); };
     $('b-nhap-vt').onclick = () => hopFileExcel('Nhập danh mục mã vật tư', 'Chọn file danh mục mã VT của Trường (cột "MÃ VẬT TƯ", "DANH MỤC VẬT TƯ", "ĐVỊ"…). Mã đã có được cập nhật, đánh dấu kiểm soát được giữ nguyên.', (rows, ten) => {
       const vt = docMaVT(rows);
       $('x-kq').innerHTML = hopFileExcel.chonSheet(ten) + '<p>Đọc được <b>' + vt.length + '</b> mã vật tư.</p><div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn" id="x-ok">Nhập</button></div>';
       hopFileExcel.ganSheet();
-      $('x-ok').onclick = async (e) => { const r = await chay(e.target, () => api('vt_nhap', { ds: vt })); dongHop(); toast(r.them + ' mã mới, ' + r.sua + ' cập nhật'); dieuHuong(); };
+      $('x-ok').onclick = async (e) => { const r = await chay(e.target, () => api('vt_nhap', { ds: vt })); dongHop(); toast(r.them + ' mã mới, ' + r.sua + ' cập nhật' + (r.ma_cap_nhat ? ' · tự điền mã cho ' + r.ma_cap_nhat + ' dòng định mức / dự trù / biên bản' : '')); dieuHuong(); };
     }, /m[aã]\s*vt/i);
   }
 
@@ -1130,12 +1153,12 @@
     return rows.slice(h + 1).filter(r => r && /^\d+$/.test(chu(r[C.ma])) && chu(r[C.ten])).map(r => ({
       ma_vt: chu(r[C.ma]), ten: chu(r[C.ten]), loai: chu(r[C.loai]), nsx: chu(r[C.nsx]), dvt: chu(r[C.dvt]), ma_effect: C.eff >= 0 ? chu(r[C.eff]) : '', nhom: C.nhom >= 0 ? chu(r[C.nhom]) : '' }));
   }
-  // Biên bản dụng cụ theo môn (MÔN: …; STT | Tên dụng cụ | NSX | Số lượng[/ n nhóm] …) → định mức DC / 1 nhóm
+  // Biên bản dụng cụ theo môn (MÔN: …; STT | Tên dụng cụ | NSX | Số lượng …) → định mức DC = 1 bộ cho 1 lớp thực hành (số lượng trong file là của cả lớp; chỉ chia khi tiêu đề ghi "/ n bộ")
   function docDungCu(rows) {
     const h = rows.findIndex(r => r && r.some(c => /ten dung cu/.test(boDau(chu(c)))));
     if (h < 0) throw new Error('Không thấy dòng tiêu đề (cần cột "Tên dụng cụ")');
     const H = rows[h], C = { stt: tim(H, /^stt$/), ten: tim(H, /ten dung cu/), nsx: tim(H, /^nsx/), dvt: tim(H, /^dvt|don vi/), sl: tim(H, /so luong/), gc: tim(H, /ghi chu/) };
-    const chia = (/\/\s*(\d+)\s*nhom/.exec(boDau(chu(H[C.sl]))) || [])[1] || 1;
+    const chia = (/\/\s*(\d+)\s*bo\b/.exec(boDau(chu(H[C.sl]))) || [])[1] || 1;
     const dongMon = rows.slice(0, h).map(r => (r || []).map(chu).join(' ')).find(t => /^mon\s*:/.test(boDau(t)));
     const ten = dongMon ? dongMon.replace(/^m[oô]n\s*:\s*/i, '').replace(/\s{2,}.*$/, '').trim() : '';
     const dm = rows.slice(h + 1).filter(r => r && chu(r[C.ten]) && so1(r[C.sl])).map((r, i) => ({ stt: so1(r[C.stt]) || i + 1, ten: chu(r[C.ten]), nsx: chu(r[C.nsx]),
@@ -1331,6 +1354,6 @@
   function trangCongKhai() { return location.href.split('#')[0].replace(/[?].*$/, '').replace(/quan-ly\/(index\.html|chay-thu\.html)?$/, ''); }
   // dùng chung cho app-mo-rong.js
   window.PTN_QL = { S, $, api, chay, trang, moHop, dongHop, o, giaTri, esc, toast, ngayVN, homNay, congNgay, boDau, tien, fmt, tag, hanTag, laAdmin, quyen, coQuyen, dieuHuong, napXlsx, napQR,
-    guiTep, taiVe, docB64, dsPhongChon, phongTen, capNhatDanhMuc, lienKet, trangCongKhai, MENU, TUYEN, DEMO, ganDieuHuong, hopDonVaoBB, nhapFileHC, nhapFileDC, icon, docKeHoachVatTu, docPhieuDuTru, hopFileExcel };
+    guiTep, taiVe, docB64, dsPhongChon, phongTen, capNhatDanhMuc, lienKet, trangCongKhai, MENU, TUYEN, DEMO, ganDieuHuong, hopDonVaoBB, nhapFileHC, nhapFileDC, icon, docKeHoachVatTu, docPhieuDuTru, hopFileExcel, ganGoiYVT };
   document.addEventListener('DOMContentLoaded', batDau);
 })();
