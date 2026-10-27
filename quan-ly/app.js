@@ -535,7 +535,7 @@
       $('x-kq').innerHTML = '<div class="loading"><div class="spin"></div></div>';
       try {
         const X = await napXlsx(), wb = X.read(await file.arrayBuffer(), { cellDates: true });
-        const docSheet = (ten) => X.utils.sheet_to_json(wb.Sheets[ten], { header: 1, raw: true, defval: '' }); // đọc thêm trang tính khác (file nhiều môn)
+        const docSheet = (ten) => X.utils.sheet_to_json(wb.Sheets[ten], { header: 1, raw: true, defval: '', blankrows: true }); // giữ dòng trắng (ngăn vùng nhóm) // đọc thêm trang tính khác (file nhiều môn)
         const chay1 = (ten) => { try { xuLy(docSheet(ten), ten, wb.SheetNames, docSheet); } catch (err) { $('x-kq').innerHTML = chonSheet(ten) + '<p class="err">' + esc(err.message) + '</p>'; ganSheet(); } };
         const chonSheet = (ten) => wb.SheetNames.length > 1 ? '<label class="f"><span>Trang tính</span><select id="x-sheet">' + wb.SheetNames.map(n => '<option' + (n === ten ? ' selected' : '') + '>' + esc(n) + '</option>').join('') + '</select></label>' : '';
         const ganSheet = () => { if ($('x-sheet')) $('x-sheet').onchange = (ev) => chay1(ev.target.value); };
@@ -779,9 +779,12 @@
       const l = r.dinh_muc.filter(d => d.loai === loai);
       if (!l.length) return '<div class="note">Chưa có.</div>';
       let nhom = '';
-      return '<div class="tbl-wrap"><table><thead><tr><th>STT</th><th>Tên – quy cách</th><th>Mã VT</th><th>NSX</th><th>ĐVT</th><th class="num">' + (loai === 'HC' ? 'ĐM / 1 SV' : 'SL / 1 bộ (1 lớp)') + '</th><th>Ghi chú</th><th></th></tr></thead><tbody>' +
-        l.map(d => (d.nhom !== nhom ? (nhom = d.nhom, '<tr><td colspan="8" style="background:#F6F8FD;font-weight:600">' + esc(d.nhom) + '</td></tr>') : '') +
-          '<tr><td>' + esc(d.stt) + '</td><td>' + esc(d.ten) + (d.kiem_soat ? ' <span class="tag t-bad">kiểm soát</span>' : '') + '</td><td class="mono">' + (d.ma_vt ? esc(d.ma_vt) : '<span class="tag t-warn">chưa MVT</span>') + '</td><td>' + esc(d.nsx) + '</td><td>' + esc(d.dvt) + '</td><td class="num">' + fmt(d.dm) + '</td><td class="note">' + esc(d.ghi_chu) + '</td>' +
+      const hc = loai === 'HC', nCot = hc ? 9 : 8;
+      // hóa chất: ô chuyển nhóm từng dòng (hệ thống xếp nhầm thì chỉnh tay; dòng chỉnh tay có ✎, nút Chuẩn hóa nhóm không đổi lại)
+      const chonNhom = (d) => '<select data-doi-nhom="' + esc(d.id) + '" title="Chuyển nhóm">' + ['Hóa chất', 'Dược liệu', 'Vật tư tiêu hao'].map(n => '<option' + (n === d.nhom ? ' selected' : '') + '>' + n + '</option>').join('') + '</select>' + (d.nhom_tay ? ' <span class="note" title="Nhóm chỉnh tay / ghi rõ trong file">✎</span>' : '');
+      return '<div class="tbl-wrap"><table><thead><tr><th>STT</th><th>Tên – quy cách</th><th>Mã VT</th><th>NSX</th><th>ĐVT</th><th class="num">' + (hc ? 'ĐM / 1 SV' : 'SL / 1 bộ (1 lớp)') + '</th><th>Ghi chú</th>' + (hc ? '<th>Nhóm</th>' : '') + '<th></th></tr></thead><tbody>' +
+        l.map(d => (d.nhom !== nhom ? (nhom = d.nhom, '<tr><td colspan="' + nCot + '" style="background:#F6F8FD;font-weight:600">' + esc(d.nhom) + '</td></tr>') : '') +
+          '<tr><td>' + esc(d.stt) + '</td><td>' + esc(d.ten) + (d.kiem_soat ? ' <span class="tag t-bad">kiểm soát</span>' : '') + '</td><td class="mono">' + (d.ma_vt ? esc(d.ma_vt) : '<span class="tag t-warn">chưa MVT</span>') + '</td><td>' + esc(d.nsx) + '</td><td>' + esc(d.dvt) + '</td><td class="num">' + fmt(d.dm) + '</td><td class="note">' + esc(d.ghi_chu) + '</td>' + (hc ? '<td style="white-space:nowrap">' + chonNhom(d) + '</td>' : '') +
           '<td class="btns"><button class="btn o sm" data-sua="' + esc(d.id) + '">Sửa</button><button class="btn red sm" data-xoa="' + esc(d.id) + '">Xóa</button></td></tr>').join('') + '</tbody></table></div>';
     };
     nd.innerHTML = '<div class="crumb" style="margin-top:-8px"><a href="#/hoa-chat/mon">Môn & định mức</a> ›</div><div class="card"><dl class="kv"><dt>Mã môn</dt><dd>' + esc(m.ma) + '</dd><dt>Mã học phần</dt><dd class="mono">' + esc(m.ma_hp || '—') + '</dd><dt>Bộ môn</dt><dd>' + esc(m.bo_mon || '—') + '</dd></dl>' +
@@ -790,6 +793,11 @@
     $('b-sua-mon').onclick = () => hopMon(m);
     $('b-them-dm').onclick = () => hopDinhMuc({ mon: ma, loai: 'HC' }, r.dinh_muc);
     nd.querySelectorAll('[data-sua]').forEach(b => { b.onclick = () => hopDinhMuc(r.dinh_muc.find(d => d.id === b.dataset.sua), r.dinh_muc); });
+    nd.querySelectorAll('[data-doi-nhom]').forEach(sl => { sl.onchange = async () => {
+      const d = r.dinh_muc.find(x => x.id === sl.dataset.doiNhom);
+      try { const k = await api('dm_luu', { dm: Object.assign({}, d, { nhom: sl.value }) }); toast('Đã chuyển "' + d.ten + '" sang nhóm ' + sl.value + ttBBDM(k)); }
+      catch (e) { toast(e.message, true); sl.value = d.nhom; return; }
+      dieuHuong(); }; });
     nd.querySelectorAll('[data-xoa]').forEach(b => { b.onclick = async (e) => { if (!confirm('Xóa dòng định mức này?')) return; const r = await chay(e.target, () => api('dm_xoa', { id: b.dataset.xoa })); toast('Đã xóa' + ttBBDM(r)); dieuHuong(); }; });
   }
   const tenSo = (s) => boDau(s).replace(/[^a-z0-9]+/g, ' ').trim(); // so tên hóa chất: bỏ dấu, hoa thường, ký tự lạ
@@ -1166,12 +1174,16 @@
       ten: tim(H, /qu[iy] cach/), ma: tim(H, /^ma\s*vt$|ma vat tu/), nsx: tim(H, /^nsx$/), dvt: tim(H, /^dv|don vi/), dm: tim(H, /slg\s*\/\s*1|\/\s*1\s*(hs|sv)/), gc: tim(H, /ghi chu/),
       sl: tim(H, /^slg$|^so luong$|^tong slg?$/)
     };
-    const mon = []; let m = null, sec = 0, sttTruoc = 0; const nhan = {};
+    // nhóm: dòng nhãn ở cột đầu ("DƯỢC LIỆU…") theo khối STT; hoặc 3 vùng ngăn bằng dòng trắng trong môn: 1 Hóa chất · 2 Dược liệu · 3 Vật tư tiêu hao
+    // (bỏ trống một nhóm: để 2 dòng trắng liền nhau); không nhãn, không dòng trắng → máy chủ tự xếp theo tên / mã VT
+    const VUNG = ['Hóa chất', 'Dược liệu', 'Vật tư tiêu hao'], trang = (r) => !r || r.every(c => chu(c) === '');
+    const mon = []; let m = null, sec = 0, sttTruoc = 0, vung = 0, coHang = false; const nhan = {};
     for (let i = h + 1; i < rows.length; i++) {
       const r = rows[i] || [], a = chu(r[0]);
+      if (trang(r)) { if (m && coHang) vung++; continue; }
       if (/hieu truong|nguoi lap|truong khoa/.test(boDau(a))) break;
       const dauMon = /^\d+\s*[.)]\s*\S/.test(a) || (tuy.monKhongSo && a && so1(r[C.stt]) === 1 && C.lop >= 0 && (chu(r[C.lop]) || chu(r[C.lhp])));
-      if (dauMon) { m = { ten: a.replace(/^\d+\s*[.)]\s*/, ''), ma_hp: [], lop: [], dm: [] }; mon.push(m); sec++; sttTruoc = 0; }
+      if (dauMon) { m = { ten: a.replace(/^\d+\s*[.)]\s*/, ''), ma_hp: [], lop: [], dm: [] }; mon.push(m); sec++; sttTruoc = 0; vung = 0; coHang = false; }
       if (!m) continue;
       const stt = so1(r[C.stt]);
       if (stt && stt <= sttTruoc) sec++;
@@ -1183,9 +1195,14 @@
         if (/^\d{10}/.test(lhp) && m.ma_hp.indexOf(lhp.slice(0, 10)) < 0) m.ma_hp.push(lhp.slice(0, 10));
       }
       const ten = chu(r[C.ten]);
-      if (ten && stt) m.dm.push({ _sec: sec, stt, ten, ma_vt: chu(r[C.ma]), nsx: chu(r[C.nsx]), dvt: chu(r[C.dvt]), dm: so1(r[C.dm]), sl: C.sl >= 0 ? so1(r[C.sl]) : 0, ghi_chu: C.gc >= 0 ? chu(r[C.gc]) : '' });
+      if (ten && stt) { coHang = true; m.dm.push({ _sec: sec, _vung: vung, stt, ten, ma_vt: chu(r[C.ma]), nsx: chu(r[C.nsx]), dvt: chu(r[C.dvt]), dm: so1(r[C.dm]), sl: C.sl >= 0 ? so1(r[C.sl]) : 0, ghi_chu: C.gc >= 0 ? chu(r[C.gc]) : '' }); }
     }
-    mon.forEach(x => x.dm.forEach(d => { d.nhom = nhan[d._sec] || 'Hóa chất'; delete d._sec; }));
+    // nhãn "Dược liệu…" / "Vật tư…" giữ cố định; nhãn chung "Hóa chất" vẫn để máy chủ tách vật tư tiêu hao theo tên / mã VT
+    const nhomTuNhan = (t) => /duoc lieu/.test(boDau(t)) ? 'Dược liệu' : /vat tu|tieu hao/.test(boDau(t)) ? 'Vật tư tiêu hao' : '';
+    mon.forEach(x => { const coVung = x.dm.some(d => d._vung > 0); x.dm.forEach(d => { // chỉ chia vùng khi có dòng nằm sau dòng trắng (dòng trắng cuối môn không tính)
+      const nh = nhomTuNhan(nhan[d._sec] || ''), v = coVung ? VUNG[Math.min(d._vung, 2)] : '';
+      d.nhom = nh || v || nhan[d._sec] || 'Hóa chất'; if (nh || v) d.nhom_ro = 1; // nhóm ghi rõ trong file → giữ, không tự xếp
+      delete d._sec; delete d._vung; }); });
     return mon.filter(x => x.dm.length);
   }
   // Phiếu dự trù hóa chất – vật tư của một môn (mẫu PHIẾU DỰ TRÙ: tên môn, mã môn / mã HP, tổng số sinh viên; nhóm 1. Hóa chất · 2. Dược liệu · 3. Vật tư tiêu hao;

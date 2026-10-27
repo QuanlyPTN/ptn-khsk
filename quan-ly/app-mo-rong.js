@@ -1252,7 +1252,8 @@
     const doan = (m) => (mons.find(x => m.mon && x.ma === m.mon) || mons.find(x => m.ma_hp.some(h => String(x.ma_hp || '').indexOf(h) >= 0)) || mons.find(x => chuan(x.ten) === chuan(m.ten)) || {}).ma || '';
     Q.hopFileExcel('Tải file dự trù của môn', 'Chọn file dự trù theo mẫu kế hoạch vật tư (khối môn "1. TH …" hoặc tên môn ở cột TÊN BÀI TẬP, cột QUI CÁCH VẬT TƯ, MÃ VT, ĐVỊ, SLG/1HS, SLG). File có thể gồm <b>một hay nhiều môn</b>; dự trù cũ của các môn trong file được thay. ' +
       '<br><b>Nhóm (Hóa chất · Dược liệu · Vật tư tiêu hao):</b> nên dùng <b>Phiếu dự trù</b> do hệ thống in (nút "📄 Phiếu dự trù…") – ghi dưới đúng tiêu đề "1. HÓA CHẤT / 2. DƯỢC LIỆU / 3. VẬT TƯ TIÊU HAO" thì xếp đúng 100%. ' +
-      'File kế hoạch vật tư: nhóm theo dòng nhãn ở cột đầu (VD "DƯỢC LIỆU KHÔ", STT bắt đầu lại từ 1); dòng không có nhãn tự xếp theo tên / mã VT – kiểm tra lại sau khi tải. Không cần dòng trắng. ' +
+      'File kế hoạch vật tư: mỗi môn chia <b>3 vùng ngăn bằng một dòng trắng</b> – vùng 1 Hóa chất · vùng 2 Dược liệu · vùng 3 Vật tư tiêu hao (môn không có nhóm nào thì để 2 dòng trắng liền nhau); ' +
+      'hoặc dòng nhãn ở cột đầu (VD "DƯỢC LIỆU"). Không chia vùng / không nhãn thì hệ thống tự xếp theo tên / mã VT. Xếp nhầm: chuyển nhóm từng dòng ở bảng sửa dự trù hoặc định mức của môn. ' +
       'Dòng không ghi SLG tính bằng SLG/1HS × tổng sĩ số các lớp trong file.', (rows, ten, sheets, docSheet) => {
       // phiếu dự trù (mẫu mới): đọc mọi trang tính là phiếu – mỗi trang một môn; không thì đọc theo mẫu kế hoạch vật tư
       const laPhieu = Q.docPhieuDuTru(rows), kh = laPhieu ? sheets.map(n => n === ten ? laPhieu : Q.docPhieuDuTru(docSheet(n))).filter(p => p && p.dm.length) : Q.docKeHoachVatTu(rows, { monKhongSo: true }), tong = kh.reduce((a, m) => a + m.dm.length, 0);
