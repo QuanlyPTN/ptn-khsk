@@ -1180,8 +1180,12 @@
     const box = $('kq'), oN = (i, k, w, kieu) => '<input class="o-sua" data-i="' + i + '" data-k="' + k + '"' + (kieu === 'so' ? ' type="number" step="any" min="0" inputmode="decimal"' : ' type="text"') + (k === 'ten' ? ' list="dt-goi-y"' : k === 'ma_vt' ? ' placeholder="Chưa MVT"' : '') +
       ' value="' + esc(ds[i][k] === '' || ds[i][k] == null ? '' : ds[i][k]) + '" style="width:' + w + '">';
     const slCua = (d) => d.dm === '' ? (+d.sl || '') : r3(d.dm * ss);
+    const tenSo = (s) => boDau(s).replace(/[^a-z0-9]+/g, ' ').trim();
+    const trungTen = (i) => { const t = tenSo(ds[i].ten); return t ? ds.findIndex((d, j) => j !== i && tenSo(d.ten) === t) : -1; };
     const ve = () => {
-      const thuTu = []; [0, 1, 2].forEach(k => ds.forEach((d, i) => { if (d.nhom === k) thuTu.push(i); }));
+      // trong mỗi nhóm: tên A → Z (STT tự đánh), dòng mới chưa có tên ở cuối
+      const thuTu = []; [0, 1, 2].forEach(k => ds.map((d, i) => i).filter(i => ds[i].nhom === k)
+        .sort((a, b) => (!ds[a].ten.trim()) - (!ds[b].ten.trim()) || ds[a].ten.trim().localeCompare(ds[b].ten.trim(), 'vi', { sensitivity: 'base' })).forEach(i => thuTu.push(i)));
       let stt = 0;
       box.innerHTML = '<div class="card"><div class="btns" style="justify-content:space-between"><h2 style="margin:0">' + (r.nguon === 'du_tru' ? 'Sửa' : 'Nhập') + ' dự trù: ' + esc(r.mon.ten) + ' – ' + esc(hk) + '</h2>' +
         '<span class="btns"><button class="btn o sm" id="dt-phieu">🖨 Phiếu dự trù (số đang sửa)</button><button class="btn o sm" id="dt-bo">Đóng</button><button class="btn sm" id="dt-luu">Lưu dự trù</button></span></div>' +
@@ -1190,7 +1194,7 @@
         '<label class="f" style="max-width:260px"><span>Tổng số sinh viên (cả học kỳ)</span><input type="number" min="0" id="dt-ss" value="' + ss + '"></label>' +
         '<datalist id="dt-goi-y"></datalist><div class="tbl-wrap"><table class="bb-sua dt-sua"><thead><tr><th>STT</th><th>Tên nguyên liệu – quy cách</th><th>Công thức</th><th>Mã VT</th><th>NSX</th><th>ĐVT</th><th>ĐM 1 SV</th><th class="num">SL dự trù</th><th>Ghi chú</th><th>Nhóm</th><th></th></tr></thead><tbody>' +
         [0, 1, 2].map(k => '<tr><td colspan="11" class="nhom-dong">' + (k + 1) + '. ' + NH[k].toUpperCase() + ' <button type="button" class="btn o sm" data-them="' + k + '" style="margin-left:10px">+ Thêm dòng</button></td></tr>' +
-          thuTu.filter(i => ds[i].nhom === k).map(i => '<tr><td>' + (++stt) + '</td><td>' + oN(i, 'ten', '100%') + '</td><td>' + oN(i, 'cong_thuc', '76px') + '</td><td>' + oN(i, 'ma_vt', '62px') + '</td><td>' + oN(i, 'nsx', '48px') + '</td><td>' + oN(i, 'dvt', '54px') +
+          thuTu.filter(i => ds[i].nhom === k).map(i => '<tr' + (trungTen(i) >= 0 ? ' class="canh-bao" title="Tên trùng với dòng khác"' : '') + '><td>' + (++stt) + '</td><td>' + oN(i, 'ten', '100%') + (trungTen(i) >= 0 ? '<span class="tag t-warn">⚠ trùng tên</span>' : '') + '</td><td>' + oN(i, 'cong_thuc', '76px') + '</td><td>' + oN(i, 'ma_vt', '62px') + '</td><td>' + oN(i, 'nsx', '48px') + '</td><td>' + oN(i, 'dvt', '54px') +
             '</td><td>' + oN(i, 'dm', '66px', 'so') + '</td><td class="num">' + (ds[i].dm === '' ? oN(i, 'sl', '76px', 'so') : '<b data-sl="' + i + '">' + fmt(slCua(ds[i])) + '</b>') + '</td><td>' + oN(i, 'ghi_chu', '110px') +
             '</td><td><select data-i="' + i + '" data-k="nhom">' + NH.map((n, j) => '<option value="' + j + '"' + (j === ds[i].nhom ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></td><td><button type="button" class="btn red sm" data-xoa="' + i + '" title="Xóa dòng">✕</button></td></tr>').join('')).join('') +
         '</tbody></table></div><p class="note">' + ds.filter(d => d.ten).length + ' dòng · ' + [0, 1, 2].map(k => NH[k].toLowerCase() + ': ' + ds.filter(d => d.nhom === k && d.ten).length).join(' · ') + '</p></div>';
@@ -1201,7 +1205,9 @@
         if (k === 'ten') goiY(el.value); });
       bang.addEventListener('change', (e) => { const el = e.target, i = el.dataset.i, k = el.dataset.k; if (i === undefined) return;
         if (k === 'nhom') { ds[i].nhom = +el.value; doi = true; ve(); }
-        else if (k === 'ten') { const v = (goiY.ds || []).find(x => x.ten === el.value), d = ds[i]; if (v) { d.ma_vt = v.ma_vt || ''; d.dvt = d.dvt || v.dvt; d.nsx = d.nsx || v.nsx; ve(); } }
+        else if (k === 'ten') { const v = (goiY.ds || []).find(x => x.ten === el.value), d = ds[i]; if (v) { d.ma_vt = v.ma_vt || ''; d.dvt = d.dvt || v.dvt; d.nsx = d.nsx || v.nsx; }
+          const j = trungTen(i); if (j >= 0) toast('"' + ds[j].ten + '" đã có trong danh sách dự trù – sửa số lượng ở dòng đó rồi xóa dòng trùng', true);
+          ve(); }
         else if (k === 'dm' && el.value === '') ve(); });
       box.querySelectorAll('[data-them]').forEach(b => { b.onclick = () => { ds.push({ nhom: +b.dataset.them, ten: '', cong_thuc: '', ma_vt: '', nsx: '', dvt: '', dm: '', sl: '', ghi_chu: '' }); doi = true; ve();
         const oTen = box.querySelector('input[data-k="ten"][data-i="' + (ds.length - 1) + '"]'); if (oTen) oTen.focus(); }; });
@@ -1212,6 +1218,7 @@
         return t.map((d, i) => ({ stt: i + 1, nhom: NH[d.nhom], nhom_dt: String(d.nhom + 1), ten: String(d.ten).trim(), cong_thuc: d.cong_thuc, ma_vt: d.ma_vt, nsx: d.nsx, dvt: d.dvt, dm: d.dm, sl: slCua(d), ghi_chu: d.ghi_chu })); };
       $('dt-phieu').onclick = () => window.PTN_IN.xemTruoc(M.duTruMonNhieu([{ hk, mon: r.mon, si_so: ss, dm: dongIn() }], window.PTN_KY, hk));
       $('dt-luu').onclick = (e) => chay(e.target, async () => {
+        if (ds.some((d, i) => trungTen(i) >= 0) && !confirm('Có hóa chất trùng tên trong danh sách (dòng ⚠ trùng tên). Vẫn lưu?')) return;
         const dm = dongIn();
         if (!dm.length) { if (r.nguon === 'du_tru' && confirm('Không còn dòng nào – xóa dự trù đã lưu của môn?')) { await api('dtm_xoa', { hk, mon }); toast('Đã xóa dự trù'); dieuHuong(); } else toast('Chưa có dòng dự trù nào', true); return; }
         const kq = await api('dtm_nhap', { hk, tep: 'Nhập / sửa trên web', ds: [{ mon, ten: r.mon.ten, ma_hp: [], lop: [{ lop: '', ma_lhp: '', si_so: ss }], dm }] });

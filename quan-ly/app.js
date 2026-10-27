@@ -722,16 +722,23 @@
       '<div class="btns" style="margin-top:10px"><button class="btn o sm" id="b-sua-mon">Sửa môn</button><button class="btn sm" id="b-them-dm">+ Thêm dòng định mức</button></div></div>' +
       '<div class="card"><h2>Hóa chất – vật tư (định mức / 1 sinh viên)</h2>' + bang('HC') + '</div><div class="card"><h2>Dụng cụ (1 bộ / 1 lớp thực hành)</h2>' + bang('DC') + '</div>';
     $('b-sua-mon').onclick = () => hopMon(m);
-    $('b-them-dm').onclick = () => hopDinhMuc({ mon: ma, loai: 'HC' });
-    nd.querySelectorAll('[data-sua]').forEach(b => { b.onclick = () => hopDinhMuc(r.dinh_muc.find(d => d.id === b.dataset.sua)); });
+    $('b-them-dm').onclick = () => hopDinhMuc({ mon: ma, loai: 'HC' }, r.dinh_muc);
+    nd.querySelectorAll('[data-sua]').forEach(b => { b.onclick = () => hopDinhMuc(r.dinh_muc.find(d => d.id === b.dataset.sua), r.dinh_muc); });
     nd.querySelectorAll('[data-xoa]').forEach(b => { b.onclick = async (e) => { if (!confirm('Xóa dòng định mức này?')) return; await chay(e.target, () => api('dm_xoa', { id: b.dataset.xoa })); toast('Đã xóa'); dieuHuong(); }; });
   }
-  function hopDinhMuc(d) {
+  const tenSo = (s) => boDau(s).replace(/[^a-z0-9]+/g, ' ').trim(); // so tên hóa chất: bỏ dấu, hoa thường, ký tự lạ
+  function hopDinhMuc(d, ds) {
     moHop('<h2>' + (d.id ? 'Sửa định mức' : 'Thêm định mức') + '</h2><form id="f"><div class="form-grid">' + o('loai', 'Loại', { select: [['HC', 'Hóa chất – vật tư (/1 SV)'], ['DC', 'Dụng cụ (1 bộ / 1 lớp)']], v: d.loai }) + o('nhom', 'Nhóm', { v: d.nhom || 'Hóa chất', ph: 'Hóa chất, Dược liệu khô…' }) +
       o('ten', 'Tên – quy cách', { v: d.ten, req: 1, full: 1 }) + o('ma_vt', 'Mã VT', { v: d.ma_vt }) + o('nsx', 'NSX', { v: d.nsx }) + o('dvt', 'ĐVT', { v: d.dvt }) + o('dm', 'Định mức', { v: d.dm, req: 1 }) +
       o('stt', 'STT', { v: d.stt }) + o('ghi_chu', 'Ghi chú', { v: d.ghi_chu }) + '</div><div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>');
     ganGoiYVT($('f'));
-    $('f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target); v.id = d.id; v.mon = d.mon; const r = await chay(e.submitter, () => api('dm_luu', { dm: v })); dongHop(); toast('Đã lưu' + (r.ma_vt ? ' · mã VT ' + r.ma_vt : ' · Chưa MVT')); dieuHuong(); };
+    // tên đã có trong định mức của môn → báo ngay, không cho thêm trùng (STT tự đánh theo tên A → Z khi lưu)
+    const f = $('f'), oTen = f.querySelector('[name=ten]'), bao = document.createElement('div'); bao.className = 'err hide'; oTen.closest('label').after(bao);
+    const trung = () => (ds || []).find(x => x.id !== d.id && x.loai === f.querySelector('[name=loai]').value && tenSo(x.ten) === tenSo(oTen.value));
+    const kiem = () => { const t = trung(); bao.classList.toggle('hide', !t); bao.innerHTML = t ? '⚠ "' + esc(t.ten) + '" đã có trong định mức của môn (STT ' + esc(t.stt) + ', ' + fmt(t.dm) + ' ' + esc(t.dvt) + ') – bấm "Sửa" ở dòng đó để đổi số lượng.' : ''; return t; };
+    oTen.addEventListener('input', kiem); f.querySelector('[name=loai]').onchange = kiem;
+    f.querySelector('[name=stt]').closest('label').remove(); // STT tự đánh theo tên A → Z
+    f.onsubmit = async (e) => { e.preventDefault(); if (kiem()) return toast('Hóa chất đã có trong định mức', true); const v = giaTri(e.target); v.id = d.id; v.mon = d.mon; const r = await chay(e.submitter, () => api('dm_luu', { dm: v })); dongHop(); toast('Đã lưu · STT ' + r.stt + (r.ma_vt ? ' · mã VT ' + r.ma_vt : ' · Chưa MVT')); dieuHuong(); };
   }
 
   async function manVatTu(nd) {
