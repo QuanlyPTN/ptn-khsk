@@ -648,13 +648,15 @@
       '<ul style="margin:6px 0 0 18px;padding:0"><li>Hóa chất, vật tư tiêu hao tính cho <b>1 sinh viên</b>; dụng cụ tính cho <b>1 bộ giao 1 lớp thực hành</b> (gồm các nhóm của lớp; lớp nhận thêm bộ 2, 3 thì xuất biên bản bộ 2, 3 ở trang biên bản dụng cụ) – nhập một lần, dùng lại mọi học kỳ, chỉ sửa khi môn đổi bài.</li>' +
       '<li>Số cần cho từng học kỳ = định mức × sĩ số theo thời khóa biểu: xem / lấy ở thẻ <a href="#/hoa-chat/du-tru-mon"><b>Dự trù hóa chất ' + esc(hkMacDinh() || 'HK') + '</b></a> (chọn môn → "Lấy dự trù từ định mức", không cần tải file).</li>' +
       '<li>Biên bản bàn giao và dự trù theo đợt cũng tự tính từ định mức này.</li></ul></div>' +
-      '<div class="tools"><button class="btn sm" id="b-kh">⇪ Tải file định mức hóa chất (một hay nhiều môn)</button><button class="btn sm" id="b-dc">⇪ Tải file dụng cụ (một hoặc nhiều môn)</button><button class="btn o sm" id="b-mon">+ Môn</button></div>' +
+      '<div class="tools"><button class="btn sm" id="b-kh">⇪ Tải file định mức hóa chất (một hay nhiều môn)</button><button class="btn sm" id="b-dc">⇪ Tải file dụng cụ (một hoặc nhiều môn)</button><button class="btn o sm" id="b-mon">+ Môn</button>' + (coQuyen('hoa-chat', 'xu_ly') ? '<button class="btn o sm" id="b-chuan-nhom" title="Xếp lại định mức hóa chất mọi môn về 3 nhóm: Hóa chất · Dược liệu · Vật tư tiêu hao">⇄ Chuẩn hóa nhóm (Hóa chất / Dược liệu / Vật tư tiêu hao)</button>' : '') + '</div>' +
       '<p class="note">Định mức hóa chất tính cho <b>1 sinh viên</b>; định mức dụng cụ tính cho <b>1 bộ / 1 lớp thực hành</b>. Đây là dữ liệu cốt lõi, dùng lại cho mọi học kỳ. Môn nào có file thì tải lên môn đó – biên bản bàn giao và dự trù của học kỳ đang chọn tự cập nhật.</p>' +
       (ds.length ? '<div class="tbl-wrap"><table><thead><tr><th>Mã</th><th>Môn thực hành</th><th>Mã học phần</th><th class="num">Dòng hóa chất</th><th class="num">Dòng dụng cụ</th></tr></thead><tbody>' +
         ds.map(m => '<tr class="click" data-ma="' + esc(m.ma) + '"><td class="mono">' + esc(m.ma) + '</td><td><b>' + esc(m.ten) + '</b></td><td class="mono">' + esc(m.ma_hp) + '</td><td class="num">' + (m.so_hc || '<span class="tag t-warn">0</span>') + '</td><td class="num">' + (m.so_dc || '—') + '</td></tr>').join('') + '</tbody></table></div>'
         : '<div class="card empty">Chưa có môn. Bấm "Nhập định mức hóa chất" và chọn file kế hoạch vật tư (ví dụ "KSK. KH vat HKI 2026.xlsm").</div>');
     nd.querySelectorAll('tr[data-ma]').forEach(tr => { tr.onclick = () => { location.hash = '#/hoa-chat/mon/' + tr.dataset.ma; }; });
     $('b-mon').onclick = () => hopMon(null);
+    if ($('b-chuan-nhom')) $('b-chuan-nhom').onclick = async (e) => { if (!confirm('Xếp lại định mức hóa chất của mọi môn về 3 nhóm (1. Hóa chất · 2. Dược liệu · 3. Vật tư tiêu hao), đánh lại STT?\nDự trù "lấy từ định mức" và biên bản cập nhật theo; thu hồi được ở Lịch sử tải file.')) return;
+      const r = await chay(e.target, () => api('dm_chuan_nhom')); toast(r.so_dong ? 'Đã xếp lại ' + r.so_dong + ' dòng của ' + r.so_mon + ' môn' + (r.bien_ban ? ' · cập nhật ' + r.bien_ban + ' biên bản' : '') : 'Định mức đã đúng 3 nhóm – không có gì thay đổi'); dieuHuong(); };
     $('b-kh').onclick = () => nhapFileHC();
     $('b-dc').onclick = () => nhapFileDC(ds);
   }
@@ -784,7 +786,7 @@
     };
     nd.innerHTML = '<div class="crumb" style="margin-top:-8px"><a href="#/hoa-chat/mon">Môn & định mức</a> ›</div><div class="card"><dl class="kv"><dt>Mã môn</dt><dd>' + esc(m.ma) + '</dd><dt>Mã học phần</dt><dd class="mono">' + esc(m.ma_hp || '—') + '</dd><dt>Bộ môn</dt><dd>' + esc(m.bo_mon || '—') + '</dd></dl>' +
       '<div class="btns" style="margin-top:10px"><button class="btn o sm" id="b-sua-mon">Sửa môn</button><button class="btn sm" id="b-them-dm">+ Thêm dòng định mức</button></div></div>' +
-      '<div class="card"><h2>Hóa chất – vật tư (định mức / 1 sinh viên)</h2>' + bang('HC') + '</div><div class="card"><h2>Dụng cụ (1 bộ / 1 lớp thực hành)</h2>' + bang('DC') + '</div>';
+      '<div class="card"><h2>Hóa chất · Dược liệu · Vật tư tiêu hao (định mức / 1 sinh viên)</h2>' + bang('HC') + '</div><div class="card"><h2>Dụng cụ (1 bộ / 1 lớp thực hành)</h2>' + bang('DC') + '</div>';
     $('b-sua-mon').onclick = () => hopMon(m);
     $('b-them-dm').onclick = () => hopDinhMuc({ mon: ma, loai: 'HC' }, r.dinh_muc);
     nd.querySelectorAll('[data-sua]').forEach(b => { b.onclick = () => hopDinhMuc(r.dinh_muc.find(d => d.id === b.dataset.sua), r.dinh_muc); });
@@ -795,11 +797,11 @@
   const ttBBDM = (r) => { const l = (r && r.bien_ban) || [], n = l.reduce((a, b) => a + b.tao.length + b.cap_nhat.length, 0), dt = (r && r.du_tru) || { lam_moi: [], rieng: [] };
     return (dt.lam_moi.length ? ' · dự trù ' + dt.lam_moi.join(', ') + ' lấy lại theo định mức' : '') + (n ? ' · đã cập nhật ' + n + ' biên bản bàn giao' : '') +
       (dt.rieng.length ? ' · ⚠ dự trù ' + dt.rieng.join(', ') + ' nhập riêng – biên bản theo dự trù đó; thêm dòng ở thẻ "Dự trù hóa chất"' : ''); };
-  // Loại / nhóm: Hóa chất – vật tư, Dược liệu (cùng loại HC, nhóm "Dược liệu" – in mục III. Dược liệu), Dụng cụ
-  const laDL = (x) => x.loai === 'HC' && /d[uư][oợ]c li[eệ]u/i.test(x.nhom || '');
-  const loaiChon = (x) => x.loai === 'DC' ? 'DC' : laDL(x) ? 'DL' : 'HC';
+  // Loại / nhóm: Hóa chất · Dược liệu · Vật tư tiêu hao (cùng loại HC, định mức / 1 SV – đúng 3 nhóm của phiếu dự trù) · Dụng cụ (1 bộ / 1 lớp)
+  const NHOM_CHON = { HC: 'Hóa chất', DL: 'Dược liệu', VT: 'Vật tư tiêu hao', DC: 'Dụng cụ' };
+  const loaiChon = (x) => x.loai === 'DC' ? 'DC' : /d[uư][oợ]c li[eệ]u/i.test(x.nhom || '') ? 'DL' : /v[aậ]t t[uư]|ti[eê]u hao/i.test(x.nhom || '') ? 'VT' : 'HC';
   function hopDinhMuc(d, ds) {
-    moHop('<h2>' + (d.id ? 'Sửa định mức' : 'Thêm định mức') + '</h2><form id="f"><div class="form-grid">' + o('loai', 'Loại', { select: [['HC', 'Hóa chất – vật tư (/1 SV)'], ['DL', 'Dược liệu (/1 SV)'], ['DC', 'Dụng cụ (1 bộ / 1 lớp)']], v: d.loai ? loaiChon(d) : 'HC' }) +
+    moHop('<h2>' + (d.id ? 'Sửa định mức' : 'Thêm định mức') + '</h2><form id="f"><div class="form-grid">' + o('loai', 'Loại', { select: [['HC', 'Hóa chất (/1 SV)'], ['DL', 'Dược liệu (/1 SV)'], ['VT', 'Vật tư tiêu hao (/1 SV)'], ['DC', 'Dụng cụ (1 bộ / 1 lớp)']], v: d.loai ? loaiChon(d) : 'HC' }) +
       o('ten', 'Tên – quy cách', { v: d.ten, req: 1, full: 1 }) + o('ma_vt', 'Mã VT', { v: d.ma_vt }) + o('nsx', 'NSX', { v: d.nsx }) + o('dvt', 'ĐVT', { v: d.dvt }) + o('dm', 'Định mức', { v: d.dm, req: 1 }) +
       o('stt', 'STT', { v: d.stt }) + o('ghi_chu', 'Ghi chú', { v: d.ghi_chu }) + '</div><div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>');
     ganGoiYVT($('f'));
@@ -809,8 +811,7 @@
     const kiem = () => { const t = trung(); bao.classList.toggle('hide', !t); bao.innerHTML = t ? '⚠ "' + esc(t.ten) + '" đã có trong định mức của môn (STT ' + esc(t.stt) + ', ' + fmt(t.dm) + ' ' + esc(t.dvt) + ') – bấm "Sửa" ở dòng đó để đổi số lượng.' : ''; return t; };
     oTen.addEventListener('input', kiem); f.querySelector('[name=loai]').onchange = kiem;
     f.querySelector('[name=stt]').closest('label').remove(); // STT tự đánh theo tên A → Z
-    f.onsubmit = async (e) => { e.preventDefault(); if (kiem()) return toast('Hóa chất đã có trong định mức', true); const v = giaTri(e.target); v.id = d.id; v.mon = d.mon; const chon = v.loai; v.loai = chon === 'DC' ? 'DC' : 'HC'; // nhóm theo loại; sửa dòng cũ cùng loại giữ nhóm cũ
-      v.nhom = chon === 'DL' ? 'Dược liệu' : d.id && chon === loaiChon(d) ? d.nhom : chon === 'DC' ? 'Dụng cụ' : 'Hóa chất';
+    f.onsubmit = async (e) => { e.preventDefault(); if (kiem()) return toast('Hóa chất đã có trong định mức', true); const v = giaTri(e.target); v.id = d.id; v.mon = d.mon; const chon = v.loai; v.loai = chon === 'DC' ? 'DC' : 'HC'; v.nhom = NHOM_CHON[chon]; // nhóm theo lựa chọn
       const r = await chay(e.submitter, () => api('dm_luu', { dm: v })); dongHop(); toast('Đã lưu · STT ' + r.stt + ttBBDM(r) + (r.ma_vt ? ' · mã VT ' + r.ma_vt : ' · Chưa MVT')); dieuHuong(); };
   }
 
