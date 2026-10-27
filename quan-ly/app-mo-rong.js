@@ -897,13 +897,15 @@
     if (p[1] && !NHOM_BB[p[1]]) return manBBct(decodeURIComponent(p[1]));
     const nhom = p[1] || 'hc', N = NHOM_BB[nhom], kltn = nhom === 'kltn';
     const nd = trang('Biên bản bàn giao', '<button class="btn o sm" id="b-tu-nhan">Tải bản ký (tự nhận qua mã QR)</button>' +
-      (!kltn && coQuyen('hoa-chat', 'xu_ly') ? '<button class="btn o sm" id="b-file-dm">⇪ Tải file ' + (nhom === 'hc' ? 'định mức hóa chất' : 'dụng cụ') + ' của môn</button>' : '') + (kltn ? '' : '<button class="btn sm" id="b-tao">+ Tạo ' + esc(N.ten.replace('BBBG', 'biên bản').toLowerCase()) + '</button>'));
+      (kltn ? '' : '<button class="btn sm" id="b-tao">+ Tạo ' + esc(N.ten.replace('BBBG', 'biên bản').toLowerCase()) + '</button>'));
     $('b-xuat-trang').remove(); // biên bản in / tải theo mẫu bằng nút riêng
     const hk = Q.S.hk || (S.dm.hoc_ky || [])[0] || '';
     const tatCa = await api('bb_ds', { hk: '' }), cuaHK = tatCa.filter(b => kltn || b.hk === hk);
     const dem = (k) => tatCa.filter(b => NHOM_BB[k].loc(b) && (k === 'kltn' || b.hk === hk)).length;
     const ds = cuaHK.filter(N.loc).sort((a, b) => a.ten_mon.localeCompare(b.ten_mon, 'vi') || a.id.localeCompare(b.id));
     nd.innerHTML = '<div class="bb-nhom">' + Object.keys(NHOM_BB).map(k => '<a class="bb-the' + (k === nhom ? ' on' : '') + '" href="#/bien-ban/' + k + '"><span class="ico">' + Q.icon(k === 'hc' ? 'hoa-chat' : k === 'dc' ? 'kho' : 'de-tai') + '</span><b>' + esc(NHOM_BB[k].ten) + '</b><span class="note">' + dem(k) + ' biên bản' + (k === 'kltn' ? ' (mọi học kỳ)' : ' – ' + esc(hk)) + '</span></a>').join('') + '</div>' +
+      (kltn ? '' : '<p class="note">Danh sách dòng và số dự trù lấy từ <b>dữ liệu gốc</b>: ' + (nhom === 'hc' ? '<a href="#/hoa-chat/du-tru-mon">Hóa chất – vật tư › Dự trù hóa chất ' + esc(hk) + '</a>' : '<a href="#/hoa-chat/dung-cu">Hóa chất – vật tư › Dụng cụ các môn</a>') +
+        ' (tải file / sửa ở đó, biên bản tự cập nhật). Ở đây chọn môn theo lịch học kỳ để in / tải và ghi số bàn giao – hoàn trả.</p>') +
       '<div class="tools">' + (kltn ? '' : '<b>Học kỳ</b> <select id="f-hk">' + (S.dm.hoc_ky || []).map(h => '<option' + (h === hk ? ' selected' : '') + '>' + esc(h) + '</option>').join('') + '</select>') +
       '<input type="search" id="q" placeholder="Tìm ' + (kltn ? 'đề tài, mã hồ sơ, GVHD' : 'môn, lớp, GV, phòng') + '…"><select id="f-tt"><option value="">Mọi trạng thái</option>' + S.dm.trang_thai_bb.map(t => '<option>' + esc(t) + '</option>').join('') + '</select>' +
       '<label class="check" style="margin:0"><input type="checkbox" id="f-cb"> Có ⚠ / bổ sung / nợ</label><button class="btn sm" id="b-xuat-bb">🖨 In / tải biên bản</button></div><div id="kq"></div>';
@@ -928,7 +930,6 @@
     ['q', 'f-tt', 'f-cb'].forEach(id => { $(id).oninput = ve; $(id).onchange = ve; }); ve();
     if ($('f-hk')) $('f-hk').onchange = (e) => { Q.S.hk = e.target.value; dieuHuong(); };
     $('b-tu-nhan').onclick = () => Q.hopTuNhanBanKy();
-    if ($('b-file-dm')) $('b-file-dm').onclick = () => nhom === 'hc' ? Q.nhapFileHC() : Q.nhapFileDC();
     $('b-xuat-bb').onclick = () => hopXuatBB(hk, dangHien, [...$('kq').querySelectorAll('[data-chon]:checked')].map(c => c.dataset.chon));
     if ($('b-tao')) $('b-tao').onclick = async (e) => {
       const loai = nhom === 'hc' ? 'HC' : 'DC', r = await chay(e.target, () => api('bb_tao', { hk, loai }));
@@ -941,11 +942,11 @@
     const nd = trang(esc(b.ten_mon), '', '<a href="#/bien-ban/' + nhom + '">' + esc(N.ten) + '</a> ›');
     $('b-xuat-trang').remove();
     $('main').querySelector('h1').innerHTML = esc(b.ten_mon) + ' <span class="tag ' + (MAU_BB[b.trang_thai] || 't-gray') + '">' + esc(b.trang_thai) + '</span>';
-    const suaDK = kltn || coQuyen('hoa-chat', 'xu_ly'), so = (v) => v === '' || v == null ? '' : Math.round(+v * 1000) / 1000;
+    const suaDK = kltn, so = (v) => v === '' || v == null ? '' : Math.round(+v * 1000) / 1000;
     const no = (d) => Math.round(((+d.ban_giao || 0) + (+d.bo_sung || 0) - (+d.tra || 0)) * 1000) / 1000;
     const o2 = (d, k, w) => '<input class="o-sua" type="' + (k === 'ghi_chu' ? 'text' : 'number') + '"' + (k === 'ghi_chu' ? '' : ' step="any" min="0" inputmode="decimal"') + ' data-d="' + esc(d.id) + '" data-k="' + k + '" value="' + esc(k === 'ghi_chu' ? d[k] : so(d[k])) + '" data-goc="' + esc(k === 'ghi_chu' ? d[k] : so(d[k])) + '" style="width:' + w + '">';
     let h = '<div class="btns" style="margin-bottom:12px"><button class="btn sm" id="b-in">🖨 Xem trước – in / tải Excel</button><button class="btn sm" id="b-giay">⇪ Cập nhật từ bản giấy</button><button class="btn o sm" id="b-ky">Đính kèm bản ký</button>' +
-      '<button class="btn o sm" id="b-dien">Điền bàn giao = ' + (kltn ? 'SL đăng ký' : 'dự trù') + '</button><button class="btn o sm" id="b-them">+ Thêm dòng</button>' + (dc && !kltn ? '<button class="btn o sm" id="b-in-bo" title="Lớp nhận thêm bộ dụng cụ thứ 2, 3…">🖨 Xuất bộ 2, 3…</button>' : '') + '<button class="btn o sm" id="b-sua-bb">Sửa thông tin</button>' +
+      '<button class="btn o sm" id="b-dien">Điền bàn giao = ' + (kltn ? 'SL đăng ký' : 'dự trù') + '</button>' + (kltn ? '<button class="btn o sm" id="b-them">+ Thêm dòng</button>' : '<a class="btn o sm" href="' + (dc ? '#/hoa-chat/mon/' + encodeURIComponent(b.mon) : '#/hoa-chat/du-tru-mon') + '" title="Danh sách dòng và số dự trù sửa ở dữ liệu gốc – biên bản tự cập nhật">✎ Sửa danh sách gốc</a>') + (dc && !kltn ? '<button class="btn o sm" id="b-in-bo" title="Lớp nhận thêm bộ dụng cụ thứ 2, 3…">🖨 Xuất bộ 2, 3…</button>' : '') + '<button class="btn o sm" id="b-sua-bb">Sửa thông tin</button>' +
       '<select id="f-tt">' + S.dm.trang_thai_bb.map(t => '<option' + (t === b.trang_thai ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select><button class="btn o sm" id="b-tt">Đổi trạng thái</button>' +
       (laAdmin() ? '<button class="btn red sm" id="b-xoa">Xóa</button>' : '') + '</div>';
     h += '<div class="grid g2"><div class="card"><dl class="kv"><dt>Số biên bản</dt><dd class="mono">' + esc(b.id) + '</dd><dt>Loại</dt><dd>' + esc(N.ten) + '</dd><dt>Học kỳ</dt><dd>' + esc(b.hk) + '</dd>' +
@@ -999,7 +1000,7 @@
         dongHop(); toast('Đã tải lên'); dieuHuong();
       };
     };
-    $('b-them').onclick = () => {
+    if ($('b-them')) $('b-them').onclick = () => {
       moHop('<h2>Thêm dòng ngoài định mức</h2><form id="f"><div class="form-grid">' + o('ten', 'Tên – quy cách', { req: 1, full: 1 }) + o('ma_vt', 'Mã VT') + o('dvt', 'ĐVT') + o('nsx', 'NSX') + o('ghi_chu', 'Ghi chú') +
         '</div><p class="note">Dòng thêm ngoài định mức được đánh dấu ⚠ để kiểm tra. Nhập số lượng trực tiếp trên bảng sau khi thêm.</p><div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Thêm</button></div></form>');
       ganGoiYVT($('f'));
