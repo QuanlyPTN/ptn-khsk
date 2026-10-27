@@ -1226,6 +1226,38 @@
     const hp = (maMon.match(/\d{10}/g) || []), m = /\bM\d+\b/.exec(maMon);
     return { ten, mon: m ? m[0] : '', ma_hp: hp, lop: [{ lop: '', ma_lhp: '', si_so: ss }], dm };
   }
+  // Dự trù theo nhóm: mỗi nhóm một khối có dòng tiêu đề nhóm (HÓA CHẤT / VẬT TƯ TIÊU HAO / DƯỢC LIỆU…) ngay trên dòng tiêu đề cột
+  // (STT | TÊN NGUYÊN LIỆU | ĐVT | ĐM… | SL… | THỰC NHẬN | GHI CHÚ); thứ tự các nhóm tùy ý. Không phải mẫu này → null.
+  function docDuTruNhom(rows, tenSheet) {
+    const dong = (r) => (r || []).map(chu).filter(Boolean).join(' '), trang = (r) => !dong(r);
+    const nhomCua = (t) => { const b = boDau(t); return /duoc lieu/.test(b) ? 'Dược liệu' : /vat tu|tieu hao/.test(b) ? 'Vật tư tiêu hao' : /hoa chat/.test(b) ? 'Hóa chất' : ''; };
+    const laTieuDe = (r) => r && r.some(c => /ten nguyen lieu|ten hoa chat|ten vat tu|qu[iy] cach/.test(boDau(chu(c)))) && r.some(c => /^dvt|^dv\b|don vi/.test(boDau(chu(c))));
+    const khoi = []; // [{h: chỉ số dòng tiêu đề cột, nhom}]
+    rows.forEach((r, i) => { if (!laTieuDe(r)) return; let k = i - 1; while (k >= 0 && trang(rows[k])) k--; const n = k >= 0 && !laTieuDe(rows[k]) ? nhomCua(dong(rows[k])) : ''; khoi.push({ h: i, nhom: n, k }); });
+    if (!khoi.length || !khoi.some(x => x.nhom)) return null;
+    const dau = rows.slice(0, khoi[0].k >= 0 ? khoi[0].k : khoi[0].h).map(dong), tim1 = (re) => { for (const t of dau) { const m = re.exec(boDau(t)); if (m) return t.slice(m.index + m[0].length).replace(/^[\s:.-]+/, '').trim(); } return ''; };
+    const tenMon = (tim1(/(^|\s)mon( hoc| thuc hanh)?\s*:/) || tim1(/ten mon( thuc hanh)?\s*:?/) || String(tenSheet || '')).split(/\s+(Thời gian|Phòng|Lớp|GVHD|Giảng viên|Tổng số|Học kỳ)\s*:/i)[0].trim();
+    const ss = so1((/(\d+)/.exec(tim1(/(tong so (sv|sinh vien)[^:]*|si so)\s*:?/)) || [])[1]);
+    const hp = (dau.join(' ').match(/\b\d{10}\b/g) || []).filter((x, i, a) => a.indexOf(x) === i);
+    const dm = [];
+    khoi.forEach((kh, j) => {
+      const H = rows[kh.h], ket = j + 1 < khoi.length ? (khoi[j + 1].k >= 0 ? khoi[j + 1].k : khoi[j + 1].h) : rows.length, nhom = kh.nhom || 'Hóa chất';
+      const C = { stt: tim(H, /^stt$/), ten: tim(H, /ten nguyen lieu|ten hoa chat|ten vat tu|qu[iy] cach/), ct: tim(H, /cong thuc/), ma: tim(H, /^ma\s*vt$|ma vat tu/), nsx: tim(H, /^nsx$/), dvt: tim(H, /^dvt|^dv\b|don vi/),
+        dm: tim(H, /^dm|dinh muc/), sl: H.findIndex(c => /^sl\b|^slg|so luong/.test(boDau(chu(c))) && !/thuc nhan|ban giao|hoan tra/.test(boDau(chu(c)))), gc: tim(H, /ghi chu/) };
+      const dmTheoSV = C.dm >= 0 && /1\s*(sv|hs|sinh vien)/.test(boDau(chu(H[C.dm]))); // "ĐM 1 NHÓM" không phải định mức / 1 SV → chỉ lấy SL
+      for (let i = kh.h + 1; i < ket; i++) {
+        const r = rows[i] || [], t = chu(r[C.ten]);
+        if (!t || laTieuDe(r) || /^(tong|cong)\b/.test(boDau(t)) || /nguoi lap|truong khoa|ban giao|ky ten/.test(boDau(dong(r)))) continue;
+        dm.push({ stt: so1(r[C.stt]) || dm.filter(x => x.nhom === nhom).length + 1, nhom, nhom_ro: 1, nhom_dt: String(['Hóa chất', 'Dược liệu', 'Vật tư tiêu hao'].indexOf(nhom) + 1), ten: t,
+          cong_thuc: C.ct >= 0 ? chu(r[C.ct]) : '', ma_vt: C.ma >= 0 ? chu(r[C.ma]) : '', nsx: C.nsx >= 0 ? chu(r[C.nsx]) : '', dvt: C.dvt >= 0 ? chu(r[C.dvt]) : '',
+          dm: dmTheoSV ? so1(r[C.dm]) : '', sl: C.sl >= 0 ? so1(r[C.sl]) : 0, ghi_chu: C.gc >= 0 ? chu(r[C.gc]) : '' });
+      }
+    });
+    // xếp theo thứ tự nhóm chuẩn (Hóa chất → Dược liệu → Vật tư tiêu hao) dù trong file khác thứ tự
+    const TT = ['Hóa chất', 'Dược liệu', 'Vật tư tiêu hao'];
+    dm.sort((a, b) => TT.indexOf(a.nhom) - TT.indexOf(b.nhom) || a.stt - b.stt); dm.forEach((d, i) => { d.stt = i + 1; }); // STT liên tục theo thứ tự nhóm
+    return { ten: tenMon, mon: '', ma_hp: hp, lop: [{ lop: '', ma_lhp: '', si_so: ss }], dm };
+  }
   // File "TH & Phòng học" (thời khóa biểu thực hành)
   function docTKB(rows) {
     const h = rows.findIndex(r => r.some(c => /ma lhp/.test(boDau(chu(c)))) && r.some(c => /ten mon/.test(boDau(chu(c)))));
@@ -1268,7 +1300,7 @@
     if (!dm.length) throw new Error('Không đọc được dòng dụng cụ nào (cần tên dụng cụ và số lượng ở cột "' + chu(H[C.sl]) + '")');
     return { ten, dm, chia: +chia };
   }
-  window.__PTN_TEST = { ghepCot, chuanNgay, chuanPhong, boDau, docKeHoachVatTu, docPhieuDuTru, docTKB, docMaVT, docDungCu };
+  window.__PTN_TEST = { ghepCot, chuanNgay, chuanPhong, boDau, docKeHoachVatTu, docPhieuDuTru, docDuTruNhom, docTKB, docMaVT, docDungCu };
 
   function hopNhapExcel() {
     moHop('<h2>Nhập thiết bị từ Excel</h2><p class="note">Chọn file Excel danh mục thiết bị (ví dụ "Danh muc thiet bi - K.KHSK.xlsx"). Hệ thống tự nhận cột theo tiêu đề; anh/chị kiểm tra lại trước khi nhập. Dòng trùng mã tài sản sẽ bị bỏ qua.' + linkMau('thiet_bi') + '</p>' +
@@ -1457,6 +1489,6 @@
   function trangCongKhai() { return location.href.split('#')[0].replace(/[?].*$/, '').replace(/quan-ly\/(index\.html|chay-thu\.html)?$/, ''); }
   // dùng chung cho app-mo-rong.js
   window.PTN_QL = { S, $, api, chay, trang, moHop, dongHop, o, giaTri, esc, toast, ngayVN, homNay, congNgay, boDau, tien, fmt, tag, hanTag, laAdmin, quyen, coQuyen, dieuHuong, napXlsx, napQR,
-    guiTep, taiVe, docB64, dsPhongChon, phongTen, capNhatDanhMuc, lienKet, trangCongKhai, MENU, TUYEN, DEMO, ganDieuHuong, hopDonVaoBB, nhapFileHC, nhapFileDC, icon, docKeHoachVatTu, docPhieuDuTru, hopFileExcel, ganGoiYVT };
+    guiTep, taiVe, docB64, dsPhongChon, phongTen, capNhatDanhMuc, lienKet, trangCongKhai, MENU, TUYEN, DEMO, ganDieuHuong, hopDonVaoBB, nhapFileHC, nhapFileDC, icon, docKeHoachVatTu, docPhieuDuTru, docDuTruNhom, hopFileExcel, ganGoiYVT };
   document.addEventListener('DOMContentLoaded', batDau);
 })();

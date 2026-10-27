@@ -1252,15 +1252,20 @@
     const doan = (m) => (mons.find(x => m.mon && x.ma === m.mon) || mons.find(x => m.ma_hp.some(h => String(x.ma_hp || '').indexOf(h) >= 0)) || mons.find(x => chuan(x.ten) === chuan(m.ten)) || {}).ma || '';
     Q.hopFileExcel('Tải file dự trù của môn', 'Chọn file dự trù theo mẫu kế hoạch vật tư (khối môn "1. TH …" hoặc tên môn ở cột TÊN BÀI TẬP, cột QUI CÁCH VẬT TƯ, MÃ VT, ĐVỊ, SLG/1HS, SLG). File có thể gồm <b>một hay nhiều môn</b>; dự trù cũ của các môn trong file được thay. ' +
       '<br><b>Nhóm (Hóa chất · Dược liệu · Vật tư tiêu hao):</b> nên dùng <b>Phiếu dự trù</b> do hệ thống in (nút "📄 Phiếu dự trù…") – ghi dưới đúng tiêu đề "1. HÓA CHẤT / 2. DƯỢC LIỆU / 3. VẬT TƯ TIÊU HAO" thì xếp đúng 100%. ' +
+      'Dự trù chia khối theo nhóm: mỗi nhóm một bảng có dòng tiêu đề nhóm ("HÓA CHẤT", "DƯỢC LIỆU", "VẬT TƯ TIÊU HAO") ngay trên dòng tiêu đề cột – thứ tự nhóm tùy ý, mỗi sheet một môn. ' +
       'File kế hoạch vật tư: mỗi môn chia <b>3 vùng ngăn bằng một dòng trắng</b> – vùng 1 Hóa chất · vùng 2 Dược liệu · vùng 3 Vật tư tiêu hao (môn không có nhóm nào thì để 2 dòng trắng liền nhau); ' +
       'hoặc dòng nhãn ở cột đầu (VD "DƯỢC LIỆU"). Không chia vùng / không nhãn thì hệ thống tự xếp theo tên / mã VT. Xếp nhầm: chuyển nhóm từng dòng ở bảng sửa dự trù hoặc định mức của môn. ' +
       'Dòng không ghi SLG tính bằng SLG/1HS × tổng sĩ số các lớp trong file.', (rows, ten, sheets, docSheet) => {
-      // phiếu dự trù (mẫu mới): đọc mọi trang tính là phiếu – mỗi trang một môn; không thì đọc theo mẫu kế hoạch vật tư
-      const laPhieu = Q.docPhieuDuTru(rows), kh = laPhieu ? sheets.map(n => n === ten ? laPhieu : Q.docPhieuDuTru(docSheet(n))).filter(p => p && p.dm.length) : Q.docKeHoachVatTu(rows, { monKhongSo: true }), tong = kh.reduce((a, m) => a + m.dm.length, 0);
+      // phiếu dự trù (mẫu hệ thống in) hoặc dự trù chia khối theo nhóm (dòng tiêu đề HÓA CHẤT / DƯỢC LIỆU / VẬT TƯ TIÊU HAO trên mỗi bảng):
+      // đọc mọi trang tính cùng mẫu – mỗi trang một môn; không thì đọc theo mẫu kế hoạch vật tư
+      const laPhieu = Q.docPhieuDuTru(rows), laNhom = !laPhieu && Q.docDuTruNhom(rows, ten), mau = laPhieu ? 'phieu' : laNhom ? 'nhom' : 'kh';
+      const docMau = (n) => { const r2 = n === ten ? rows : docSheet(n); return mau === 'phieu' ? Q.docPhieuDuTru(r2) : Q.docDuTruNhom(r2, n); };
+      const kh = mau === 'kh' ? Q.docKeHoachVatTu(rows, { monKhongSo: true }) : sheets.map(n => n === ten ? (laPhieu || laNhom) : docMau(n)).filter(p => p && p.dm.length), tong = kh.reduce((a, m) => a + m.dm.length, 0);
+      const demNhom = (m) => ['Hóa chất', 'Dược liệu', 'Vật tư tiêu hao'].map(n => [n, m.dm.filter(d => d.nhom === n).length]).filter(x => x[1]).map(x => x[0] + ' ' + x[1]).join(' · ');
       const chon = (m, i) => '<select data-i="' + i + '"><option value="">— Bỏ qua —</option>' + mons.map(x => '<option value="' + esc(x.ma) + '"' + (x.ma === doan(m) ? ' selected' : '') + '>' + esc(x.ten) + '</option>').join('') + '</select>';
-      $('x-kq').innerHTML = (laPhieu ? '' : Q.hopFileExcel.chonSheet(ten)) + '<p>' + (laPhieu ? 'Phiếu dự trù – ' : 'Kế hoạch vật tư – ') + 'đọc được <b>' + kh.length + '</b> môn, <b>' + tong + '</b> dòng dự trù. Kiểm tra cột "Môn trên web" (đã đoán theo mã môn / mã học phần / tên môn).</p>' +
+      $('x-kq').innerHTML = (mau !== 'kh' ? '' : Q.hopFileExcel.chonSheet(ten)) + '<p>' + ({ phieu: 'Phiếu dự trù – ', nhom: 'Dự trù chia theo nhóm (Hóa chất / Dược liệu / Vật tư tiêu hao) – ', kh: 'Kế hoạch vật tư – ' })[mau] + 'đọc được <b>' + kh.length + '</b> môn, <b>' + tong + '</b> dòng dự trù. Kiểm tra cột "Môn trên web" (đã đoán theo mã môn / mã học phần / tên môn).</p>' +
         '<div class="tbl-wrap" style="max-height:300px"><table><thead><tr><th>Môn trong file</th><th class="num">Lớp</th><th class="num">Sĩ số</th><th class="num">Dòng</th><th>Môn trên web</th></tr></thead><tbody>' +
-        kh.map((m, i) => '<tr><td>' + esc(m.ten) + '<div class="note mono">' + esc(m.ma_hp.join(', ')) + '</div></td><td class="num">' + m.lop.length + '</td><td class="num">' + m.lop.reduce((a, l) => a + (+l.si_so || 0), 0) + '</td><td class="num">' + m.dm.length + '</td><td>' + chon(m, i) + '</td></tr>').join('') + '</tbody></table></div>' +
+        kh.map((m, i) => '<tr><td>' + esc(m.ten) + '<div class="note mono">' + esc(m.ma_hp.join(', ')) + '</div><div class="note">' + esc(demNhom(m)) + '</div></td><td class="num">' + m.lop.length + '</td><td class="num">' + m.lop.reduce((a, l) => a + (+l.si_so || 0), 0) + '</td><td class="num">' + m.dm.length + '</td><td>' + chon(m, i) + '</td></tr>').join('') + '</tbody></table></div>' +
         '<div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn" id="x-ok">Lưu dự trù ' + esc(hk) + '</button></div>';
       Q.hopFileExcel.ganSheet();
       $('x-ok').onclick = async (e) => {
