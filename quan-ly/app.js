@@ -792,19 +792,26 @@
   }
   const tenSo = (s) => boDau(s).replace(/[^a-z0-9]+/g, ' ').trim(); // so tên hóa chất: bỏ dấu, hoa thường, ký tự lạ
   // sửa định mức từng dòng → biên bản lớp thực hành của môn đã cập nhật bao nhiêu
-  const ttBBDM = (r) => { const l = (r && r.bien_ban) || [], n = l.reduce((a, b) => a + b.tao.length + b.cap_nhat.length, 0); return n ? ' · đã cập nhật ' + n + ' biên bản bàn giao' : ''; };
+  const ttBBDM = (r) => { const l = (r && r.bien_ban) || [], n = l.reduce((a, b) => a + b.tao.length + b.cap_nhat.length, 0), dt = (r && r.du_tru) || { lam_moi: [], rieng: [] };
+    return (dt.lam_moi.length ? ' · dự trù ' + dt.lam_moi.join(', ') + ' lấy lại theo định mức' : '') + (n ? ' · đã cập nhật ' + n + ' biên bản bàn giao' : '') +
+      (dt.rieng.length ? ' · ⚠ dự trù ' + dt.rieng.join(', ') + ' nhập riêng – biên bản theo dự trù đó; thêm dòng ở thẻ "Dự trù hóa chất"' : ''); };
+  // Loại / nhóm: Hóa chất – vật tư, Dược liệu (cùng loại HC, nhóm "Dược liệu" – in mục III. Dược liệu), Dụng cụ
+  const laDL = (x) => x.loai === 'HC' && /d[uư][oợ]c li[eệ]u/i.test(x.nhom || '');
+  const loaiChon = (x) => x.loai === 'DC' ? 'DC' : laDL(x) ? 'DL' : 'HC';
   function hopDinhMuc(d, ds) {
-    moHop('<h2>' + (d.id ? 'Sửa định mức' : 'Thêm định mức') + '</h2><form id="f"><div class="form-grid">' + o('loai', 'Loại', { select: [['HC', 'Hóa chất – vật tư (/1 SV)'], ['DC', 'Dụng cụ (1 bộ / 1 lớp)']], v: d.loai }) + o('nhom', 'Nhóm', { v: d.nhom || 'Hóa chất', ph: 'Hóa chất, Dược liệu khô…' }) +
+    moHop('<h2>' + (d.id ? 'Sửa định mức' : 'Thêm định mức') + '</h2><form id="f"><div class="form-grid">' + o('loai', 'Loại', { select: [['HC', 'Hóa chất – vật tư (/1 SV)'], ['DL', 'Dược liệu (/1 SV)'], ['DC', 'Dụng cụ (1 bộ / 1 lớp)']], v: d.loai ? loaiChon(d) : 'HC' }) +
       o('ten', 'Tên – quy cách', { v: d.ten, req: 1, full: 1 }) + o('ma_vt', 'Mã VT', { v: d.ma_vt }) + o('nsx', 'NSX', { v: d.nsx }) + o('dvt', 'ĐVT', { v: d.dvt }) + o('dm', 'Định mức', { v: d.dm, req: 1 }) +
       o('stt', 'STT', { v: d.stt }) + o('ghi_chu', 'Ghi chú', { v: d.ghi_chu }) + '</div><div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>');
     ganGoiYVT($('f'));
     // tên đã có trong định mức của môn → báo ngay, không cho thêm trùng (STT tự đánh theo tên A → Z khi lưu)
     const f = $('f'), oTen = f.querySelector('[name=ten]'), bao = document.createElement('div'); bao.className = 'err hide'; oTen.closest('label').after(bao);
-    const trung = () => (ds || []).find(x => x.id !== d.id && x.loai === f.querySelector('[name=loai]').value && tenSo(x.ten) === tenSo(oTen.value));
+    const trung = () => (ds || []).find(x => x.id !== d.id && x.loai === (f.querySelector('[name=loai]').value === 'DC' ? 'DC' : 'HC') && tenSo(x.ten) === tenSo(oTen.value));
     const kiem = () => { const t = trung(); bao.classList.toggle('hide', !t); bao.innerHTML = t ? '⚠ "' + esc(t.ten) + '" đã có trong định mức của môn (STT ' + esc(t.stt) + ', ' + fmt(t.dm) + ' ' + esc(t.dvt) + ') – bấm "Sửa" ở dòng đó để đổi số lượng.' : ''; return t; };
     oTen.addEventListener('input', kiem); f.querySelector('[name=loai]').onchange = kiem;
     f.querySelector('[name=stt]').closest('label').remove(); // STT tự đánh theo tên A → Z
-    f.onsubmit = async (e) => { e.preventDefault(); if (kiem()) return toast('Hóa chất đã có trong định mức', true); const v = giaTri(e.target); v.id = d.id; v.mon = d.mon; const r = await chay(e.submitter, () => api('dm_luu', { dm: v })); dongHop(); toast('Đã lưu · STT ' + r.stt + ttBBDM(r) + (r.ma_vt ? ' · mã VT ' + r.ma_vt : ' · Chưa MVT')); dieuHuong(); };
+    f.onsubmit = async (e) => { e.preventDefault(); if (kiem()) return toast('Hóa chất đã có trong định mức', true); const v = giaTri(e.target); v.id = d.id; v.mon = d.mon; const chon = v.loai; v.loai = chon === 'DC' ? 'DC' : 'HC'; // nhóm theo loại; sửa dòng cũ cùng loại giữ nhóm cũ
+      v.nhom = chon === 'DL' ? 'Dược liệu' : d.id && chon === loaiChon(d) ? d.nhom : chon === 'DC' ? 'Dụng cụ' : 'Hóa chất';
+      const r = await chay(e.submitter, () => api('dm_luu', { dm: v })); dongHop(); toast('Đã lưu · STT ' + r.stt + ttBBDM(r) + (r.ma_vt ? ' · mã VT ' + r.ma_vt : ' · Chưa MVT')); dieuHuong(); };
   }
 
   async function manVatTu(nd) {
