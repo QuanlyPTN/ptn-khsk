@@ -667,7 +667,9 @@
         (b.tao.length ? '<p>✓ Tạo mới ' + b.tao.length + ' biên bản: ' + b.tao.map(id => '<a href="#/bien-ban/' + encodeURIComponent(id) + '" data-dong>' + esc(id) + '</a>').join(', ') + '</p>' : '') +
         (cn.length ? '<p>✓ Cập nhật ' + cn.length + ' biên bản:</p><ul>' + cn.map(c => '<li><a href="#/bien-ban/' + encodeURIComponent(c.id) + '" data-dong>' + esc(c.id) + '</a> ' + esc(c.ten_mon) + ': ' +
           [c.them && '+' + c.them + ' dòng mới', c.sua && c.sua + ' dòng đổi định mức / dự trù', c.xoa && c.xoa + ' dòng bỏ (chưa giao)', c.giu && c.giu + ' dòng đã giao nhưng không còn trong định mức (giữ lại, ⚠)'].filter(Boolean).join(' · ') + '</li>').join('') + '</ul>' : '') +
-        (!b.tao.length && !cn.length ? '<p class="note">Không có biên bản nào cần tạo / thay đổi (môn chưa có ca thực hành trong học kỳ này, hoặc định mức không đổi).</p>' : '')
+        ((b.khong_lop || []).length ? '<div class="err" style="margin-top:8px">⚠ Chưa tạo được biên bản cho: <b>' + esc(b.khong_lop.join(', ')) + '</b> – môn chưa có lớp thực hành nào trong thời khóa biểu ' + esc(b.hk) + '.<br>' +
+          'Cách xử lý: vào <a href="#/hoa-chat/hoc-ky" data-dong>Học kỳ & thời khóa biểu</a> → "Gán môn" cho các lớp của môn này (hoặc tải lại file và chọn đúng môn có lớp trong TKB). Định mức đã lưu, biên bản sẽ tự tạo khi môn có lớp.</div>' : '') +
+        (!b.tao.length && !cn.length && !(b.khong_lop || []).length ? '<p class="note">Biên bản đã khớp với định mức / dự trù – không có gì thay đổi.</p>' : '')
         : '<p class="note">Chưa có học kỳ – biên bản sẽ được tạo khi nhập thời khóa biểu.</p>') +
       '<div class="modal-foot"><button class="btn" data-dong>Xong</button></div>');
     dieuHuong();
@@ -685,18 +687,26 @@
   }
   async function nhapFileDC(ds) {
     ds = ds || await api('mon_ds');
-    const hk = hkMacDinh();
+    const hk = hkMacDinh(), coLop = {};
+    if (hk) (await api('lop_ds', { hk }).catch(() => [])).forEach(l => { if (l.mon) coLop[l.mon] = 1; });
+    const tenSo = (s) => boDau(s).replace(/^th\s+/, '').replace(/[^a-z0-9]+/g, ' ').trim();
+    // môn có lớp thực hành trong TKB học kỳ lên đầu danh sách chọn
+    ds = ds.slice().sort((a, b) => (coLop[b.ma] || 0) - (coLop[a.ma] || 0) || a.ten.localeCompare(b.ten, 'vi'));
     hopFileExcel('Tải file dụng cụ của một môn', 'Chọn biên bản / danh sách dụng cụ của môn (cột "Tên dụng cụ", "Số lượng" – số lượng của 1 bộ dụng cụ giao 1 lớp thực hành; mỗi môn chỉ cần 1 file). Định mức dụng cụ của môn được thay; biên bản dụng cụ ' + esc(hk) + ' của môn tự tạo / cập nhật.', (rows, ten) => {
-      const dc = docDungCu(rows), goiY = ds.find(m => boDau(m.ten).replace(/^th\s+/, '') === boDau(dc.ten).replace(/^th\s+/, ''));
+      const dc = docDungCu(rows), t = tenSo(dc.ten);
+      // gợi ý môn: trùng tên → tên chứa nhau (ưu tiên môn có lớp trong TKB); không đoán được thì để cán bộ chọn, không tự tạo môn mới
+      const goiY = t ? ds.find(m => tenSo(m.ten) === t) || ds.find(m => coLop[m.ma] && (tenSo(m.ten).indexOf(t) >= 0 || t.indexOf(tenSo(m.ten)) >= 0)) : null;
       $('x-kq').innerHTML = hopFileExcel.chonSheet(ten) + '<p>Môn trong file: <b>' + esc(dc.ten || '(không ghi)') + '</b> · ' + dc.dm.length + ' dụng cụ' + (dc.chia > 1 ? ' (số lượng / ' + dc.chia + ' bộ → quy về 1 bộ)' : '') + '</p>' +
-        o('mon', 'Gắn vào môn', { select: [['', '— Chọn môn —']].concat(dc.ten && !goiY ? [['~moi', '+ Tạo môn mới: ' + dc.ten]] : []).concat(ds.map(m => [m.ma, m.ten])), v: goiY ? goiY.ma : dc.ten ? '~moi' : '' }) +
+        o('mon', 'Gắn vào môn', { select: [['', '— Chọn môn —']].concat(ds.map(m => [m.ma, m.ten + (coLop[m.ma] ? ' ✓ có lớp TH ' + hk : ' (chưa có lớp trong TKB)')])).concat(dc.ten ? [['~moi', '+ Tạo môn mới: ' + dc.ten + ' (chưa có lớp → chưa tạo biên bản)']] : []), v: goiY ? goiY.ma : '' }) +
+        (goiY ? '' : '<p class="note" style="color:var(--bad)">Không tự khớp được môn "' + esc(dc.ten || '') + '" – chọn môn có ✓ (có lớp trong thời khóa biểu) để tạo biên bản dụng cụ.</p>') +
         '<div class="tbl-wrap" style="max-height:220px"><table><thead><tr><th>Dụng cụ</th><th class="num">Số lượng / 1 bộ</th></tr></thead><tbody>' + dc.dm.map(d => '<tr><td>' + esc(d.ten) + '</td><td class="num">' + fmt(d.dm) + '</td></tr>').join('') + '</tbody></table></div>' +
         '<div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn" id="x-ok">Cập nhật định mức + biên bản</button></div>';
       hopFileExcel.ganSheet();
       $('x-ok').onclick = async (e) => {
         const ma = $('x-kq').querySelector('[name=mon]').value; if (!ma) return toast('Chọn môn', true);
+        if (!coLop[ma] && !confirm('Môn này chưa có lớp thực hành trong thời khóa biểu ' + hk + ' → chỉ lưu định mức dụng cụ, CHƯA tạo được biên bản.\nTiếp tục?')) return;
         const tenMon = ma === '~moi' ? dc.ten : ds.find(m => m.ma === ma).ten;
-        const r = await chay(e.target, () => api('dm_nhap', { loai: 'DC', ds: [{ ten: tenMon, ma_hp: [], dm: dc.dm }], hk, dong_bo: true })); ketQuaDongBo(r, 'Đã cập nhật định mức dụng cụ');
+        const r = await chay(e.target, () => api('dm_nhap', { loai: 'DC', ds: [{ mon: ma === '~moi' ? '' : ma, ten: tenMon, ma_hp: [], dm: dc.dm }], hk, dong_bo: true })); ketQuaDongBo(r, 'Đã cập nhật định mức dụng cụ');
       };
     });
   }
