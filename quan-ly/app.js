@@ -648,23 +648,24 @@
       '<ul style="margin:6px 0 0 18px;padding:0"><li>Hóa chất, vật tư tiêu hao tính cho <b>1 sinh viên</b>; dụng cụ tính cho <b>1 bộ giao 1 lớp thực hành</b> (gồm các nhóm của lớp; lớp nhận thêm bộ 2, 3 thì xuất biên bản bộ 2, 3 ở trang biên bản dụng cụ) – nhập một lần, dùng lại mọi học kỳ, chỉ sửa khi môn đổi bài.</li>' +
       '<li>Số cần cho từng học kỳ = định mức × sĩ số theo thời khóa biểu: xem / lấy ở thẻ <a href="#/hoa-chat/du-tru-mon"><b>Dự trù hóa chất ' + esc(hkMacDinh() || 'HK') + '</b></a> (chọn môn → "Lấy dự trù từ định mức", không cần tải file).</li>' +
       '<li>Biên bản bàn giao và dự trù theo đợt cũng tự tính từ định mức này.</li></ul></div>' +
-      '<div class="tools"><button class="btn sm" id="b-kh">⇪ Tải file định mức hóa chất (một hay nhiều môn)</button><button class="btn sm" id="b-dc">⇪ Tải file dụng cụ (một hoặc nhiều môn)</button><button class="btn o sm" id="b-mon">+ Môn</button>' + (laAdmin() ? '<button class="btn red o sm" id="b-don-thu" title="Chạy thử: giữ vài môn, xóa định mức, dự trù, biên bản lớp thực hành của các môn còn lại">🧹 Dọn dữ liệu thử</button>' : '') + (coQuyen('hoa-chat', 'xu_ly') ? '<button class="btn o sm" id="b-chuan-nhom" title="Xếp lại định mức hóa chất mọi môn về 3 nhóm: Hóa chất · Dược liệu · Vật tư tiêu hao">⇄ Chuẩn hóa nhóm (Hóa chất / Dược liệu / Vật tư tiêu hao)</button>' : '') + '</div>' +
+      '<div class="tools"><button class="btn sm" id="b-kh">⇪ Tải file định mức hóa chất (một hay nhiều môn)</button><button class="btn sm" id="b-dc">⇪ Tải file dụng cụ (một hoặc nhiều môn)</button><button class="btn o sm" id="b-mon">+ Môn</button>' + (laAdmin() ? '<button class="btn red o sm" id="b-don" title="Xóa định mức, dự trù, biên bản lớp thực hành của các môn được chọn">🧹 Dọn dữ liệu</button>' : '') + (coQuyen('hoa-chat', 'xu_ly') ? '<button class="btn o sm" id="b-chuan-nhom" title="Xếp lại định mức hóa chất mọi môn về 3 nhóm: Hóa chất · Dược liệu · Vật tư tiêu hao">⇄ Chuẩn hóa nhóm (Hóa chất / Dược liệu / Vật tư tiêu hao)</button>' : '') + '</div>' +
       '<p class="note">Định mức hóa chất tính cho <b>1 sinh viên</b>; định mức dụng cụ tính cho <b>1 bộ / 1 lớp thực hành</b>. Đây là dữ liệu cốt lõi, dùng lại cho mọi học kỳ. Môn nào có file thì tải lên môn đó – biên bản bàn giao và dự trù của học kỳ đang chọn tự cập nhật.</p>' +
       (ds.length ? '<div class="tbl-wrap"><table><thead><tr><th>Mã</th><th>Môn thực hành</th><th>Mã học phần</th><th class="num">Dòng hóa chất</th><th class="num">Dòng dụng cụ</th></tr></thead><tbody>' +
         ds.map(m => '<tr class="click" data-ma="' + esc(m.ma) + '"><td class="mono">' + esc(m.ma) + '</td><td><b>' + esc(m.ten) + '</b></td><td class="mono">' + esc(m.ma_hp) + '</td><td class="num">' + (m.so_hc || '<span class="tag t-warn">0</span>') + '</td><td class="num">' + (m.so_dc || '—') + '</td></tr>').join('') + '</tbody></table></div>'
         : '<div class="card empty">Chưa có môn. Bấm "Nhập định mức hóa chất" và chọn file kế hoạch vật tư (ví dụ "KSK. KH vat HKI 2026.xlsm").</div>');
     nd.querySelectorAll('tr[data-ma]').forEach(tr => { tr.onclick = () => { location.hash = '#/hoa-chat/mon/' + tr.dataset.ma; }; });
     $('b-mon').onclick = () => hopMon(null);
-    if ($('b-don-thu')) $('b-don-thu').onclick = () => {
-      const goiY = (m) => /hoa sinh dinh duong/.test(boDau(m.ten));
-      moHop('<h2>🧹 Dọn dữ liệu thử</h2><p class="note">Đánh dấu các môn <b>giữ lại</b>. Các môn còn lại bị xóa: <b>định mức hóa chất + dụng cụ</b>, <b>dự trù hóa chất</b> (mọi học kỳ) và <b>biên bản bàn giao lớp thực hành</b> (hóa chất + dụng cụ, kèm lịch sử cấp phát). ' +
-        'Danh sách môn, thời khóa biểu giữ nguyên. Thu hồi được ở Lịch sử tải file.</p><div style="max-height:320px;overflow:auto">' +
-        ds.map(m => '<label class="check"><input type="checkbox" data-giu="' + esc(m.ma) + '"' + (goiY(m) ? ' checked' : '') + '> ' + esc(m.ten) + ' <span class="note">(' + (m.so_hc || 0) + ' HC · ' + (m.so_dc || 0) + ' DC)</span></label>').join('') +
-        '</div><div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn red" id="b-don-ok">Dọn – xóa dữ liệu các môn không đánh dấu</button></div>');
+    if ($('b-don')) $('b-don').onclick = () => {
+      moHop('<h2>🧹 Dọn dữ liệu</h2><p class="note">Đánh dấu các môn <b>cần dọn</b> – môn được đánh dấu bị xóa <b>định mức hóa chất + dụng cụ</b>, <b>dự trù hóa chất</b> (mọi học kỳ) và <b>biên bản bàn giao lớp thực hành</b> (hóa chất + dụng cụ, kèm lịch sử cấp phát). ' +
+        'Môn <b>không đánh dấu giữ nguyên</b>. Danh sách môn, thời khóa biểu không bị xóa. Xóa nhầm: thu hồi ở Lịch sử tải file.</p>' +
+        '<label class="check"><input type="checkbox" id="don-het"> Chọn tất cả</label><div style="max-height:320px;overflow:auto">' +
+        ds.map(m => '<label class="check"><input type="checkbox" data-xoa-mon="' + esc(m.ma) + '"> ' + esc(m.ten) + ' <span class="note">(' + (m.so_hc || 0) + ' HC · ' + (m.so_dc || 0) + ' DC)</span></label>').join('') +
+        '</div><div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn red" id="b-don-ok">Dọn – xóa dữ liệu các môn đã đánh dấu</button></div>');
+      $('don-het').onchange = (e) => document.querySelectorAll('[data-xoa-mon]').forEach(c => { c.checked = e.target.checked; });
       $('b-don-ok').onclick = async (e) => {
-        const giu = [...document.querySelectorAll('[data-giu]:checked')].map(c => c.dataset.giu); if (!giu.length) return toast('Đánh dấu ít nhất một môn giữ lại', true);
-        if (!confirm('Xóa định mức, dự trù, biên bản lớp thực hành của ' + (ds.length - giu.length) + ' môn, chỉ giữ ' + giu.length + ' môn?')) return;
-        const r = await chay(e.target, () => api('don_du_lieu_thu', { giu })); dongHop();
+        const xoa = [...document.querySelectorAll('[data-xoa-mon]:checked')].map(c => c.dataset.xoaMon); if (!xoa.length) return toast('Đánh dấu ít nhất một môn cần dọn', true);
+        if (!confirm('Xóa định mức, dự trù, biên bản lớp thực hành của ' + xoa.length + ' môn đã đánh dấu? (' + (ds.length - xoa.length) + ' môn còn lại giữ nguyên)')) return;
+        const r = await chay(e.target, () => api('don_du_lieu', { xoa })); dongHop();
         toast('Đã dọn: ' + r.dinh_muc + ' dòng định mức, ' + r.du_tru + ' dòng dự trù, ' + r.bien_ban + ' biên bản (' + r.dong_bb + ' dòng)'); dieuHuong(); };
     };
     if ($('b-chuan-nhom')) $('b-chuan-nhom').onclick = async (e) => { if (!confirm('Xếp lại định mức hóa chất của mọi môn về 3 nhóm (1. Hóa chất · 2. Dược liệu · 3. Vật tư tiêu hao), đánh lại STT?\nDự trù "lấy từ định mức" và biên bản cập nhật theo; thu hồi được ở Lịch sử tải file.')) return;
