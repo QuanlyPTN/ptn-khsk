@@ -631,7 +631,8 @@
       $('dtm-ss').oninput = (e) => { ss = +e.target.value || 0; f.querySelectorAll('[data-sl]').forEach(b => { b.textContent = slCua(ds[+b.dataset.sl]); }); };
       f.onsubmit = async (e) => {
         e.preventDefault();
-        const dm = ds.filter(d => String(d.ten).trim()).map(d => ({ nhom_dt: String(d.nhom + 1), ten: String(d.ten).trim(), cong_thuc: d.cong_thuc, ma_vt: d.ma_vt, nsx: d.nsx, dvt: d.dvt, dm: d.dm, sl: slCua(d), ghi_chu: d.ghi_chu }));
+        // gửi theo thứ tự nhóm (dòng thêm sau của nhóm nào về đúng nhóm đó)
+        const dm = [0, 1, 2].reduce((a, k) => a.concat(ds.filter(d => d.nhom === k)), []).filter(d => String(d.ten).trim()).map(d => ({ nhom_dt: String(d.nhom + 1), ten: String(d.ten).trim(), cong_thuc: d.cong_thuc, ma_vt: d.ma_vt, nsx: d.nsx, dvt: d.dvt, dm: d.dm, sl: slCua(d), ghi_chu: d.ghi_chu }));
         const loi = !dm.length ? 'Chưa có dòng dự trù nào' : !f.querySelector('[name=cam_ket]').checked ? 'Đánh dấu ô xác nhận' : '';
         if (loi) { $('err').textContent = loi; return; }
         $('sb').disabled = true; $('sb').textContent = 'Đang gửi…'; $('err').textContent = '';
