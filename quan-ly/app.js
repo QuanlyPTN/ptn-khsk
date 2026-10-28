@@ -648,13 +648,35 @@
       '<ul style="margin:6px 0 0 18px;padding:0"><li>Hóa chất, vật tư tiêu hao tính cho <b>1 sinh viên</b>; dụng cụ tính cho <b>1 bộ giao 1 lớp thực hành</b> (gồm các nhóm của lớp; lớp nhận thêm bộ 2, 3 thì xuất biên bản bộ 2, 3 ở trang biên bản dụng cụ) – nhập một lần, dùng lại mọi học kỳ, chỉ sửa khi môn đổi bài.</li>' +
       '<li>Số cần cho từng học kỳ = định mức × sĩ số theo thời khóa biểu: xem / lấy ở thẻ <a href="#/hoa-chat/du-tru-mon"><b>Dự trù hóa chất ' + esc(hkMacDinh() || 'HK') + '</b></a> (chọn môn → "Lấy dự trù từ định mức", không cần tải file).</li>' +
       '<li>Biên bản bàn giao và dự trù theo đợt cũng tự tính từ định mức này.</li></ul></div>' +
-      '<div class="tools"><button class="btn sm" id="b-kh">⇪ Tải file định mức hóa chất (một hay nhiều môn)</button><button class="btn sm" id="b-dc">⇪ Tải file dụng cụ (một hoặc nhiều môn)</button><button class="btn o sm" id="b-mon">+ Môn</button>' + (laAdmin() ? '<button class="btn red o sm" id="b-don" title="Xóa định mức, dự trù, biên bản lớp thực hành của các môn được chọn">🧹 Dọn dữ liệu</button>' : '') + (coQuyen('hoa-chat', 'xu_ly') ? '<button class="btn o sm" id="b-chuan-nhom" title="Xếp lại định mức hóa chất mọi môn về 3 nhóm: Hóa chất · Dược liệu · Vật tư tiêu hao">⇄ Chuẩn hóa nhóm (Hóa chất / Dược liệu / Vật tư tiêu hao)</button>' : '') + '</div>' +
+      '<div class="tools"><button class="btn sm" id="b-kh">⇪ Tải file định mức hóa chất (một hay nhiều môn)</button><button class="btn sm" id="b-dc">⇪ Tải file dụng cụ (một hoặc nhiều môn)</button><button class="btn o sm" id="b-mon">+ Môn</button>' + (laAdmin() ? '<button class="btn o sm" id="b-gop" title="Gộp môn trùng tên (do tải file tên viết khác) vào môn giữ lại">⇄ Gộp môn trùng</button><button class="btn red o sm" id="b-don" title="Xóa định mức, dự trù, biên bản lớp thực hành của các môn được chọn">🧹 Dọn dữ liệu</button>' : '') + (coQuyen('hoa-chat', 'xu_ly') ? '<button class="btn o sm" id="b-chuan-nhom" title="Xếp lại định mức hóa chất mọi môn về 3 nhóm: Hóa chất · Dược liệu · Vật tư tiêu hao">⇄ Chuẩn hóa nhóm (Hóa chất / Dược liệu / Vật tư tiêu hao)</button>' : '') + '</div>' +
       '<p class="note">Định mức hóa chất tính cho <b>1 sinh viên</b>; định mức dụng cụ tính cho <b>1 bộ / 1 lớp thực hành</b>. Đây là dữ liệu cốt lõi, dùng lại cho mọi học kỳ. Môn nào có file thì tải lên môn đó – biên bản bàn giao và dự trù của học kỳ đang chọn tự cập nhật.</p>' +
       (ds.length ? '<div class="tbl-wrap"><table><thead><tr><th>Mã</th><th>Môn thực hành</th><th>Mã học phần</th><th class="num">Dòng hóa chất</th><th class="num">Dòng dụng cụ</th></tr></thead><tbody>' +
         ds.map(m => '<tr class="click" data-ma="' + esc(m.ma) + '"><td class="mono">' + esc(m.ma) + '</td><td><b>' + esc(m.ten) + '</b></td><td class="mono">' + esc(m.ma_hp) + '</td><td class="num">' + (m.so_hc || '<span class="tag t-warn">0</span>') + '</td><td class="num">' + (m.so_dc || '—') + '</td></tr>').join('') + '</tbody></table></div>'
         : '<div class="card empty">Chưa có môn. Bấm "Nhập định mức hóa chất" và chọn file kế hoạch vật tư (ví dụ "KSK. KH vat HKI 2026.xlsm").</div>');
     nd.querySelectorAll('tr[data-ma]').forEach(tr => { tr.onclick = () => { location.hash = '#/hoa-chat/mon/' + tr.dataset.ma; }; });
     $('b-mon').onclick = () => hopMon(null);
+    if ($('b-gop')) $('b-gop').onclick = () => {
+      // gợi ý cặp có thể trùng: tên (bỏ dấu, "TH", số thứ tự) trùng hẳn hoặc tên này chứa tên kia
+      const tso = (t) => boDau(t).replace(/^\s*\d+\s*[.)]\s*/, '').replace(/^th\s+/, '').replace(/[^a-z0-9]+/g, ' ').trim(), cap = [];
+      ds.forEach((a, i) => ds.slice(i + 1).forEach(b => { const x = tso(a.ten), y = tso(b.ten); if (x && y && (x === y || x.indexOf(y) >= 0 || y.indexOf(x) >= 0)) cap.push([a, b]); }));
+      const nhan = (m) => esc(m.ten) + ' (' + (m.so_hc || 0) + ' HC · ' + (m.so_dc || 0) + ' DC' + (m.ma_hp ? ' · ' + esc(m.ma_hp) : '') + ')';
+      const chon = (id, ph) => '<select id="' + id + '" style="width:100%"><option value="">— ' + ph + ' —</option>' + ds.map(m => '<option value="' + esc(m.ma) + '">' + nhan(m) + '</option>').join('') + '</select>';
+      moHop('<h2>⇄ Gộp môn trùng</h2><p class="note">Dùng khi một môn bị tạo hai lần (tải file có tên môn viết khác). Mọi dữ liệu của <b>môn trùng</b> – định mức hóa chất + dụng cụ, dự trù các học kỳ, lớp trong thời khóa biểu, mã / đề nghị dự trù của GV – ' +
+        'chuyển sang <b>môn giữ lại</b>, mã học phần ghép lại, rồi môn trùng bị xóa. Biên bản môn giữ lại tự cập nhật. Thu hồi được ở Lịch sử tải file.</p>' +
+        (cap.length ? '<div class="card" style="margin-bottom:10px"><b>Gợi ý các cặp có thể trùng</b> <span class="note">(bấm để chọn)</span><div>' + cap.map((c, i) => '<button type="button" class="btn o sm" data-cap="' + i + '" style="margin:4px 4px 0 0">' + esc(c[0].ten) + ' ⇄ ' + esc(c[1].ten) + '</button>').join('') + '</div></div>' : '<p class="note">Không thấy cặp tên nào giống nhau – chọn tay bên dưới.</p>') +
+        '<label class="f"><span>Môn trùng (bị gộp, sẽ xóa)</span>' + chon('gop-tu', 'Chọn môn trùng') + '</label><label class="f"><span>Gộp vào môn (giữ lại)</span>' + chon('gop-vao', 'Chọn môn giữ lại') + '</label>' +
+        '<div class="f"><span>Khi cả hai môn cùng có định mức (cùng loại) hoặc dự trù (cùng học kỳ)</span><label class="check"><input type="radio" name="gop-ut" value="vao" checked> Giữ của <b>môn giữ lại</b> (khuyên dùng)</label><label class="check"><input type="radio" name="gop-ut" value="tu"> Lấy của <b>môn trùng</b></label></div>' +
+        '<div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn" id="b-gop-ok">Gộp môn</button></div>');
+      document.querySelectorAll('[data-cap]').forEach(b => { b.onclick = () => { const c = cap[+b.dataset.cap], it = (m) => (m.so_hc || 0) + (m.so_dc || 0);
+        const [vao, tu] = it(c[0]) >= it(c[1]) ? c : [c[1], c[0]]; $('gop-tu').value = tu.ma; $('gop-vao').value = vao.ma; }; }); // môn nhiều dữ liệu hơn là môn giữ lại
+      $('b-gop-ok').onclick = async (e) => {
+        const tu = $('gop-tu').value, vao = $('gop-vao').value, ut = document.querySelector('[name=gop-ut]:checked').value;
+        if (!tu || !vao) return toast('Chọn môn trùng và môn giữ lại', true); if (tu === vao) return toast('Hai môn phải khác nhau', true);
+        const t1 = ds.find(m => m.ma === tu).ten, t2 = ds.find(m => m.ma === vao).ten;
+        if (!confirm('Gộp "' + t1 + '" vào "' + t2 + '"?\nMôn "' + t1 + '" sẽ bị xóa sau khi chuyển dữ liệu.')) return;
+        const r = await chay(e.target, () => api('gop_mon', { tu, vao, uu_tien: ut })); dongHop();
+        toast('Đã gộp "' + r.tu + '" vào "' + r.vao + '": ' + r.dinh_muc + ' dòng định mức, ' + r.du_tru + ' dòng dự trù, ' + r.lop + ' dòng lịch TKB chuyển sang'); dieuHuong(); };
+    };
     if ($('b-don')) $('b-don').onclick = () => {
       moHop('<h2>🧹 Dọn dữ liệu</h2><p class="note">Đánh dấu các môn <b>cần dọn</b> – môn được đánh dấu bị xóa <b>định mức hóa chất + dụng cụ</b>, <b>dự trù hóa chất</b> (mọi học kỳ) và <b>biên bản bàn giao lớp thực hành</b> (hóa chất + dụng cụ, kèm lịch sử cấp phát). ' +
         'Môn <b>không đánh dấu giữ nguyên</b>. Danh sách môn, thời khóa biểu không bị xóa. Xóa nhầm: thu hồi ở Lịch sử tải file.</p>' +
