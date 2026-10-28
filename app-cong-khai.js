@@ -9,7 +9,7 @@
   // đối tượng dùng mã (nhãn góc ô); QR2, QR3, QR4 nằm ở nhóm "Giảng viên – thiết bị"
   const QR_AI = { QR1: 'Giảng viên, Sinh viên', QR5: 'Giảng viên, Sinh viên', QR6: 'Giảng viên, Sinh viên', QR8: 'Giảng viên, Sinh viên', QR7: 'Sinh viên', QR2: 'Giảng viên', QR3: 'Giảng viên', QR4: 'Giảng viên' };
   const QR_GV = ['QR2', 'QR3', 'QR4'];
-  const BIEU = { QR1: '<path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 21v-6h6v6"/>', QR2: '<path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2z"/>',
+  const BIEU = { DT: '<path d="M9 3h6"/><path d="M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/><path d="M7 14h10"/>', QR1: '<path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 21v-6h6v6"/>', QR2: '<path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2z"/>',
     QR3: '<path d="M9 3h6"/><path d="M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/><path d="M7 15h10"/>', QR4: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
     QR5: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', QR6: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 3v18"/><path d="M9 12h.01M15 12h.01"/>',
     QR7: '<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>', QR8: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 12v6M9 15h6"/>',
@@ -171,6 +171,7 @@
       Object.keys(QR_TEN).filter(q => QR_GV.indexOf(q) < 0).map(oQR).join('') +
       '</div><div class="tieu-de-nhom">Giảng viên – thiết bị</div><div class="grid">' + QR_GV.map(oQR).join('') +
       Object.keys(GV().LOAI).filter(q => !GV().LOAI[q].ngung).map(q => '<a class="tile" href="#/' + q + '">' + bieu(q) + '<span class="qv">' + q + '</span>' + esc(GV().LOAI[q].ten) + '</a>').join('') +
+      '<a class="tile" href="#/DT">' + bieu('DT') + '<span class="qv">DT</span>Dự trù hóa chất môn học<span class="note" style="font-size:12px">Nhập bằng mã PTN cấp</span></a>' +
       '</div><div class="tieu-de-nhom">Tiện ích</div><div class="grid"><a class="tile t2" href="#/don-cua-toi">' + bieu('cua_toi') + '<span><b>Đơn của tôi</b><br><span class="note" id="dem-don">Trạng thái các đơn đã gửi</span></span></a>' +
       '<a class="tile t2" href="#/bieu-mau">' + bieu('mau') + '<span><b>Biểu mẫu PTN</b><br><span class="note">Mẫu đơn, phiếu trống</span></span></a></div>' +
       (navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ? '' : '<div class="card note" style="margin-top:14px"><b>Cài như ứng dụng:</b> iPhone (Safari): bấm Chia sẻ → <i>Thêm vào MH chính</i>. Android (Chrome): bấm ⋮ → <i>Thêm vào màn hình chính</i>.</div>') +
@@ -581,6 +582,62 @@
       BIEU_MAU.map(g => '<div class="card"><b>' + esc(g[0]) + '</b>' + g[1].map(f => '<div class="dong-don"><span>📄 ' + esc(f[1]) + '</span><a class="nho" href="bieu-mau/' + f[0] + '" download>Tải</a></div>').join('') + '</div>').join(''));
   }
 
+  // ---------------- Dự trù hóa chất môn học (GV mở bằng mã PTN cấp cho đúng môn – học kỳ; gửi đề nghị, PTN duyệt) ----------------
+  async function trangDTM(ma) {
+    $('hb').classList.remove('hide'); nutLui(true);
+    if (!ma) {
+      M('<h2>Dự trù hóa chất môn học</h2><p class="note">PTN cấp cho mỗi môn một <b>mã dự trù</b> (gửi qua Zalo / email hoặc mã QR). Nhập mã để mở dự trù của môn – chỉ sửa được môn của mã đó; bản gửi đi sẽ được PTN duyệt trước khi áp dụng.</p>' +
+        '<form class="card" id="f-ma"><label class="f"><span>Mã dự trù</span><input name="ma" placeholder="VD: DTAB12CD34" autocomplete="off" style="text-transform:uppercase"></label><button class="btn">Mở dự trù</button></form>');
+      $('f-ma').onsubmit = (e) => { e.preventDefault(); const v = e.target.ma.value.trim().toUpperCase(); if (v) location.hash = '#/DT/' + v; };
+      return;
+    }
+    M('<div class="spin"></div>');
+    const r = await api('ck_dtm_mo', { ma }), p = hoSo(), NH = ['Hóa chất', 'Dược liệu', 'Vật tư tiêu hao'], r3 = (n) => Math.round((+n || 0) * 1000) / 1000;
+    let ds = r.dong.map(d => ({ nhom: Math.max(0, Math.min(2, (+d.nhom_dt || 1) - 1)), ten: d.ten || '', cong_thuc: d.cong_thuc || '', ma_vt: d.ma_vt || '', nsx: d.nsx || '', dvt: d.dvt || '', dm: d.dm === '' || d.dm == null ? '' : +d.dm, sl: +d.sl || '', ghi_chu: d.ghi_chu || '' }));
+    let ss = +r.si_so || 0, goiY = [];
+    const slCua = (d) => d.dm === '' ? (+d.sl || '') : r3(d.dm * ss);
+    const dn = r.de_nghi, tt = !dn ? '' : dn.trang_thai === 'Chờ duyệt' ? '<div class="pre">⏳ Bản đề nghị gửi ' + esc(ngayVN(dn.tg)) + ' đang <b>chờ PTN duyệt</b> – bảng dưới là bản đó; gửi lại sẽ thay bản này.</div>'
+      : dn.trang_thai === 'Trả lại' ? '<div class="warn">↩ PTN đã <b>trả lại</b> bản gửi ' + esc(ngayVN(dn.tg)) + ': ' + esc(dn.ly_do) + '. Sửa rồi gửi lại.</div>'
+      : dn.trang_thai === 'Đã duyệt' ? '<div class="pre">✓ Bản gửi ' + esc(ngayVN(dn.tg)) + ' đã được PTN duyệt – bảng dưới là dự trù hiện hành của môn.</div>' : '';
+    const oN = (i, k, w, so) => '<input data-i="' + i + '" data-k="' + k + '"' + (so ? ' type="number" step="any" min="0" inputmode="decimal"' : '') + (k === 'ten' ? ' list="dtm-goi-y"' : '') + ' value="' + esc(ds[i][k] === '' || ds[i][k] == null ? '' : ds[i][k]) + '" style="width:' + w + ';padding:6px">';
+    const ve = () => {
+      M('<h2>Dự trù hóa chất – ' + esc(r.mon.ten) + '</h2><div class="pre"><b>' + esc(r.hk) + '</b> · mã ' + esc(r.ma) + ' (hạn ' + esc(ngayVN(r.han)) + ')<br><b>Người đề nghị:</b> ' + esc([p.ho_ten, p.ma_so, p.sdt].filter(Boolean).join(' · ')) + ' <a class="lnk" href="#/ho-so">Sửa</a></div>' + tt +
+        '<p class="note">Sửa / thêm / bỏ dòng theo 3 nhóm. Ghi <b>ĐM 1 SV</b> thì SL = ĐM × tổng SV; không ghi ĐM thì nhập thẳng SL. Gõ tên để chọn từ danh mục vật tư (tự điền mã VT, ĐVT).</p>' +
+        '<form class="card" id="f" autocomplete="off"><label class="f"><span>Tổng số sinh viên (cả học kỳ)</span><input type="number" min="0" id="dtm-ss" value="' + ss + '"></label><datalist id="dtm-goi-y"></datalist>' +
+        NH.map((n, k) => '<div class="tieu-de-nhom" style="margin-top:12px">' + (k + 1) + '. ' + n.toUpperCase() + '</div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="text-align:left"><th>Tên – quy cách</th><th>ĐVT</th><th>ĐM 1 SV</th><th>SL</th><th>Ghi chú</th><th>Nhóm</th><th></th></tr></thead><tbody>' +
+          ds.map((d, i) => [d, i]).filter(([d]) => d.nhom === k).map(([d, i]) => '<tr><td>' + oN(i, 'ten', '100%') + '</td><td>' + oN(i, 'dvt', '64px') + '</td><td>' + oN(i, 'dm', '70px', 1) + '</td><td>' +
+            (d.dm === '' ? oN(i, 'sl', '80px', 1) : '<b data-sl="' + i + '">' + slCua(d) + '</b>') + '</td><td>' + oN(i, 'ghi_chu', '110px') + '</td><td><select data-i="' + i + '" data-k="nhom">' + NH.map((x, j) => '<option value="' + j + '"' + (j === d.nhom ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></td>' +
+            '<td><button type="button" class="nho o" data-xoa="' + i + '">✕</button></td></tr>').join('') + '</tbody></table></div><button type="button" class="nho o" data-them="' + k + '" style="margin-top:6px">+ Thêm dòng ' + n.toLowerCase() + '</button>').join('') +
+        '<label class="f" style="margin-top:12px"><span>Ghi chú gửi PTN</span><textarea id="dtm-gc" rows="2"></textarea></label><label class="opt"><input type="checkbox" name="cam_ket"><span>Tôi xác nhận dự trù trên là của môn tôi phụ trách.</span></label>' +
+        '<div id="err" class="err"></div><button class="btn" id="sb">Gửi PTN duyệt</button></form>');
+      const f = $('f');
+      f.addEventListener('input', (e) => { const el = e.target, i = el.dataset.i, k = el.dataset.k; if (i === undefined || k === 'nhom') return;
+        ds[i][k] = el.type === 'number' ? (el.value === '' ? '' : +el.value) : el.value;
+        if (k === 'dm') { const b = f.querySelector('[data-sl="' + i + '"]'); if (b) b.textContent = slCua(ds[i]); else if (ds[i].dm !== '') ve(); }
+        if (k === 'ten' && el.value.trim().length >= 2) { clearTimeout(ve.t); ve.t = setTimeout(async () => { try { goiY = await api('ck_dtm_goi_y', { ma: r.ma, q: el.value.trim() }); const dl = $('dtm-goi-y'); if (dl) dl.innerHTML = goiY.map(v => '<option value="' + esc(v.ten) + '">' + esc((v.ma_vt ? 'MVT ' + v.ma_vt : 'Chưa MVT') + ' · ' + (v.dvt || '')) + '</option>').join(''); } catch (err) { /* bỏ qua gợi ý */ } }, 300); } });
+      f.addEventListener('change', (e) => { const el = e.target, i = el.dataset.i, k = el.dataset.k; if (i === undefined) return;
+        if (k === 'nhom') { ds[i].nhom = +el.value; ve(); }
+        else if (k === 'ten') { const v = goiY.find(x => x.ten === el.value); if (v) { ds[i].ma_vt = v.ma_vt || ''; ds[i].dvt = ds[i].dvt || v.dvt || ''; ds[i].nsx = ds[i].nsx || v.nsx || ''; ve(); } }
+        else if (k === 'dm' && el.value === '') ve(); });
+      f.querySelectorAll('[data-them]').forEach(b => { b.onclick = () => { ds.push({ nhom: +b.dataset.them, ten: '', cong_thuc: '', ma_vt: '', nsx: '', dvt: '', dm: '', sl: '', ghi_chu: '' }); ve(); }; });
+      f.querySelectorAll('[data-xoa]').forEach(b => { b.onclick = () => { ds.splice(+b.dataset.xoa, 1); ve(); }; });
+      $('dtm-ss').oninput = (e) => { ss = +e.target.value || 0; f.querySelectorAll('[data-sl]').forEach(b => { b.textContent = slCua(ds[+b.dataset.sl]); }); };
+      f.onsubmit = async (e) => {
+        e.preventDefault();
+        const dm = ds.filter(d => String(d.ten).trim()).map(d => ({ nhom_dt: String(d.nhom + 1), ten: String(d.ten).trim(), cong_thuc: d.cong_thuc, ma_vt: d.ma_vt, nsx: d.nsx, dvt: d.dvt, dm: d.dm, sl: slCua(d), ghi_chu: d.ghi_chu }));
+        const loi = !dm.length ? 'Chưa có dòng dự trù nào' : !f.querySelector('[name=cam_ket]').checked ? 'Đánh dấu ô xác nhận' : '';
+        if (loi) { $('err').textContent = loi; return; }
+        $('sb').disabled = true; $('sb').textContent = 'Đang gửi…'; $('err').textContent = '';
+        try {
+          const k = await api('ck_dtm_gui', { ma: r.ma, ng: ngGui(), may: may(), si_so: ss, dm, ghi_chu: $('dtm-gc').value.trim() });
+          M('<div class="card msg"><div class="ok">✓</div><h2>Đã gửi đề nghị dự trù</h2><p>Mã đề nghị <b>' + esc(k.id) + '</b> · ' + k.so_dong + ' dòng · môn ' + esc(r.mon.ten) + '</p>' +
+            '<p class="note">PTN sẽ xem và duyệt. Mở lại bằng mã ' + esc(r.ma) + ' để xem trạng thái (chờ duyệt / trả lại / đã duyệt) hoặc gửi lại bản sửa.</p><a class="btn" href="#/DT/' + esc(r.ma) + '">Mở lại dự trù</a><a class="btn o" href="#/">Về trang chủ</a></div>');
+        } catch (err) { $('sb').disabled = false; $('sb').textContent = 'Gửi PTN duyệt'; $('err').textContent = err.message; }
+      };
+    };
+    ve();
+  }
+
   // ---------------- Điều hướng ----------------
   async function dieuHuong() {
     const qrCu = (/[?&]qr=(QR[1-8])/i.exec(location.search) || [])[1];
@@ -593,6 +650,7 @@
         return await trangQR(p[0]);
       }
       if (/^GV-(BH|SC|BS|TS)$/.test(p[0])) return await trangGV(p[0]); // GV-BG: đã bỏ (25/10/2026)
+      if (p[0] === 'DT') return await trangDTM(p[1]);
       if (p[0] === 'ho-so') return trangHoSo(false);
       if (p[0] === 'don-cua-toi') return await trangDonCuaToi();
       if (p[0] === 'bieu-mau') return trangBieuMau();

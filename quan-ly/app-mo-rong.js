@@ -1128,6 +1128,9 @@
     if (!(S.dm.hoc_ky || []).length) { nd.innerHTML = '<div class="card empty">Chưa có học kỳ – tạo ở thẻ "Học kỳ & thời khóa biểu".</div>'; return; }
     const hk = Q.S.hk || S.dm.hoc_ky[0], ds = await api('dtm_tong', { hk }), da = ds.filter(x => x.co_du_tru), chua = ds.filter(x => !x.co_du_tru && x.so_lop);
     const coLop = ds.filter(x => x.so_lop);
+    // đề nghị dự trù GV gửi từ trang dùng chung (chỉ admin xem / duyệt)
+    const dn = laAdmin() ? await api('dtm_dn_ds', { hk }).catch(() => []) : [], choDuyet = dn.filter(x => x.trang_thai === 'Chờ duyệt'), dnMon = {};
+    choDuyet.forEach(x => { dnMon[x.mon] = x; });
     nd.innerHTML = '<h2 style="margin-top:0">Dự trù hóa chất ' + esc(hk) + ' <span class="note" style="font-weight:400">– theo thời khóa biểu học kỳ</span></h2>' +
       '<div class="tools"><b>Học kỳ</b> <select id="f-hk">' + S.dm.hoc_ky.map(h => '<option' + (h === hk ? ' selected' : '') + '>' + esc(h) + '</option>').join('') + '</select>' +
       '<button class="btn sm" id="b-lay-dm"' + (coLop.length ? '' : ' disabled') + ' title="Lấy dự trù của các môn đã chọn từ Môn & định mức (định mức / 1 SV × sĩ số theo TKB)">⤵ Lấy dự trù từ định mức (môn đã chọn)</button>' +
@@ -1137,16 +1140,20 @@
       'Sau đó có thể "Sửa trên web" từng môn nếu kỳ này khác định mức. Vẫn dùng được cách cũ: phiếu dự trù gửi môn → tải file đã điền. Mọi lần lấy / tải đều thu hồi được ở Lịch sử tải file. ' +
       '<b>Dự trù là chuẩn:</b> mỗi lần lấy / sửa / tải dự trù, <b>biên bản bàn giao hóa chất</b> của môn tự cập nhật dòng và số dự trù theo dự trù (dòng đã giao được giữ). ' +
       'Đối chiếu: <span class="tag t-gray">chưa giao</span> = biên bản chưa ghi số bàn giao (chưa phải lệch) · <span class="tag t-warn">lệch</span> = đã giao thiếu / vượt / ngoài dự trù · <span class="tag t-ok">khớp</span> = giao đúng dự trù.</p>' +
+      (choDuyet.length ? '<div class="card" style="border-color:#F2D58A;background:#FFFBEA;margin-bottom:12px"><h2 style="margin-top:0">📨 Đề nghị dự trù của GV chờ duyệt (' + choDuyet.length + ')</h2><div class="tbl-wrap"><table><thead><tr><th>Môn</th><th>GV đề nghị</th><th>Gửi lúc</th><th class="num">Dòng</th><th>Ghi chú của GV</th><th></th></tr></thead><tbody>' +
+        choDuyet.map(x => '<tr><td><b>' + esc(x.ten_mon) + '</b></td><td>' + esc(x.gv) + '<div class="note">' + esc([x.ma_so, x.sdt].filter(Boolean).join(' · ')) + '</div></td><td>' + esc(ngayVN(x.tg)) + '</td><td class="num">' + x.so_dong + '</td><td class="note">' + esc(x.ghi_chu) + '</td>' +
+          '<td><button class="btn sm" data-dn="' + esc(x.id) + '">Xem – duyệt</button></td></tr>').join('') + '</tbody></table></div></div>' : '') +
       '<div class="grid g4" style="margin-bottom:14px">' + st(ds.filter(x => x.so_lop).length, 'Môn có lớp thực hành') + st(da.length, 'Đã có dự trù', 'ok') + st(chua.length, 'Chưa có dự trù', chua.length ? 'bad' : 'ok') +
       st(da.filter(x => x.lech).length, 'Môn giao lệch dự trù (thiếu / vượt / ngoài dự trù)', da.some(x => x.lech) ? 'warn' : 'ok') + '</div>' +
       (!ds.length ? '<div class="card empty">Học kỳ ' + esc(hk) + ' chưa có lớp thực hành (tải thời khóa biểu ở thẻ "Học kỳ & thời khóa biểu").</div>' :
         '<div class="tbl-wrap"><table><thead><tr><th style="width:64px"><label style="display:flex;gap:4px;align-items:center;cursor:pointer;font-weight:600"><input type="checkbox" id="chon-het-dtm" title="Chọn tất cả môn có lớp"> Tất cả</label></th><th>Môn thực hành</th><th>Mã HP</th><th class="num">Nhóm / sĩ số (TKB)</th><th>Dự trù của môn</th><th>Biên bản hóa chất</th><th>Đối chiếu</th><th></th></tr></thead><tbody>' +
         ds.map(x => '<tr class="click" data-mon="' + esc(x.mon) + '"><td>' + (x.so_lop ? '<input type="checkbox" data-chon-dtm="' + esc(x.mon) + '"' + (x.co_du_tru ? '' : ' checked') + '>' : '') + '</td><td><b>' + esc(x.ten) + '</b></td><td class="mono">' + esc(x.ma_hp) + '</td><td class="num">' + x.so_lop + ' / ' + x.si_so + '</td><td>' +
-          (x.co_du_tru ? '<span class="tag t-ok">' + (x.tep === 'Lấy từ Môn & định mức' ? 'Lấy từ định mức' : 'Đã nộp') + ' · ' + x.so_dong + ' dòng</span><div class="note">' + esc(x.tep) + ' · ' + esc(ngayVN(x.ngay)) + '</div>' : '<span class="tag t-bad">Chưa có</span>') + '</td><td>' +
+          (x.co_du_tru ? '<span class="tag t-ok">' + (x.tep === 'Lấy từ Môn & định mức' ? 'Lấy từ định mức' : 'Đã nộp') + ' · ' + x.so_dong + ' dòng</span><div class="note">' + esc(x.tep) + ' · ' + esc(ngayVN(x.ngay)) + '</div>' : '<span class="tag t-bad">Chưa có</span>') + (dnMon[x.mon] ? '<div><button class="btn o sm" data-dn="' + esc(dnMon[x.mon].id) + '" style="margin-top:4px">📨 GV đề nghị – chờ duyệt</button></div>' : '') + '</td><td>' +
           (x.bien_ban.length ? x.bien_ban.map(b => '<a href="#/bien-ban/' + encodeURIComponent(b) + '">' + esc(b) + '</a>').join('<br>') : '<span class="note">Chưa có</span>') + '</td><td>' +
           (x.co_du_tru ? (x.chua_giao ? '<span class="tag t-gray">' + x.chua_giao + ' chưa giao</span> ' : '') + (x.lech ? '<span class="tag t-warn">' + x.lech + ' lệch</span> ' : '') + '<span class="tag t-ok">' + x.khop + ' khớp</span>' : '') + '</td><td class="btns">' +
           (x.so_lop ? '<button class="btn sm" data-lay-dm="' + esc(x.mon) + '" title="Lấy dự trù của môn từ Môn & định mức">' + (x.co_du_tru ? 'Lấy lại từ định mức' : 'Lấy từ định mức') + '</button>' : '') + '<button class="btn o sm" data-sua-dtm="' + esc(x.mon) + '" title="Nhập / sửa dự trù của môn ngay trên web">Sửa trên web</button><button class="btn o sm" data-phieu="' + esc(x.mon) + '" title="Phiếu dự trù điền sẵn của môn">Phiếu dự trù</button>' +
-          (x.co_du_tru ? '<button class="btn o sm" data-dc="' + esc(x.mon) + '">Đối chiếu</button><button class="btn red sm" data-xoa-dtm="' + esc(x.mon) + '">Xóa</button>' : '') + '</td></tr>').join('') + '</tbody></table></div>') +
+          (x.co_du_tru ? '<button class="btn o sm" data-dc="' + esc(x.mon) + '">Đối chiếu</button><button class="btn red sm" data-xoa-dtm="' + esc(x.mon) + '">Xóa</button>' : '') +
+          (laAdmin() ? '<button class="btn o sm" data-ma-gv="' + esc(x.mon) + '" title="Cấp mã cho GV tự nhập / sửa dự trù của môn trên trang dùng chung (PTN duyệt)">🔑 Mã GV</button>' : '') + '</td></tr>').join('') + '</tbody></table></div>') +
       '<div id="kq"></div>';
     $('f-hk').onchange = (e) => { Q.S.hk = e.target.value; dieuHuong(); };
     $('b-nhap-dtm').onclick = () => nhapFileDTM(hk);
@@ -1169,6 +1176,8 @@
     $('b-phieu-dtm').onclick = (e) => moPhieu(e.target, '');
     $('b-them-dtm').onclick = () => themMonDTM(hk, ds.map(x => x.mon));
     nd.querySelectorAll('[data-sua-dtm]').forEach(b => { b.onclick = (e) => chay(e.target, () => suaDuTruMon(hk, b.dataset.suaDtm)); });
+    nd.querySelectorAll('[data-ma-gv]').forEach(b => { b.onclick = (e) => { e.stopPropagation(); hopMaGV(hk, ds.find(x => x.mon === b.dataset.maGv)); }; });
+    nd.querySelectorAll('[data-dn]').forEach(b => { b.onclick = (e) => { e.stopPropagation(); chay(e.target, () => hopDeNghiDTM(b.dataset.dn)); }; });
     nd.querySelectorAll('[data-phieu]').forEach(b => { b.onclick = (e) => moPhieu(e.target, b.dataset.phieu); });
     $('b-in-dtm').onclick = (e) => chay(e.target, async () => window.PTN_IN.xemTruoc(fileDTM(await api('dtm_xuat', { hk }))));
     const moDC = (mon) => chay(null, async () => { veDoiChieuDTM(await api('dtm_doi_chieu', { hk, mon })); $('kq').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
@@ -1276,6 +1285,52 @@
         dongHop(); toast('Đã lưu dự trù ' + r.mon.length + ' môn · ' + r.so_dong + ' dòng' + ttBB(r)); dieuHuong();
       };
     }, /du tru|DUOC|KH|HK/i);
+  }
+  // ---- Mã dự trù cho GV (mỗi mã: một môn – một học kỳ, hạn tự đặt) – GV mở trang dùng chung bằng mã, gửi đề nghị; admin duyệt ----
+  const linkDTM = (ma) => Q.trangCongKhai() + '#/DT/' + ma;
+  async function hopMaGV(hk, mon) {
+    const ds = await api('dtm_ma_ds', { hk, mon: mon.mon }), hn = homNay(), han14 = new Date(Date.now() + 14 * 864e5).toISOString().slice(0, 10);
+    const tt = (x) => x.trang_thai !== 'Hiệu lực' ? '<span class="tag t-gray">Thu hồi</span>' : x.han < hn ? '<span class="tag t-bad">Hết hạn</span>' : '<span class="tag t-ok">Hiệu lực</span>';
+    moHop('<h2>🔑 Mã dự trù cho GV – ' + esc(mon.ten) + ' (' + esc(hk) + ')</h2><p class="note">Mã chỉ mở được dự trù của <b>đúng môn này</b> trên trang dùng chung (mục Giảng viên – thiết bị → Dự trù hóa chất môn học). ' +
+      'GV sửa bản nháp và gửi đề nghị; <b>chỉ admin duyệt</b> mới áp vào dự trù gốc. Hết hạn hoặc thu hồi thì mã không dùng được nữa.</p>' +
+      '<form id="f-ma" class="form-grid">' + o('han', 'Hạn dùng *', { type: 'date', v: han14 }) + o('ghi_chu', 'Ghi chú (GV nhận mã)', { ph: 'VD: ThS. Nguyễn Văn A – 0901…' }) + '<div class="f" style="align-self:end"><button class="btn">Cấp mã mới</button></div></form>' +
+      '<div id="ma-moi"></div><h2 style="margin-top:14px">Mã đã cấp (' + ds.length + ')</h2>' + (ds.length ? '<div class="tbl-wrap"><table><thead><tr><th>Mã</th><th>Hạn dùng</th><th>Trạng thái</th><th>Ghi chú</th><th>Cấp lúc</th><th></th></tr></thead><tbody>' +
+        ds.map(x => '<tr><td class="mono"><b>' + esc(x.ma) + '</b></td><td>' + esc(ngayVN(x.han)) + '</td><td>' + tt(x) + '</td><td class="note">' + esc(x.ghi_chu) + '</td><td class="note">' + esc(ngayVN(x.tao)) + ' · ' + esc(x.nguoi) + '</td><td class="btns">' +
+          (x.con_hieu_luc ? '<button class="btn o sm" data-xem-ma="' + esc(x.ma) + '">Link / QR</button><button class="btn red o sm" data-thu-ma="' + esc(x.ma) + '">Thu hồi</button>' : '') + '</td></tr>').join('') + '</tbody></table></div>' : '<p class="note">Chưa cấp mã nào.</p>') +
+      '<div class="modal-foot"><button class="btn o" data-dong>Đóng</button></div>');
+    const hien = async (ma, han) => {
+      const l = linkDTM(ma), qr = await anhQR(l);
+      $('ma-moi').innerHTML = '<div class="card" style="text-align:center;margin-top:10px"><div class="note">Gửi GV mã hoặc link / mã QR dưới đây' + (han ? ' – hạn dùng đến <b>' + esc(ngayVN(han)) + '</b>' : '') + '</div>' +
+        '<div class="mono" style="font-size:26px;font-weight:700;letter-spacing:2px;margin:6px 0">' + esc(ma) + '</div>' + (qr ? '<img src="' + qr.dataUrl + '" alt="QR" style="width:160px;height:160px">' : '') +
+        '<div style="display:flex;gap:6px;margin-top:6px"><input type="text" readonly value="' + esc(l) + '" style="flex:1" id="ma-link"><button type="button" class="btn o sm" id="ma-chep">Chép link</button></div></div>';
+      $('ma-chep').onclick = () => { $('ma-link').select(); try { navigator.clipboard.writeText(l); } catch (e) { document.execCommand('copy'); } toast('Đã chép link'); };
+    };
+    $('f-ma').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target); if (!v.han) return toast('Chọn hạn dùng', true);
+      const x = await chay(e.submitter, () => api('dtm_cap_ma', { hk, mon: mon.mon, han: v.han, ghi_chu: v.ghi_chu })); toast('Đã cấp mã ' + x.ma); await hopMaGV(hk, mon); await hien(x.ma, x.han); };
+    document.querySelectorAll('[data-xem-ma]').forEach(b => { b.onclick = () => hien(b.dataset.xemMa, (ds.find(x => x.ma === b.dataset.xemMa) || {}).han); });
+    document.querySelectorAll('[data-thu-ma]').forEach(b => { b.onclick = async (e) => { if (!confirm('Thu hồi mã ' + b.dataset.thuMa + '? GV sẽ không mở / gửi được bằng mã này nữa.')) return;
+      await chay(e.target, () => api('dtm_thu_hoi_ma', { ma: b.dataset.thuMa })); toast('Đã thu hồi mã'); hopMaGV(hk, mon); }; });
+  }
+  // xem đề nghị: so sánh với dự trù gốc (thêm / sửa / bỏ) → Duyệt (áp vào dự trù gốc) hoặc Trả lại (kèm lý do)
+  async function hopDeNghiDTM(id) {
+    const r = await api('dtm_dn_ct', { id }), MAU = { them: '#E8F5E9', sua: '#FFF8E1', bo: '#FDECEA', giu: '' }, NHAN = { them: 'Thêm', sua: 'Sửa', bo: 'Bỏ', giu: 'Giữ' };
+    const sl = (x) => !x ? '' : (x.dm !== '' && x.dm != null ? fmt(x.dm) + ' / SV → ' : '') + fmt(x.sl) + ' ' + esc(x.dvt || '');
+    const dem = (k) => r.so_sanh.filter(x => x.loai === k).length, cho = r.trang_thai === 'Chờ duyệt';
+    moHop('<h2>📨 Đề nghị dự trù ' + esc(r.id) + ' – ' + esc(r.ten_mon) + ' (' + esc(r.hk) + ')</h2>' +
+      '<p>GV: <b>' + esc(r.gv) + '</b> ' + esc([r.ma_so, r.sdt].filter(Boolean).join(' · ')) + ' · gửi ' + esc(ngayVN(r.tg)) + ' · tổng SV ' + esc(r.si_so) + ' · trạng thái <b>' + esc(r.trang_thai) + '</b>' + (r.ly_do ? ' – ' + esc(r.ly_do) : '') + '</p>' +
+      (r.ghi_chu ? '<p class="note">Ghi chú của GV: ' + esc(r.ghi_chu) + '</p>' : '') +
+      '<p><span class="tag" style="background:' + MAU.them + '">' + dem('them') + ' thêm</span> <span class="tag" style="background:' + MAU.sua + '">' + dem('sua') + ' sửa</span> <span class="tag" style="background:' + MAU.bo + '">' + dem('bo') + ' bỏ</span> <span class="tag t-gray">' + dem('giu') + ' giữ nguyên</span>' +
+      (r.co_goc ? '' : ' <span class="note">(môn chưa có dự trù gốc – mọi dòng là thêm mới)</span>') + ' <label class="check" style="display:inline-flex;margin-left:8px"><input type="checkbox" id="chi-doi" checked> Chỉ hiện dòng thay đổi</label></p>' +
+      '<div class="tbl-wrap" style="max-height:380px"><table id="bang-dn"><thead><tr><th></th><th>Nhóm</th><th>Tên – quy cách</th><th>Dự trù gốc</th><th>GV đề nghị</th><th>Ghi chú</th></tr></thead><tbody>' +
+      r.so_sanh.map(x => '<tr data-loai="' + x.loai + '" style="background:' + MAU[x.loai] + '"><td><b>' + NHAN[x.loai] + '</b></td><td class="note">' + esc(x.nhom) + '</td><td' + (x.loai === 'bo' ? ' style="text-decoration:line-through"' : '') + '>' + esc(x.ten) + '</td><td>' + sl(x.cu) + '</td><td><b>' + sl(x.moi) + '</b></td><td class="note">' + esc(x.ghi_chu || '') + '</td></tr>').join('') +
+      '</tbody></table></div><div class="modal-foot"><button class="btn o" data-dong>Đóng</button>' + (cho ? '<button class="btn red o" id="dn-tra">↩ Trả lại</button><button class="btn" id="dn-duyet">✓ Duyệt – áp vào dự trù gốc</button>' : '') + '</div>');
+    const loc = () => document.querySelectorAll('#bang-dn tr[data-loai]').forEach(tr => { tr.style.display = $('chi-doi').checked && tr.dataset.loai === 'giu' ? 'none' : ''; });
+    $('chi-doi').onchange = loc; loc();
+    if (!cho) return;
+    $('dn-duyet').onclick = async (e) => { if (!confirm('Duyệt đề nghị ' + r.id + '? Dự trù gốc của môn ' + r.ten_mon + ' được thay bằng bản GV đề nghị (thu hồi được ở Lịch sử tải file).')) return;
+      const k = await chay(e.target, () => api('dtm_dn_duyet', { id })); dongHop(); toast('Đã duyệt – dự trù ' + r.ten_mon + ' cập nhật' + ttBB(k)); dieuHuong(); };
+    $('dn-tra').onclick = async (e) => { const ly = prompt('Lý do trả lại (GV sẽ thấy khi mở bằng mã):'); if (!ly || !ly.trim()) return;
+      await chay(e.target, () => api('dtm_dn_tra', { id, ly_do: ly.trim() })); dongHop(); toast('Đã trả lại đề nghị ' + r.id); dieuHuong(); };
   }
   const fmtO = (v) => v === '' || v == null ? '' : fmt(v);
   // biên bản hóa chất cập nhật theo dự trù vừa lưu

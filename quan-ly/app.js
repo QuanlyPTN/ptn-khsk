@@ -54,7 +54,7 @@
   // ---------------- Gọi máy chủ ----------------
   // Đơn QR (don_ds, don_ct, hom_nay, qr_ds…) luôn đọc mới để xử lý kịp thời.
   // Kết quả đọc giữ 60 giây trong trang (quay lại trang vừa xem hiện ngay); có thao tác ghi bất kỳ thì xóa hết để đọc lại dữ liệu mới
-  const API_DOC = /^(tong_quan|phong_ds|phong_ct|tb_ds|tb_ct|hk_ds|vt_ds|mon_ds|mon_ct|lop_ds|kh_tinh|bb_ds|bb_ct|phong_lich|hs_ds|hs_ct|kho_ds|vt_goi_y|dt_dot|dt_tinh|dt_cap_ds|dtm_tong|dtm_doi_chieu|dtm_phieu|dtm_ct|kho_lo|kho_so_ks|bc_tb|bc_thang|bc_khac|bc_da_luu|so_ds|so_tong)$/;
+  const API_DOC = /^(tong_quan|phong_ds|phong_ct|tb_ds|tb_ct|hk_ds|vt_ds|mon_ds|mon_ct|lop_ds|kh_tinh|bb_ds|bb_ct|phong_lich|hs_ds|hs_ct|kho_ds|vt_goi_y|dt_dot|dt_tinh|dtm_ma_ds|dtm_dn_ds|dtm_dn_ct|dt_cap_ds|dtm_tong|dtm_doi_chieu|dtm_phieu|dtm_ct|kho_lo|kho_so_ks|bc_tb|bc_thang|bc_khac|bc_da_luu|so_ds|so_tong)$/;
   const DEM = new Map();
   async function api(act, data) {
     if (!API_DOC.test(act)) { DEM.clear(); return goiMayChu(act, data); }
