@@ -1323,12 +1323,15 @@
       (r.co_goc ? '' : ' <span class="note">(môn chưa có dự trù gốc – mọi dòng là thêm mới)</span>') + ' <label class="check" style="display:inline-flex;margin-left:8px"><input type="checkbox" id="chi-doi" checked> Chỉ hiện dòng thay đổi</label></p>' +
       '<div class="tbl-wrap" style="max-height:380px"><table id="bang-dn"><thead><tr><th></th><th>Nhóm</th><th>Tên – quy cách</th><th>Dự trù gốc</th><th>GV đề nghị</th><th>Ghi chú</th></tr></thead><tbody>' +
       r.so_sanh.map(x => '<tr data-loai="' + x.loai + '" style="background:' + MAU[x.loai] + '"><td><b>' + NHAN[x.loai] + '</b></td><td class="note">' + esc(x.nhom) + '</td><td' + (x.loai === 'bo' ? ' style="text-decoration:line-through"' : '') + '>' + esc(x.ten) + '</td><td>' + sl(x.cu) + '</td><td><b>' + sl(x.moi) + '</b></td><td class="note">' + esc(x.ghi_chu || '') + '</td></tr>').join('') +
-      '</tbody></table></div><div class="modal-foot"><button class="btn o" data-dong>Đóng</button>' + (cho ? '<button class="btn red o" id="dn-tra">↩ Trả lại</button><button class="btn" id="dn-duyet">✓ Duyệt – áp vào dự trù gốc</button>' : '') + '</div>');
+      '</tbody></table></div>' + (cho ? '<label class="check" style="margin-top:10px"><input type="checkbox" id="dn-cap-dm"> <span><b>Cập nhật luôn vào định mức chuẩn của môn</b> <span class="note">(Môn & định mức – dùng cho các học kỳ sau): hóa chất mới có ĐM 1 SV → thêm vào định mức đúng nhóm; hóa chất đã có mà ĐM khác → sửa ĐM. ' +
+        'Dòng chỉ ghi SL tổng không đưa vào; dòng GV bỏ không xóa khỏi định mức.</span></span></label>' : '') +
+      '<div class="modal-foot"><button class="btn o" data-dong>Đóng</button>' + (cho ? '<button class="btn red o" id="dn-tra">↩ Trả lại</button><button class="btn" id="dn-duyet">✓ Duyệt – áp vào dự trù gốc</button>' : '') + '</div>');
     const loc = () => document.querySelectorAll('#bang-dn tr[data-loai]').forEach(tr => { tr.style.display = $('chi-doi').checked && tr.dataset.loai === 'giu' ? 'none' : ''; });
     $('chi-doi').onchange = loc; loc();
     if (!cho) return;
     $('dn-duyet').onclick = async (e) => { if (!confirm('Duyệt đề nghị ' + r.id + '? Dự trù gốc của môn ' + r.ten_mon + ' được thay bằng bản GV đề nghị (thu hồi được ở Lịch sử tải file).')) return;
-      const k = await chay(e.target, () => api('dtm_dn_duyet', { id })); dongHop(); toast('Đã duyệt – dự trù ' + r.ten_mon + ' cập nhật' + ttBB(k)); dieuHuong(); };
+      const k = await chay(e.target, () => api('dtm_dn_duyet', { id, cap_dm: $('dn-cap-dm').checked })); dongHop();
+      toast('Đã duyệt – dự trù ' + r.ten_mon + ' cập nhật' + ttBB(k) + (k.dinh_muc ? ' · định mức chuẩn: thêm ' + k.dinh_muc.them + ', sửa ' + k.dinh_muc.sua + ' dòng' : '')); dieuHuong(); };
     $('dn-tra').onclick = async (e) => { const ly = prompt('Lý do trả lại (GV sẽ thấy khi mở bằng mã):'); if (!ly || !ly.trim()) return;
       await chay(e.target, () => api('dtm_dn_tra', { id, ly_do: ly.trim() })); dongHop(); toast('Đã trả lại đề nghị ' + r.id); dieuHuong(); };
   }
