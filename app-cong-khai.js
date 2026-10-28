@@ -594,33 +594,40 @@
     M('<div class="spin"></div>');
     const r = await api('ck_dtm_mo', { ma }), p = hoSo(), NH = ['Hóa chất', 'Dược liệu', 'Vật tư tiêu hao'], r3 = (n) => Math.round((+n || 0) * 1000) / 1000;
     let ds = r.dong.map(d => ({ nhom: Math.max(0, Math.min(2, (+d.nhom_dt || 1) - 1)), ten: d.ten || '', cong_thuc: d.cong_thuc || '', ma_vt: d.ma_vt || '', nsx: d.nsx || '', dvt: d.dvt || '', dm: d.dm === '' || d.dm == null ? '' : +d.dm, sl: +d.sl || '', ghi_chu: d.ghi_chu || '' }));
-    let ss = +r.si_so || 0, goiY = [];
+    let ss = +r.si_so || 0, goiY = [], gc = '', camKet = false; // ghi chú, ô xác nhận giữ qua các lần vẽ lại
     const slCua = (d) => d.dm === '' ? (+d.sl || '') : r3(d.dm * ss);
     const dn = r.de_nghi, tt = !dn ? '' : dn.trang_thai === 'Chờ duyệt' ? '<div class="pre">⏳ Bản đề nghị gửi ' + esc(ngayVN(dn.tg)) + ' đang <b>chờ PTN duyệt</b> – bảng dưới là bản đó; gửi lại sẽ thay bản này.</div>'
       : dn.trang_thai === 'Trả lại' ? '<div class="warn">↩ PTN đã <b>trả lại</b> bản gửi ' + esc(ngayVN(dn.tg)) + ': ' + esc(dn.ly_do) + '. Sửa rồi gửi lại.</div>'
       : dn.trang_thai === 'Đã duyệt' ? '<div class="pre">✓ Bản gửi ' + esc(ngayVN(dn.tg)) + ' đã được PTN duyệt – bảng dưới là dự trù hiện hành của môn.</div>' : '';
+    const oSL = (i) => ds[i].dm === '' ? oN(i, 'sl', '80px', 1) : '<b data-sl="' + i + '">' + slCua(ds[i]) + '</b>'; // SL: nhập tay khi không có ĐM
     const oN = (i, k, w, so) => '<input data-i="' + i + '" data-k="' + k + '"' + (so ? ' type="number" step="any" min="0" inputmode="decimal"' : '') + (k === 'ten' ? ' list="dtm-goi-y"' : '') + ' value="' + esc(ds[i][k] === '' || ds[i][k] == null ? '' : ds[i][k]) + '" style="width:' + w + ';padding:6px">';
-    const ve = () => {
-      M('<h2>Dự trù hóa chất – ' + esc(r.mon.ten) + '</h2><div class="pre"><b>' + esc(r.hk) + '</b> · mã ' + esc(r.ma) + ' (hạn ' + esc(ngayVN(r.han)) + ')<br><b>Người đề nghị:</b> ' + esc([p.ho_ten, p.ma_so, p.sdt].filter(Boolean).join(' · ')) + ' <a class="lnk" href="#/ho-so">Sửa</a></div>' + tt +
+    // vẽ lại bảng: giữ vị trí cuộn (M() cuộn lên đầu trang); focusI: đặt con trỏ vào ô tên của dòng đó (dòng vừa thêm)
+    let lanDau = true;
+    const ve = (focusI) => {
+      const y = window.scrollY, ve1 = (h) => { if (lanDau) { lanDau = false; M(h); } else { $('m').innerHTML = h; window.scrollTo(0, y); } };
+      ve1('<h2>Dự trù hóa chất – ' + esc(r.mon.ten) + '</h2><div class="pre"><b>' + esc(r.hk) + '</b> · mã ' + esc(r.ma) + ' (hạn ' + esc(ngayVN(r.han)) + ')<br><b>Người đề nghị:</b> ' + esc([p.ho_ten, p.ma_so, p.sdt].filter(Boolean).join(' · ')) + ' <a class="lnk" href="#/ho-so">Sửa</a></div>' + tt +
         '<p class="note">Sửa / thêm / bỏ dòng theo 3 nhóm. Ghi <b>ĐM 1 SV</b> thì SL = ĐM × tổng SV; không ghi ĐM thì nhập thẳng SL. Gõ tên để chọn từ danh mục vật tư (tự điền mã VT, ĐVT).</p>' +
         '<form class="card" id="f" autocomplete="off"><label class="f"><span>Tổng số sinh viên (cả học kỳ)</span><input type="number" min="0" id="dtm-ss" value="' + ss + '"></label><datalist id="dtm-goi-y"></datalist>' +
         NH.map((n, k) => '<div class="tieu-de-nhom" style="margin-top:12px">' + (k + 1) + '. ' + n.toUpperCase() + '</div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="text-align:left"><th>Tên – quy cách</th><th>ĐVT</th><th>ĐM 1 SV</th><th>SL</th><th>Ghi chú</th><th>Nhóm</th><th></th></tr></thead><tbody>' +
           ds.map((d, i) => [d, i]).filter(([d]) => d.nhom === k).map(([d, i]) => '<tr><td>' + oN(i, 'ten', '100%') + '</td><td>' + oN(i, 'dvt', '64px') + '</td><td>' + oN(i, 'dm', '70px', 1) + '</td><td>' +
-            (d.dm === '' ? oN(i, 'sl', '80px', 1) : '<b data-sl="' + i + '">' + slCua(d) + '</b>') + '</td><td>' + oN(i, 'ghi_chu', '110px') + '</td><td><select data-i="' + i + '" data-k="nhom">' + NH.map((x, j) => '<option value="' + j + '"' + (j === d.nhom ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></td>' +
+            '<span data-o-sl="' + i + '">' + oSL(i) + '</span></td><td>' + oN(i, 'ghi_chu', '110px') + '</td><td><select data-i="' + i + '" data-k="nhom">' + NH.map((x, j) => '<option value="' + j + '"' + (j === d.nhom ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></td>' +
             '<td><button type="button" class="nho o" data-xoa="' + i + '">✕</button></td></tr>').join('') + '</tbody></table></div><button type="button" class="nho o" data-them="' + k + '" style="margin-top:6px">+ Thêm dòng ' + n.toLowerCase() + '</button>').join('') +
-        '<label class="f" style="margin-top:12px"><span>Ghi chú gửi PTN</span><textarea id="dtm-gc" rows="2"></textarea></label><label class="opt"><input type="checkbox" name="cam_ket"><span>Tôi xác nhận dự trù trên là của môn tôi phụ trách.</span></label>' +
+        '<label class="f" style="margin-top:12px"><span>Ghi chú gửi PTN</span><textarea id="dtm-gc" rows="2">' + esc(gc) + '</textarea></label><label class="opt"><input type="checkbox" name="cam_ket"' + (camKet ? ' checked' : '') + '><span>Tôi xác nhận dự trù trên là của môn tôi phụ trách.</span></label>' +
         '<div id="err" class="err"></div><button class="btn" id="sb">Gửi PTN duyệt</button></form>');
       const f = $('f');
       f.addEventListener('input', (e) => { const el = e.target, i = el.dataset.i, k = el.dataset.k; if (i === undefined || k === 'nhom') return;
         ds[i][k] = el.type === 'number' ? (el.value === '' ? '' : +el.value) : el.value;
-        if (k === 'dm') { const b = f.querySelector('[data-sl="' + i + '"]'); if (b) b.textContent = slCua(ds[i]); else if (ds[i].dm !== '') ve(); }
+        if (k === 'dm') { const b = f.querySelector('[data-sl="' + i + '"]'); if (b) b.textContent = slCua(ds[i]); else if (ds[i].dm !== '') f.querySelector('[data-o-sl="' + i + '"]').innerHTML = oSL(i); }
         if (k === 'ten' && el.value.trim().length >= 2) { clearTimeout(ve.t); ve.t = setTimeout(async () => { try { goiY = await api('ck_dtm_goi_y', { ma: r.ma, q: el.value.trim() }); const dl = $('dtm-goi-y'); if (dl) dl.innerHTML = goiY.map(v => '<option value="' + esc(v.ten) + '">' + esc((v.ma_vt ? 'MVT ' + v.ma_vt : 'Chưa MVT') + ' · ' + (v.dvt || '')) + '</option>').join(''); } catch (err) { /* bỏ qua gợi ý */ } }, 300); } });
       f.addEventListener('change', (e) => { const el = e.target, i = el.dataset.i, k = el.dataset.k; if (i === undefined) return;
         if (k === 'nhom') { ds[i].nhom = +el.value; ve(); }
-        else if (k === 'ten') { const v = goiY.find(x => x.ten === el.value); if (v) { ds[i].ma_vt = v.ma_vt || ''; ds[i].dvt = ds[i].dvt || v.dvt || ''; ds[i].nsx = ds[i].nsx || v.nsx || ''; ve(); } }
-        else if (k === 'dm' && el.value === '') ve(); });
-      f.querySelectorAll('[data-them]').forEach(b => { b.onclick = () => { ds.push({ nhom: +b.dataset.them, ten: '', cong_thuc: '', ma_vt: '', nsx: '', dvt: '', dm: '', sl: '', ghi_chu: '' }); ve(); }; });
+        else if (k === 'ten') { const v = goiY.find(x => x.ten === el.value); if (v) { ds[i].ma_vt = v.ma_vt || ''; ds[i].dvt = ds[i].dvt || v.dvt || ''; ds[i].nsx = ds[i].nsx || v.nsx || '';
+          const o = f.querySelector('[data-i="' + i + '"][data-k="dvt"]'); if (o) o.value = ds[i].dvt; } }
+        else if (k === 'dm' && el.value === '') f.querySelector('[data-o-sl="' + i + '"]').innerHTML = oSL(i); });
+      f.querySelectorAll('[data-them]').forEach(b => { b.onclick = () => { ds.push({ nhom: +b.dataset.them, ten: '', cong_thuc: '', ma_vt: '', nsx: '', dvt: '', dm: '', sl: '', ghi_chu: '' }); ve(ds.length - 1); }; });
+      if (focusI != null) { const o = f.querySelector('[data-i="' + focusI + '"][data-k="ten"]'); if (o) { o.focus({ preventScroll: true }); o.scrollIntoView({ block: 'nearest' }); } }
       f.querySelectorAll('[data-xoa]').forEach(b => { b.onclick = () => { ds.splice(+b.dataset.xoa, 1); ve(); }; });
+      $('dtm-gc').oninput = (e) => { gc = e.target.value; }; f.querySelector('[name=cam_ket]').onchange = (e) => { camKet = e.target.checked; };
       $('dtm-ss').oninput = (e) => { ss = +e.target.value || 0; f.querySelectorAll('[data-sl]').forEach(b => { b.textContent = slCua(ds[+b.dataset.sl]); }); };
       f.onsubmit = async (e) => {
         e.preventDefault();
