@@ -64,6 +64,14 @@ textarea{min-height:80px;resize:vertical}
 .demo-bar{background:var(--vang);color:#2A1F00;text-align:center;font-size:12.5px;padding:6px 10px;font-weight:600}.demo-bar a{color:#2A1F00;font-weight:700}
 .hide{display:none!important}
 @media (max-width:360px){.hai{grid-template-columns:1fr}.tu{grid-template-columns:repeat(4,1fr)}}
+/* bảng dự trù của GV (#/DT): máy tính dạng bảng; điện thoại mỗi dòng một thẻ – tên hóa chất một hàng rộng hết màn hình */
+.dtm-khung{overflow-x:auto}.dtm-bang{width:100%;border-collapse:collapse;font-size:14px}.dtm-bang th{text-align:left;font-size:12.5px;color:var(--m);padding:4px 2px}.dtm-bang td{padding:2px}
+.dtm-bang input,.dtm-bang select{box-sizing:border-box}
+@media (max-width:700px){.dtm-khung{overflow:visible}.dtm-bang,.dtm-bang tbody{display:block;width:100%}.dtm-bang thead{display:none}
+.dtm-bang tr{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px 8px;border:1px solid var(--l);border-radius:12px;padding:10px;margin-bottom:8px;background:#fff}
+.dtm-bang td{display:block;padding:0;min-width:0}.dtm-bang td::before{content:attr(data-nhan);display:block;font-size:11.5px;color:var(--m);margin-bottom:2px}
+.dtm-bang td.c-ten{grid-column:1/-1}.dtm-bang td.c-gc{grid-column:1/3}.dtm-bang td.c-xoa{grid-column:3;align-self:end;text-align:right}.dtm-bang td.c-xoa::before{content:none}
+.dtm-bang td input,.dtm-bang td select{width:100%!important;font-size:16px!important;padding:8px!important}.dtm-bang td.c-ten input{font-weight:600}}
 </style></head><body>
 <header><button id="hl" class="lui hide" aria-label="Quay lại" title="Quay lại">‹</button><button id="hn" class="lui tiep hide" aria-label="Tiếp" title="Tiếp">›</button><img class="logo-ngang" src="logo-ngang-xanh.png" alt="Đại học Công nghiệp TP. Hồ Chí Minh – Khoa Khoa học Sức khỏe"><a id="hb" class="home hide" href="#/" aria-label="Trang chủ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/></svg></a></header>
 <main id="m"><div class="spin"></div><p class="note" style="text-align:center">Đang tải…</p></main>
@@ -79,5 +87,5 @@ textarea{min-height:80px;resize:vertical}
 <script src="don-phu-luc.js?v=f8b3423c"></script>
 <script src="don-qr.js?v=6c064311"></script>
 <script src="phieu-gv.js?v=a0ab8309"></script>
-<script src="app-cong-khai.js?v=6cad17ee"></script>
+<script src="app-cong-khai.js?v=1783c333"></script>
 </body></html>
