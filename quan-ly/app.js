@@ -691,15 +691,31 @@
       '<div class="modal-foot"><button class="btn" data-dong>Xong</button></div>');
     dieuHuong();
   }
-  function nhapFileHC() {
-    const hk = hkMacDinh();
-    hopFileExcel('Tải file định mức hóa chất', 'Chọn file kế hoạch vật tư theo mẫu P.KHĐT (khối "1. TH …", cột QUI CÁCH VẬT TƯ, MÃ VT, ĐVỊ, SLG/1HS) – file có thể chỉ gồm <b>một vài môn</b>. Định mức hóa chất của các môn có trong file được thay; biên bản hóa chất ' + esc(hk) + ' của các môn đó tự tạo / cập nhật.', (rows, ten) => {
+  // Tải file định mức hóa chất: mỗi môn trong file gắn vào một môn trên web (đoán theo mã học phần, rồi tên trùng hẳn);
+  // không khớp → để trống bắt chọn (môn cũ / "+ Tạo môn mới" / Bỏ qua) – không tự sinh môn trùng khi tên trong file khác tên cũ
+  async function nhapFileHC() {
+    const hk = hkMacDinh(), mons = await api('mon_ds'), tSo = (t) => boDau(t).replace(/^\s*\d+\s*[.)]\s*/, '').replace(/^th\s+/, '').replace(/[^a-z0-9]+/g, ' ').trim();
+    const doan = (m) => (mons.find(x => m.ma_hp.some(h => String(x.ma_hp || '').split(/[,;\s]+/).some(c => c && c.slice(0, 10) === h.slice(0, 10)))) || mons.find(x => tSo(x.ten) === tSo(m.ten)) || {}).ma || '';
+    hopFileExcel('Tải file định mức hóa chất', 'Chọn file kế hoạch vật tư theo mẫu P.KHĐT (khối "1. TH …", cột QUI CÁCH VẬT TƯ, MÃ VT, ĐVỊ, SLG/1HS) – file có thể chỉ gồm <b>một vài môn</b>. Định mức hóa chất của các môn có trong file được thay; biên bản hóa chất ' + esc(hk) + ' của các môn đó tự tạo / cập nhật. ' +
+      'Kiểm tra cột <b>"Môn trên web"</b>: môn không tự khớp (tên trong file khác tên trên web) thì chọn đúng môn cũ – chỉ chọn "+ Tạo môn mới" khi thật sự là môn mới.', (rows, ten) => {
       const kh = docKeHoachVatTu(rows), tong = kh.reduce((a, m) => a + m.dm.length, 0);
+      kh.forEach(m => { m._chon = doan(m); });
+      const chon = (m, i) => '<select data-i="' + i + '"><option value="">— Chọn môn —</option>' + mons.map(x => '<option value="' + esc(x.ma) + '"' + (x.ma === m._chon ? ' selected' : '') + '>' + esc(x.ten) + '</option>').join('') +
+        '<option value="~moi">+ Tạo môn mới: ' + esc(m.ten) + '</option><option value="~bo">— Bỏ qua môn này —</option></select>';
       $('x-kq').innerHTML = hopFileExcel.chonSheet(ten) + '<p>Đọc được <b>' + kh.length + '</b> môn, <b>' + tong + '</b> dòng định mức (' + kh.reduce((a, m) => a + m.dm.filter(d => !/^\d+$/.test(d.ma_vt)).length, 0) + ' dòng chưa có mã VT).</p>' +
-        '<div class="tbl-wrap" style="max-height:260px"><table><thead><tr><th>Môn</th><th>Mã HP</th><th class="num">Lớp</th><th class="num">Dòng</th></tr></thead><tbody>' + kh.map(m => '<tr><td>' + esc(m.ten) + '</td><td class="mono">' + esc(m.ma_hp.join(', ')) + '</td><td class="num">' + m.lop.length + '</td><td class="num">' + m.dm.length + '</td></tr>').join('') + '</tbody></table></div>' +
-        '<div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn" id="x-ok">Cập nhật định mức + biên bản</button></div>';
+        '<div class="tbl-wrap" style="max-height:300px"><table><thead><tr><th>Môn trong file</th><th>Mã HP</th><th class="num">Lớp</th><th class="num">Dòng</th><th>Môn trên web</th></tr></thead><tbody>' +
+        kh.map((m, i) => '<tr><td>' + esc(m.ten) + '</td><td class="mono">' + esc(m.ma_hp.join(', ')) + '</td><td class="num">' + m.lop.length + '</td><td class="num">' + m.dm.length + '</td><td>' + chon(m, i) + '</td></tr>').join('') + '</tbody></table></div>' +
+        '<p class="note" id="x-nhac"></p><div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn" id="x-ok">Cập nhật định mức + biên bản</button></div>';
       hopFileExcel.ganSheet();
-      $('x-ok').onclick = async (e) => { const r = await chay(e.target, () => api('dm_nhap', { loai: 'HC', ds: kh, hk, dong_bo: true })); ketQuaDongBo(r, 'Đã cập nhật định mức hóa chất'); };
+      const nhac = () => { const c = kh.filter(m => !m._chon).length; $('x-nhac').innerHTML = c ? '<b style="color:var(--bad)">' + c + ' môn chưa khớp</b> – chọn môn cũ, "+ Tạo môn mới" hoặc "Bỏ qua".' : 'Mọi môn đã gắn vào môn trên web.'; };
+      $('x-kq').querySelectorAll('select[data-i]').forEach(sl => { sl.onchange = () => { kh[+sl.dataset.i]._chon = sl.value; nhac(); }; }); nhac();
+      $('x-ok').onclick = async (e) => {
+        if (kh.some(m => !m._chon)) return toast('Chọn môn trên web cho mọi môn (hoặc "Bỏ qua")', true);
+        const ds = kh.filter(m => m._chon !== '~bo').map(m => Object.assign({}, m, { mon: m._chon === '~moi' ? '' : m._chon, _chon: undefined, ten: m._chon === '~moi' ? m.ten : (mons.find(x => x.ma === m._chon) || m).ten }));
+        if (!ds.length) return toast('Không còn môn nào để cập nhật', true);
+        const trung = ds.map(m => m.mon).filter((x, i, a) => x && a.indexOf(x) !== i); if (trung.length) return toast('Hai môn trong file cùng gắn vào môn ' + (mons.find(x => x.ma === trung[0]) || {}).ten, true);
+        const r = await chay(e.target, () => api('dm_nhap', { loai: 'HC', ds, hk, dong_bo: true })); ketQuaDongBo(r, 'Đã cập nhật định mức hóa chất');
+      };
     }, /HK|KH/i);
   }
   // ---------------- Dụng cụ các môn (dữ liệu gốc: 1 bộ / 1 lớp thực hành) ----------------
