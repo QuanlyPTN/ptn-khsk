@@ -54,7 +54,7 @@
   // ---------------- Gọi máy chủ ----------------
   // Đơn QR (don_ds, don_ct, hom_nay, qr_ds…) luôn đọc mới để xử lý kịp thời.
   // Kết quả đọc giữ 60 giây trong trang (quay lại trang vừa xem hiện ngay); có thao tác ghi bất kỳ thì xóa hết để đọc lại dữ liệu mới
-  const API_DOC = /^(tong_quan|phong_ds|phong_ct|tb_ds|tb_ct|hk_ds|vt_ds|mon_ds|mon_ct|lop_ds|kh_tinh|bb_ds|bb_ct|phong_lich|hs_ds|hs_ct|kho_ds|vt_goi_y|dt_dot|dt_tinh|dtm_ma_ds|dtm_dn_ds|dtm_dn_ct|dt_cap_ds|dtm_tong|dtm_doi_chieu|dtm_phieu|dtm_ct|kho_lo|kho_so_ks|bc_tb|bc_thang|bc_khac|bc_da_luu|so_ds|so_tong)$/;
+  const API_DOC = /^(tong_quan|nd_ds|phong_ds|phong_ct|tb_ds|tb_ct|hk_ds|vt_ds|mon_ds|mon_ct|lop_ds|kh_tinh|bb_ds|bb_ct|phong_lich|hs_ds|hs_ct|kho_ds|vt_goi_y|dt_dot|dt_tinh|dtm_ma_ds|dtm_dn_ds|dtm_dn_ct|dt_cap_ds|dtm_tong|dtm_doi_chieu|dtm_phieu|dtm_ct|kho_lo|kho_so_ks|bc_tb|bc_thang|bc_khac|bc_da_luu|so_ds|so_tong)$/;
   const DEM = new Map();
   async function api(act, data) {
     if (!API_DOC.test(act)) { DEM.clear(); return goiMayChu(act, data); }
@@ -161,6 +161,7 @@
     'don-qr': '<rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
     'cai-dat': '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
     'can-bo': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+    'nguoi-dung': '<rect x="7" y="2" width="10" height="20" rx="2"/><circle cx="12" cy="9" r="2.2"/><path d="M9 15c.6-1.4 1.6-2 3-2s2.4.6 3 2M11 18.5h2"/>',
     'nhat-ky': '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>',
     'tai-khoan': '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
     'menu': '<path d="M4 6h16M4 12h16M4 18h16"/>', 'thoat': '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
@@ -226,7 +227,7 @@
 
   // ---------------- Khung trang ----------------
   const MENU = [
-    ['tong-quan', '◧', 'Hôm nay'], ['don', '✉', 'Đơn đăng ký QR1 – QR8'], ['de-tai', '✎', 'Hồ sơ đề tài KLTN – NCKH'], ['phong', '▦', 'Phòng thí nghiệm'], ['lich-phong-th', '▦', 'Lịch phòng thực hành'], ['tai-san', '⚙', 'Tài sản'],
+    ['tong-quan', '◧', 'Hôm nay'], ['don', '✉', 'Đơn đăng ký QR1 – QR8'], ['de-tai', '✎', 'Hồ sơ đề tài KLTN – NCKH'], ['nguoi-dung', '☺', 'Người dùng trang dùng chung'], ['phong', '▦', 'Phòng thí nghiệm'], ['lich-phong-th', '▦', 'Lịch phòng thực hành'], ['tai-san', '⚙', 'Tài sản'],
     ['kiem-dinh', '✓', 'Kiểm định – bảo dưỡng'], ['hoa-chat', '⚗', 'Hóa chất – vật tư'], ['kho', '▣', 'Kho hóa chất D11.01'], ['kho-dl', '❀', 'Kho dược liệu D11'],
     ['bien-ban', '▤', 'Biên bản bàn giao'], ['bao-cao', '▥', 'Báo cáo – thống kê'], ['so', '☷', 'Sổ theo dõi – in ấn'], ['bieu-mau', '⎙', 'Biểu mẫu PTN'],
     ['giang-vien', '☺', 'Giảng viên'], ['lich-su-tai', '↺', 'Lịch sử tải file'], ['don-qr', '✉', 'Đơn cũ (Google Form)'], ['cai-dat', '⚑', 'Cài đặt – mã QR tổng', 1], ['can-bo', '☺', 'Cán bộ', 1], ['nhat-ky', '☰', 'Nhật ký', 1], ['tai-khoan', '⚿', 'Tài khoản']

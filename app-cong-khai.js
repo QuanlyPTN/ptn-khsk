@@ -91,7 +91,7 @@
       catch (e) { throw new Error(navigator.onLine === false ? 'Không có kết nối mạng' : 'Không kết nối được máy chủ, thử lại sau ít phút'); }
       j = await r.json();
     }
-    if (!j.ok) throw new Error(j.err || 'Lỗi máy chủ');
+    if (!j.ok) { const e = new Error(j.err || 'Lỗi máy chủ'); e.code = j.code; throw e; }
     return j.r;
   }
   async function danhMuc(moi) {
@@ -179,7 +179,7 @@
     $('hb').classList.add('hide'); nutLui(false);
     const p = hoSo();
     let h = '<div class="card prof"><div class="av">' + esc((p.ho_ten || '?').trim().split(' ').pop().charAt(0)) + '</div><div class="i"><b>' + esc(p.ho_ten) + '</b><span>' + esc([p.ma_so, ngGui().doi_tuong, p.lop].filter(Boolean).join(' · ')) +
-      '</span></div><a class="lnk" href="#/ho-so">Sửa</a></div><div id="tb"></div><div class="tieu-de-nhom">Đăng ký – biểu mẫu</div><div class="grid">' +
+      '</span></div><a class="lnk" href="#/ho-so">Thông tin</a></div><div id="tb"></div><div class="tieu-de-nhom">Đăng ký – biểu mẫu</div><div class="grid">' +
       Object.keys(QR_TEN).filter(q => QR_GV.indexOf(q) < 0).map(oQR).join('') +
       '</div><div class="tieu-de-nhom">Giảng viên – thiết bị</div><div class="grid">' + QR_GV.map(oQR).join('') +
       Object.keys(GV().LOAI).filter(q => !GV().LOAI[q].ngung).map(q => '<a class="tile" href="#/' + q + '">' + bieu(q) + '<span class="qv">' + q + '</span>' + esc(GV().LOAI[q].ten) + '</a>').join('') +
@@ -201,32 +201,96 @@
     } catch (e) { if ($('tb')) $('tb').innerHTML = '<div class="warn">' + esc(e.message) + '</div>'; }
   }
 
-  // ---------------- Hồ sơ cá nhân ----------------
-  function trangHoSo(lanDau) {
-    nutLui(!lanDau);
-    const p = hoSo() || {}, bmKhac = !!p.bo_mon && BO_MON.indexOf(p.bo_mon) < 0; // bộ môn đã nhập tay trước đó
-    M('<div class="card"><h2>' + (lanDau ? 'Thông tin cá nhân (nhập một lần)' : 'Sửa thông tin cá nhân') + '</h2><p class="note">Thông tin lưu trên điện thoại này và tự điền vào mọi biểu mẫu.</p><form id="f">' +
-      nhap('ho_ten', 'Họ và tên', { v: p.ho_ten, req: 1, extra: ' autocomplete="name"' }) + chon('doi_tuong', 'Đối tượng', DOI_TUONG, { v: p.doi_tuong || 'Sinh viên', req: 1 }) +
-      nhap('ma_so', 'MSSV / mã học viên / mã viên chức', { v: p.ma_so, req: 1 }) + nhap('lop', 'Lớp (sinh viên, học viên)', { v: p.lop }) +
+  // ---------------- Hồ sơ cá nhân: nhập một lần, gắn với máy này; sửa / đổi máy → gửi đề nghị, PTN duyệt ----------------
+  // thông tin trên máy chủ → dạng lưu trên máy ("Khác – …" tách ra ô ghi rõ)
+  const tuMayChu = (n) => { const o = { ho_ten: n.ho_ten, doi_tuong: n.doi_tuong, ma_so: n.ma_so, lop: n.lop || '', bo_mon: n.bo_mon || '', sdt: n.sdt, email: n.email || '' };
+    const m = /^Khác – (.+)$/.exec(n.doi_tuong || ''); if (m) { o.doi_tuong = 'Khác'; o.doi_tuong_khac = m[1]; } return o; };
+  const ngTu = (v) => { const p = Object.assign({}, v); if (p.doi_tuong === 'Khác' && p.doi_tuong_khac) p.doi_tuong = 'Khác – ' + p.doi_tuong_khac; delete p.doi_tuong_khac; return p; };
+  // đồng bộ với máy chủ (mỗi lần mở trang): máy đã đăng ký → dùng thông tin trên máy chủ (kể cả sau khi PTN duyệt sửa)
+  async function dongBoNguoi() {
+    if (S.ndXong) return S.nd;
+    const r = await api('ck_nguoi_dung', { khoa: may().khoa });
+    S.nd = r.nd; S.yc = r.yeu_cau || []; S.ndXong = true;
+    if (r.nd) { ghi('khsk_ho_so', tuMayChu(r.nd)); S.hs = null; }
+    return r.nd;
+  }
+  const oTT = (p, khoaMa) => nhap('ho_ten', 'Họ và tên', { v: p.ho_ten, req: 1, extra: ' autocomplete="name"' }) + chon('doi_tuong', 'Đối tượng', DOI_TUONG, { v: p.doi_tuong || 'Sinh viên', req: 1 }) +
+      nhap('ma_so', 'MSSV / mã học viên / mã viên chức', { v: p.ma_so, req: 1, extra: khoaMa ? ' readonly' : '' }) + nhap('lop', 'Lớp (sinh viên, học viên)', { v: p.lop }) +
       '<div id="o-dt-khac" class="' + (p.doi_tuong === 'Khác' ? '' : 'hide') + '">' + nhap('doi_tuong_khac', 'Đối tượng khác (ghi rõ)', { v: p.doi_tuong_khac, ph: 'VD: Nhân viên, nghiên cứu viên, khách mời…', req: 1 }) + '</div>' +
-      chon('bo_mon', 'Bộ môn / ngành', BO_MON, { v: bmKhac ? 'Khác' : p.bo_mon || 'Dược học', req: 1 }) +
-      '<div id="o-bm-khac" class="' + (bmKhac ? '' : 'hide') + '">' + nhap('bo_mon_khac', 'Bộ môn / ngành khác (ghi rõ)', { v: bmKhac ? p.bo_mon : '', ph: 'VD: Công nghệ sinh học – Khoa CNSH', req: 1 }) + '</div>' + nhap('sdt', 'Số điện thoại', { type: 'tel', v: p.sdt, req: 1, extra: ' inputmode="tel" autocomplete="tel"' }) +
-      nhap('email', 'Email', { type: 'email', v: p.email, extra: ' autocomplete="email"' }) +
-      '<div class="err" id="err"></div><button class="btn g">Lưu thông tin</button>' + (lanDau ? '' : '<a class="btn o" href="#/">Hủy</a>') + '</form></div>');
-    danhDau($('f'));
-    $('f').addEventListener('change', (e) => {
-      if (e.target.name === 'doi_tuong') $('o-dt-khac').classList.toggle('hide', e.target.value !== 'Khác');
-      if (e.target.name === 'bo_mon') $('o-bm-khac').classList.toggle('hide', e.target.value !== 'Khác');
-    });
-    $('f').onsubmit = (e) => {
-      e.preventDefault(); const v = giaTri(e.target);
-      v.sdt = v.sdt.replace(/\s/g, ''); v.ma_so = v.ma_so.toUpperCase();
-      if (v.doi_tuong !== 'Khác') delete v.doi_tuong_khac; else if (!v.doi_tuong_khac) { $('err').textContent = 'Ghi rõ đối tượng khác'; return; }
-      if (v.bo_mon === 'Khác') { if (!v.bo_mon_khac) { $('err').textContent = 'Ghi rõ bộ môn / ngành'; return; } v.bo_mon = v.bo_mon_khac; } delete v.bo_mon_khac;
-      const loi = !v.ho_ten ? 'Nhập họ và tên' : !v.ma_so ? 'Nhập MSSV / mã viên chức' : !/^0\d{9,10}$/.test(v.sdt) ? 'Số điện thoại gồm 10 – 11 chữ số, bắt đầu bằng 0' : v.email && !/^\S+@\S+\.\S+$/.test(v.email) ? 'Email không hợp lệ' : '';
+      chon('bo_mon', 'Bộ môn / ngành', BO_MON, { v: p.bo_mon && BO_MON.indexOf(p.bo_mon) < 0 ? 'Khác' : p.bo_mon || 'Dược học', req: 1 }) +
+      '<div id="o-bm-khac" class="' + (p.bo_mon && BO_MON.indexOf(p.bo_mon) < 0 ? '' : 'hide') + '">' + nhap('bo_mon_khac', 'Bộ môn / ngành khác (ghi rõ)', { v: p.bo_mon && BO_MON.indexOf(p.bo_mon) < 0 ? p.bo_mon : '', ph: 'VD: Công nghệ sinh học – Khoa CNSH', req: 1 }) + '</div>' +
+      nhap('sdt', 'Số điện thoại', { type: 'tel', v: p.sdt, req: 1, extra: ' inputmode="tel" autocomplete="tel"' }) + nhap('email', 'Email', { type: 'email', v: p.email, extra: ' autocomplete="email"' });
+  const ganTT = (f) => { danhDau(f); f.addEventListener('change', (e) => {
+    if (e.target.name === 'doi_tuong') $('o-dt-khac').classList.toggle('hide', e.target.value !== 'Khác');
+    if (e.target.name === 'bo_mon') $('o-bm-khac').classList.toggle('hide', e.target.value !== 'Khác');
+  }); };
+  // đọc + kiểm tra form thông tin → [giá trị, lỗi]
+  function docTT(f) {
+    const v = giaTri(f); v.sdt = (v.sdt || '').replace(/\s/g, ''); v.ma_so = (v.ma_so || '').toUpperCase().trim(); v.ho_ten = (v.ho_ten || '').trim();
+    if (v.doi_tuong !== 'Khác') delete v.doi_tuong_khac; else if (!v.doi_tuong_khac) return [v, 'Ghi rõ đối tượng khác'];
+    if (v.bo_mon === 'Khác') { if (!v.bo_mon_khac) return [v, 'Ghi rõ bộ môn / ngành']; v.bo_mon = v.bo_mon_khac; } delete v.bo_mon_khac;
+    delete v.xac_nhan; delete v.ly_do;
+    return [v, !v.ho_ten ? 'Nhập họ và tên' : !v.ma_so ? 'Nhập MSSV / mã viên chức' : !/^0\d{9,10}$/.test(v.sdt) ? 'Số điện thoại gồm 10 – 11 chữ số, bắt đầu bằng 0' : v.email && !/^\S+@\S+\.\S+$/.test(v.email) ? 'Email không hợp lệ' : ''];
+  }
+  const TT_YC = { 'Chờ duyệt': '⏳ đang chờ PTN duyệt', 'Đã duyệt': '✓ PTN đã duyệt', 'Từ chối': '✗ PTN không duyệt' };
+  const dongYC = (y) => '<div class="' + (y.trang_thai === 'Từ chối' ? 'warn' : 'pre') + '" style="margin-bottom:8px"><b>' + (y.loai === 'chuyen_may' ? 'Đề nghị chuyển sang máy này' : 'Đề nghị sửa thông tin') + '</b> (' + esc(ngayVN(y.tg)) + ') – ' + (TT_YC[y.trang_thai] || esc(y.trang_thai)) +
+    '<br><span class="note">Lý do: ' + esc(y.ly_do) + (y.ghi_chu ? ' · PTN: ' + esc(y.ghi_chu) : '') + '</span></div>';
+  async function trangHoSo(lanDau) {
+    nutLui(!lanDau);
+    let nd = null; try { nd = await dongBoNguoi(); } catch (e) { nd = S.nd || null; }
+    const cho = (S.yc || []).find(y => y.trang_thai === 'Chờ duyệt');
+    if (nd) { // đã đăng ký: chỉ xem; sửa → đề nghị
+      const p = tuMayChu(nd);
+      M('<div class="card"><h2>Thông tin cá nhân</h2><div class="pre">🔒 Thông tin đã khóa – gắn với thiết bị này (đăng ký ' + esc(ngayVN(nd.tg)) + '). Muốn sửa: gửi đề nghị kèm lý do, PTN duyệt rồi thông tin tự cập nhật.</div>' +
+        '<dl class="kv">' + [['Họ và tên', p.ho_ten], ['Đối tượng', nd.doi_tuong], ['MSSV / mã', p.ma_so], ['Lớp', p.lop], ['Bộ môn / ngành', p.bo_mon], ['Điện thoại', p.sdt], ['Email', p.email]].filter(x => x[1]).map(x => '<dt>' + x[0] + '</dt><dd>' + esc(x[1]) + '</dd>').join('') + '</dl>' +
+        (S.yc || []).slice(0, 3).map(dongYC).join('') +
+        (cho ? '' : '<details id="de-nghi"><summary class="btn o">✎ Đề nghị sửa thông tin</summary><form id="f" style="margin-top:10px">' + oTT(p) +
+          nhap('ly_do', 'Lý do sửa', { req: 1, area: 1, ph: 'VD: nhập sai số điện thoại; đổi lớp…' }) + '<div class="err" id="err"></div><button class="btn g">Gửi đề nghị cho PTN</button></form></details>') +
+        '<a class="btn o" href="#/" style="margin-top:10px">Về trang chủ</a></div>');
+      if (!$('f')) return;
+      ganTT($('f'));
+      $('f').onsubmit = async (e) => {
+        e.preventDefault(); const [v, loi] = docTT(e.target), ly = e.target.ly_do.value.trim();
+        if (loi || !ly) { $('err').textContent = loi || 'Ghi rõ lý do sửa'; return; }
+        try { await api('ck_yeu_cau_nd', { may: may(), loai: 'sua', ng: ngTu(v), ly_do: ly }); S.ndXong = false; toast('Đã gửi đề nghị – chờ PTN duyệt'); trangHoSo(false); }
+        catch (x) { $('err').textContent = x.message; }
+      };
+      return;
+    }
+    const p = hoSo() || {}, chuyen = (S.yc || []).find(y => y.loai === 'chuyen_may' && y.trang_thai === 'Chờ duyệt');
+    if (chuyen) {
+      M('<div class="card"><h2>Đang chờ PTN duyệt chuyển máy</h2>' + dongYC(chuyen) + '<p class="note">PTN duyệt xong, mở lại trang này là dùng được. Cần gấp: liên hệ PTN.</p><button class="btn o" id="b-tai">Kiểm tra lại</button></div>');
+      $('b-tai').onclick = () => { S.ndXong = false; trangHoSo(true); };
+      return;
+    }
+    const cuMay = !!(p && p.ma_so); // máy đã có thông tin từ trước khi khóa → xác nhận một lần
+    M('<div class="card"><h2>Thông tin cá nhân (nhập một lần)</h2>' +
+      '<div class="warn">⚠ <b>Nhập đúng và đầy đủ.</b> Thông tin chỉ nhập <b>một lần</b>, gắn với thiết bị này và tự điền vào mọi biểu mẫu. Sau khi lưu, muốn sửa phải gửi đề nghị kèm lý do và được PTN duyệt.\n' +
+      '• Mỗi người chỉ dùng <b>một thiết bị</b> (điện thoại hoặc máy tính). Thiết bị khác khai cùng MSSV sẽ bị báo lỗi.\n• Không nhập thay người khác.</div>' +
+      (cuMay ? '<p class="note">Thông tin đang lưu trên máy này – kiểm tra lại rồi xác nhận.</p>' : '') +
+      (S.yc || []).filter(y => y.trang_thai === 'Từ chối').slice(0, 1).map(dongYC).join('') +
+      '<form id="f">' + oTT(p) + '<label class="check" style="margin-top:6px"><input type="checkbox" name="xac_nhan"> Tôi đã kiểm tra: thông tin <b>đúng, đầy đủ</b> và là của tôi.</label>' +
+      '<div class="err" id="err"></div><div id="o-chuyen"></div><button class="btn g" id="b-luu">Lưu thông tin</button></form></div>');
+    ganTT($('f'));
+    $('f').onsubmit = async (e) => {
+      e.preventDefault(); const f = e.target, [v, loi] = docTT(f);
       if (loi) { $('err').textContent = loi; return; }
-      ghi('khsk_ho_so', v); S.hs = null; toast('Đã lưu'); location.hash = '#/';
-      if (lanDau) dieuHuong();
+      if (!f.xac_nhan.checked) { $('err').textContent = 'Đánh dấu ô xác nhận thông tin đúng, đầy đủ'; return; }
+      try {
+        const r = await api('ck_dang_ky_nd', { may: may(), ng: ngTu(v), xac_nhan: 1 });
+        ghi('khsk_ho_so', tuMayChu(r)); S.hs = null; S.ndXong = false; toast('Đã lưu'); location.hash = '#/'; if (lanDau) dieuHuong();
+      } catch (x) {
+        $('err').textContent = x.message;
+        if (x.code === 'MAY_KHAC') { // đã đăng ký ở máy khác → đề nghị chuyển sang máy này
+          $('o-chuyen').innerHTML = '<div class="pre"><b>Đã đổi thiết bị?</b> Gửi đề nghị chuyển sang máy này, PTN duyệt thì máy cũ không dùng được nữa.' +
+            nhap('ly_do', 'Lý do đổi máy', { req: 1, area: 1, ph: 'VD: mất điện thoại; đổi máy mới…' }) + '<button type="button" class="btn" id="b-chuyen">Gửi đề nghị chuyển máy</button></div>';
+          $('b-chuyen').onclick = async () => {
+            const ly = f.ly_do.value.trim(); if (!ly) { $('err').textContent = 'Ghi rõ lý do đổi máy'; return; }
+            try { await api('ck_yeu_cau_nd', { may: may(), loai: 'chuyen_may', ng: ngTu(v), ly_do: ly }); S.ndXong = false; toast('Đã gửi đề nghị chuyển máy'); trangHoSo(true); }
+            catch (x2) { $('err').textContent = x2.message; }
+          };
+        }
+      }
     };
   }
 
@@ -237,7 +301,7 @@
     await danhMuc();
     const p = hoSo(), gv = p.doi_tuong === 'Giảng viên';
     if (qr === 'QR7') return trangQR7();
-    let h = '<h2>' + qr + ' – ' + esc(QR_TEN[qr]) + '</h2>' + congDung(qr) + '<div class="pre"><b>✓ Người đăng ký:</b> ' + esc(p.ho_ten + ' · ' + p.ma_so + ' · ' + p.sdt) + ' <a class="lnk" href="#/ho-so">Sửa</a></div>';
+    let h = '<h2>' + qr + ' – ' + esc(QR_TEN[qr]) + '</h2>' + congDung(qr) + '<div class="pre"><b>✓ Người đăng ký:</b> ' + esc(p.ho_ten + ' · ' + p.ma_so + ' · ' + p.sdt) + ' <a class="lnk" href="#/ho-so">Thông tin</a></div>';
     if ((qr === 'QR2' || qr === 'QR4') && !gv) h += '<div class="warn">' + qr + ' dành cho giảng viên. Nếu bạn là giảng viên, sửa "Đối tượng" trong thông tin cá nhân.</div>';
     const ds = await hoSoCuaToi().catch(() => []);
     const chonHS = ds.length ? chonO('hs', 'Thuộc hồ sơ đề tài (nếu có)', ds.map(x => [x.id, x.id + ' – ' + x.ten])) : '';
@@ -420,7 +484,7 @@
     M('<div class="spin"></div>');
     await danhMuc();
     const p = hoSo(), L = GV().LOAI[qr];
-    M('<h2>' + esc(L.ten) + '</h2><div class="pre"><b>✓ Người đề nghị:</b> ' + esc([p.ho_ten, p.ma_so, p.bo_mon, p.sdt].filter(Boolean).join(' · ')) + ' <a class="lnk" href="#/ho-so">Sửa</a></div>' +
+    M('<h2>' + esc(L.ten) + '</h2><div class="pre"><b>✓ Người đề nghị:</b> ' + esc([p.ho_ten, p.ma_so, p.bo_mon, p.sdt].filter(Boolean).join(' · ')) + ' <a class="lnk" href="#/ho-so">Thông tin</a></div>' +
       (p.doi_tuong === 'Giảng viên' ? '' : '<div class="warn">Biểu mẫu dành cho giảng viên. Nếu bạn là giảng viên, sửa "Đối tượng" trong thông tin cá nhân.</div>') +
       '<form class="card" id="f" autocomplete="off"><div id="pg"></div><label class="opt"><input type="checkbox" name="cam_ket"><span>Tôi xác nhận thông tin trên là đúng.</span></label>' +
       '<div id="err" class="err"></div><button class="btn" id="sb">Gửi phiếu</button></form><p class="note">Cần bản trống để in viết tay: <a href="bieu-mau/' + esc(L.mau) + '" download>tải mẫu Word</a>.</p>');
@@ -550,21 +614,40 @@
     const chiTiet = (d) => /^GV-/.test(d.qr) ? GV().tomTat(d) : [d.phong && 'Phòng ' + d.phong, d.tu && 'Tủ ' + d.tu, d.ten_tb.length && d.ten_tb.join(', '), d.lop_hp && 'LHP ' + d.lop_hp, d.hs && 'Đề tài ' + d.hs,
       (d.nd.dong || []).length && d.nd.dong.map(x => x.ten + ' ' + x.sl + (x.dvt ? ' ' + x.dvt : '')).join('; '), d.tu_ngay && 'Từ ' + ngayVN(d.tu_ngay), d.den_ngay && (d.qr === 'QR5' ? 'đến ' : 'hạn ') + ngayVN(d.den_ngay)].filter(Boolean).join(' · ');
     let h = '<h2>Đơn của tôi</h2><p class="note">Các đơn gửi từ điện thoại này (mã máy ' + esc(may().ma) + ').</p>' + canhBaoHan(r);
-    if (r.ho_so.length) h += '<div class="sec">Hồ sơ đề tài (QR7)</div>' + r.ho_so.map(x => '<div class="card"><div class="dong-don"><b>' + esc(x.id) + '</b>' + tagTT(x.trang_thai) + '</div><div>' + esc(x.ten) + '</div><div class="note">' +
+    const theHS = (x) => '<div class="card"><div class="dong-don"><b>' + esc(x.id) + '</b>' + tagTT(x.trang_thai) + '</div><div>' + esc(x.ten) + '</div><div class="note">' +
       esc(x.ten_loai + ' · GVHD ' + x.gvhd + ' · ' + x.nhom.length + ' thành viên' + (x.phong ? ' · ' + x.phong : '') + (x.den_ngay ? ' · đến ' + ngayVN(x.den_ngay) : '')) + '</div>' +
       (x.le_phi ? '<div class="note">Lệ phí: ' + esc(x.le_phi) + (x.thu_phi ? ' – <b>đã thu ' + Number(x.thu_phi.so_tien).toLocaleString('vi-VN') + ' đ</b>' : ' – chưa thu') + '</div>' : '') +
       (x.tep.length ? '<div class="note">Minh chứng: ' + x.tep.map(t => esc(t.ten)).join(', ') + '</div>' : '') + khoiDon(x).replace('<div class="card">', '<div>') +
-      (['Đã đóng', 'Từ chối'].indexOf(x.trang_thai) < 0 ? '<div class="dong-don">' + (HS_SUA.indexOf(x.trang_thai) >= 0 ? '<a class="lnk" href="#/QR7/' + esc(x.id) + '">Sửa hồ sơ / thêm thành viên</a>' : '<span class="note">🔒 PTN đã duyệt – không sửa được; cần đổi phòng, thiết bị, thành viên hoặc gia hạn: liên hệ PTN</span>') + (x.pl === 2 ? '<label class="lnk">+ Minh chứng<input type="file" data-mc="' + esc(x.id) + '" accept=".pdf,image/*" hidden></label>' : '') + '</div>' : '') + '</div>').join('');
+      (['Đã đóng', 'Từ chối'].indexOf(x.trang_thai) < 0 ? '<div class="dong-don">' + (HS_SUA.indexOf(x.trang_thai) >= 0 ? '<a class="lnk" href="#/QR7/' + esc(x.id) + '">Sửa hồ sơ / thêm thành viên</a>' : '<span class="note">🔒 PTN đã duyệt – không sửa được; cần đổi phòng, thiết bị, thành viên hoặc gia hạn: liên hệ PTN</span>') + (x.pl === 2 ? '<label class="lnk">+ Minh chứng<input type="file" data-mc="' + esc(x.id) + '" accept=".pdf,image/*" hidden></label>' : '') + '</div>' : '') + '</div>';
     const dsQR = r.don.filter(d => !/^GV-/.test(d.qr)), dsGV = r.don.filter(d => /^GV-/.test(d.qr));
     const the = (d) => '<div class="card"><div class="dong-don"><span><span class="q">' + d.qr + '</span> <b>' + esc(d.id) + '</b></span>' + tagTT(d.trang_thai, d.qua_han) + '</div>' +
       '<div>' + esc(d.ten_qr) + '</div><div class="note">' + esc(chiTiet(d)) + '</div><div class="note">Gửi ' + ngayVN(d.tg) + (d.nguoi_xu_ly ? ' · xử lý: ' + esc(d.nguoi_xu_ly) : '') + '</div>' +
       (d.ly_do ? '<div class="err">Lý do: ' + esc(d.ly_do) + '</div>' : '') +
       (d.qr === 'QR5' && d.trang_thai === 'Đang dùng' ? '<button class="btn g" data-kt="' + esc(d.id) + '" style="margin-top:8px">Kết thúc sử dụng</button>' : '') +
       (window.PTN_DON_QR && window.PTN_DON_QR.coMau(d.qr) && d.trang_thai !== 'Từ chối' ? '<div class="dong-don"><span>📄 ' + esc(window.PTN_DON_QR.TEN[d.qr]) + '</span><span><button type="button" class="nho" data-in-don="' + esc(d.id) + '">Xem – in</button><button type="button" class="nho o" data-word-don="' + esc(d.id) + '">Word</button></span></div>' : '') + '</div>';
-    h += '<div class="sec">Đơn QR1 – QR8 (' + dsQR.length + ')</div>' + (dsQR.length ? dsQR.map(the).join('') : '<div class="card note">Chưa có đơn nào.</div>');
-    if (dsGV.length) h += '<div class="sec">Phiếu giảng viên – thiết bị (' + dsGV.length + ')</div>' + dsGV.map(the).join('');
+    // xếp theo mã QR: hàng nút "Cần xử lý · QR1 … QR8 · Phiếu GV · Tất cả"; mã còn đơn chưa xong có chấm cam, quá hạn chuyển đỏ
+    const MO = ['Chờ duyệt', 'Đã duyệt', 'Đang mượn', 'Đang dùng', 'Đang xử lý'], hn = homNay();
+    const moD = (d) => MO.indexOf(d.trang_thai) >= 0, moH = (x) => ['Đã đóng', 'Từ chối'].indexOf(x.trang_thai) < 0;
+    const quaH = (x) => moH(x) && ['Đã duyệt – đang thực hiện', 'Gia hạn', 'Chờ trả đồ'].indexOf(x.trang_thai) >= 0 && x.den_ngay && x.den_ngay < hn;
+    const nhom = { can: { ten: 'Cần xử lý', don: r.don.filter(moD), hs: r.ho_so.filter(moH) } };
+    Object.keys(QR_TEN).forEach(q => { nhom[q] = { ten: q, don: q === 'QR7' ? [] : dsQR.filter(d => d.qr === q), hs: q === 'QR7' ? r.ho_so : [] }; });
+    if (dsGV.length) nhom.GV = { ten: 'Phiếu GV', don: dsGV, hs: [] };
+    nhom.tat = { ten: 'Tất cả', don: r.don, hs: r.ho_so };
+    Object.keys(nhom).forEach(k => { const g = nhom[k]; g.n = g.don.length + g.hs.length; g.mo = g.don.filter(moD).length + g.hs.filter(moH).length; g.qh = g.don.some(d => d.qua_han && moD(d)) || g.hs.some(quaH); });
+    const chon = nhom[S.nhomDon] && nhom[S.nhomDon].n ? S.nhomDon : nhom.can.n ? 'can' : 'tat';
+    // nhắc việc ở đầu trang
+    const viec = [];
+    const dangQR5 = r.don.filter(d => d.qr === 'QR5' && d.trang_thai === 'Đang dùng'); if (dangQR5.length) viec.push('⏱ ' + dangQR5.length + ' lượt QR5 đang dùng – bấm <b>Kết thúc sử dụng</b> khi xong');
+    const choNop = r.ho_so.filter(x => x.trang_thai === 'Chờ nộp bản ký'); if (choNop.length) viec.push('📄 Hồ sơ ' + choNop.map(x => esc(x.id)).join(', ') + ' chưa nộp bản ký: in đơn → GVHD ký → nộp PTN');
+    const choDuyet = r.don.filter(d => d.trang_thai === 'Chờ duyệt').length; if (choDuyet) viec.push('⏳ ' + choDuyet + ' đơn đang chờ PTN duyệt');
+    h += (viec.length ? '<div class="pre" style="background:#FFF8E1;border-color:#F2D58A">' + viec.map(v => '<div>' + v + '</div>').join('') + '</div>' : '') +
+      '<div class="nhom-don">' + Object.keys(nhom).filter(k => nhom[k].n || k === 'can').map(k => { const g = nhom[k];
+        return '<button type="button" class="chip' + (k === chon ? ' on' : '') + (g.qh ? ' qh' : g.mo && k !== 'can' && k !== 'tat' ? ' mo' : '') + '" data-nhom="' + k + '">' + esc(g.ten) + ' <span>' + (k === 'can' ? g.mo : g.n) + '</span></button>'; }).join('') + '</div>';
+    const g = nhom[chon];
+    h += !g.n ? '<div class="card note">' + (chon === 'can' ? '✓ Không có đơn nào cần xử lý.' : 'Chưa có đơn nào.') + '</div>' : g.hs.map(theHS).join('') + g.don.map(the).join('');
     M(h);
-    r.ho_so.forEach(x => ganKhoiDon(x));
+    document.querySelectorAll('[data-nhom]').forEach(b => { b.onclick = () => { S.nhomDon = b.dataset.nhom; trangDonCuaToi(); }; });
+    g.hs.forEach(x => ganKhoiDon(x));
     document.querySelectorAll('[data-mc]').forEach(i => { i.onchange = async () => { const f = i.files[0]; if (!f) return; try { await guiMinhChung(i.dataset.mc, f); toast('Đã tải minh chứng'); trangDonCuaToi(); } catch (e) { toast(e.message, true); } }; });
     document.querySelectorAll('[data-kt]').forEach(b => { b.onclick = () => hopKetThuc(b.dataset.kt); });
     document.querySelectorAll('[data-in-don],[data-word-don]').forEach(b => { b.onclick = () => inDon(r.don.find(x => x.id === (b.dataset.inDon || b.dataset.wordDon)), !!b.dataset.wordDon); });
@@ -617,7 +700,7 @@
     let lanDau = true;
     const ve = (focusI) => {
       const y = window.scrollY, ve1 = (h) => { if (lanDau) { lanDau = false; M(h); } else { $('m').innerHTML = h; window.scrollTo(0, y); } };
-      ve1('<h2>Dự trù hóa chất – ' + esc(r.mon.ten) + '</h2><div class="pre"><b>' + esc(r.hk) + '</b> · mã ' + esc(r.ma) + ' (hạn ' + esc(ngayVN(r.han)) + ')<br><b>Người đề nghị:</b> ' + esc([p.ho_ten, p.ma_so, p.sdt].filter(Boolean).join(' · ')) + ' <a class="lnk" href="#/ho-so">Sửa</a></div>' + tt +
+      ve1('<h2>Dự trù hóa chất – ' + esc(r.mon.ten) + '</h2><div class="pre"><b>' + esc(r.hk) + '</b> · mã ' + esc(r.ma) + ' (hạn ' + esc(ngayVN(r.han)) + ')<br><b>Người đề nghị:</b> ' + esc([p.ho_ten, p.ma_so, p.sdt].filter(Boolean).join(' · ')) + ' <a class="lnk" href="#/ho-so">Thông tin</a></div>' + tt +
         '<p class="note">Sửa / thêm / bỏ dòng theo 3 nhóm. Ghi <b>ĐM 1 SV</b> thì SL = ĐM × tổng SV; không ghi ĐM thì nhập thẳng SL. Gõ tên để chọn từ danh mục vật tư (tự điền mã VT, ĐVT).</p>' +
         '<form class="card" id="f" autocomplete="off"><label class="f"><span>Tổng số sinh viên (cả học kỳ)</span><input type="number" min="0" id="dtm-ss" value="' + ss + '"></label><datalist id="dtm-goi-y"></datalist>' +
         NH.map((n, k) => '<div class="tieu-de-nhom" style="margin-top:12px">' + (k + 1) + '. ' + n.toUpperCase() + '</div><div class="dtm-khung"><table class="dtm-bang"><thead><tr style="text-align:left"><th>Tên – quy cách</th><th>ĐVT</th><th>ĐM 1 SV</th><th>SL</th><th>Ghi chú</th><th>Nhóm</th><th></th></tr></thead><tbody>' +
@@ -663,7 +746,9 @@
     const qrCu = (/[?&]qr=(QR[1-8])/i.exec(location.search) || [])[1];
     if (qrCu && !location.hash) { history.replaceState(null, '', location.pathname + (DEMO ? '?demo=1' : '') + '#/' + qrCu.toUpperCase()); }
     const p = (location.hash.replace(/^#\/?/, '') || '').split('/');
-    if (!hoSo() || !hoSo().ma_so) return trangHoSo(true);
+    // thông tin cá nhân: máy chủ là gốc (gắn với máy này); chưa đăng ký → nhập / xác nhận một lần
+    let nd = S.nd; try { nd = await dongBoNguoi(); } catch (e) { /* mất mạng: dùng thông tin đã lưu trên máy */ nd = hoSo() && hoSo().ma_so ? true : null; }
+    if (!nd) return trangHoSo(true);
     try {
       if (/^QR[1-8]$/.test(p[0])) {
         if (p[0] === 'QR7' && p[1]) { const r = await api('ck_cua_toi', { khoa: may().khoa }), x = r.ho_so.find(h => h.id === p[1]); return x && HS_SUA.indexOf(x.trang_thai) >= 0 ? trangQR7(x) : trangDonCuaToi(); }
