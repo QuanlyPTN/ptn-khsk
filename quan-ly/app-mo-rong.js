@@ -74,9 +74,13 @@
 
   // ---------------- Đơn QR1 – QR8 ----------------
   // QR1: tách Nội dung thành Phòng (mỗi phòng một dòng) và Thiết bị – dụng cụ MƯỢN THÊM (mỗi thứ một dòng);
-  // thiết bị chọn trong phòng không hiện ở đây – khi giao đơn chúng vào nhật ký sử dụng QR5
+  // thiết bị chọn trong phòng không hiện ở đây – khi giao đơn chúng vào nhật ký sử dụng QR5;
+  // riêng thiết bị của kho D11.01 (mang đi phòng khác dùng) hiện cả ở đây để biết đã cho mượn gì (vẫn vào QR5)
+  const PHONG_KHO_TB = 'D11.01';
   const dsPhongDon = (d) => String(d.phong || '').split(/\s*,\s*/).filter(Boolean);
-  const dsMuonThem = (d) => (d.nd.dung_cu_ds || []).map(x => x.ten + ' – SL ' + fmt(x.sl) + (x.ghi_chu ? ' (' + x.ghi_chu + ')' : ''))
+  const duoiKho = ' – phòng ' + PHONG_KHO_TB;
+  const dsMuonThem = (d) => (d.ten_tb || []).filter(x => x.endsWith(duoiKho)).map(x => x.slice(0, -duoiKho.length) + ' – SL 1 (thiết bị kho ' + PHONG_KHO_TB + ')')
+    .concat((d.nd.dung_cu_ds || []).map(x => x.ten + ' – SL ' + fmt(x.sl) + (x.ghi_chu ? ' (' + x.ghi_chu + ')' : '')))
     .concat(!d.nd.dung_cu_ds && d.nd.dung_cu ? String(d.nd.dung_cu).split(/\s*;\s*/).filter(Boolean) : []);
   const mucDichQR1 = (d) => [d.nd.noi_dung, d.nd.muc_dich].filter(Boolean).join(' · ');
   // các tháng có đơn (mới nhất trước) – lọc / xuất theo tháng
