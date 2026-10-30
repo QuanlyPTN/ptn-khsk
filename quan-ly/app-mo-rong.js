@@ -203,6 +203,8 @@
   }
 
   // ---------------- Người dùng trang dùng chung: một người – một máy; đề nghị sửa thông tin / chuyển máy ----------------
+  // nhóm đối tượng để lọc: Giảng viên · Sinh viên · Học viên · Khác (gồm "Khác – …")
+  const loaiDT = (n) => ['Giảng viên', 'Sinh viên', 'Học viên'].indexOf(n.doi_tuong) >= 0 ? n.doi_tuong : 'Khác';
   const TEN_TT = { ho_ten: 'Họ tên', doi_tuong: 'Đối tượng', ma_so: 'MSSV / mã', lop: 'Lớp', bo_mon: 'Bộ môn', sdt: 'Điện thoại', email: 'Email' };
   async function manNguoiDung(p) {
     const tab = ['yeu-cau', 'nguoi', 'trung'].indexOf(p[1]) >= 0 ? p[1] : 'yeu-cau', xl = coQuyen('nguoi-dung', 'xu_ly');
@@ -222,7 +224,9 @@
           (y.trang_thai === 'Chờ duyệt' && xl ? '<div class="btns" style="margin-top:8px"><button class="btn sm" data-duyet="' + esc(y.id) + '">✓ Duyệt</button><button class="btn red o sm" data-khong="' + esc(y.id) + '">Không duyệt</button></div>' : '') + '</div>';
       }).join('');
     } else if (tab === 'nguoi') {
-      h += '<div class="tools"><input type="search" id="q" placeholder="Tìm tên, MSSV, SĐT, mã máy…"></div><div id="kq"></div>';
+      h += '<div class="tools"><input type="search" id="q" placeholder="Tìm tên, MSSV, SĐT, mã máy…"><select id="f-dt" title="Đối tượng">' +
+        [['', 'Tất cả đối tượng'], ['Giảng viên', 'Giảng viên'], ['Sinh viên', 'Sinh viên'], ['Học viên', 'Học viên'], ['Khác', 'Khác']].map(x => '<option value="' + x[0] + '">' + x[1] + ' (' + r.nguoi.filter(n => !x[0] || loaiDT(n) === x[0]).length + ')</option>').join('') +
+        '</select><button class="btn o sm" id="b-in-nd" title="Theo đối tượng và ô tìm đang chọn">In / xuất Excel</button></div><div id="kq"></div>';
     } else {
       h += '<p class="note">Trước khi khóa "một người – một máy", có máy đã gửi đơn cho nhiều người. Chọn người đúng của máy (có thể là lần quét sau); tùy chọn xóa đơn của những người còn lại gửi từ máy đó (thu hồi được ở Lịch sử tải file).</p>' +
         (!r.trung.length ? '<div class="card empty">Không có máy nào gửi đơn cho nhiều người.</div>' : r.trung.map(m => '<div class="card"><b>Máy ' + esc(m.ma_may) + '</b>' + (m.dang_ky ? ' – đang đăng ký cho <b>' + esc(m.dang_ky) + '</b>' : ' – <span class="tag t-warn">chưa chọn</span>') +
@@ -232,8 +236,9 @@
     }
     nd.innerHTML = h;
     if (tab === 'nguoi') {
+      const loc = () => { const q = boDau($('q').value), dt = $('f-dt').value; return r.nguoi.filter(n => (!dt || loaiDT(n) === dt) && (!q || boDau([n.ho_ten, n.ma_so, n.sdt, n.ma_may, n.lop].join(' ')).indexOf(q) >= 0)); };
       const ve = () => {
-        const q = boDau($('q').value), l = r.nguoi.filter(n => !q || boDau([n.ho_ten, n.ma_so, n.sdt, n.ma_may, n.lop].join(' ')).indexOf(q) >= 0);
+        const l = loc();
         $('kq').innerHTML = !l.length ? '<div class="card empty">Chưa có người dùng.</div>' : '<div class="tbl-wrap"><table><thead><tr><th>Họ tên</th><th>MSSV / mã</th><th>Đối tượng – lớp</th><th>Điện thoại</th><th>Máy</th><th>Đăng ký</th><th class="num">Số đơn</th><th></th></tr></thead><tbody>' +
           l.slice(0, 500).map(n => '<tr><td><b>' + esc(n.ho_ten) + '</b>' + (n.email ? '<div class="note">' + esc(n.email) + '</div>' : '') + '</td><td class="mono">' + esc(n.ma_so) + '</td><td>' + esc([n.doi_tuong, n.lop, n.bo_mon].filter(Boolean).join(' · ')) + '</td><td>' + esc(n.sdt) + '</td><td class="mono">' + esc(n.ma_may) + '</td><td>' + ngayVN(n.tg) + '</td><td class="num">' + n.so_don + '</td><td class="btns">' +
             '<button class="btn o sm" data-ls="' + esc(n.ma_so) + '">Lịch sử</button>' + (xl ? '<button class="btn o sm" data-sua="' + esc(n.ma_so) + '">Sửa</button><button class="btn red o sm" data-bo="' + esc(n.ma_so) + '" title="Bỏ đăng ký: máy / người này đăng ký lại từ đầu">Bỏ đăng ký</button>' : '') + '</td></tr>').join('') + '</tbody></table></div>';
@@ -248,7 +253,14 @@
           if (!confirm('Bỏ đăng ký ' + b.dataset.bo + '? Máy của người này phải nhập lại thông tin; thu hồi được ở Lịch sử tải file.')) return;
           await chay(e.target, () => api('nd_xoa', { ma_so: b.dataset.bo })); toast('Đã bỏ đăng ký'); dieuHuong(); }; });
       };
-      $('q').oninput = ve; ve();
+      $('q').oninput = ve; $('f-dt').onchange = ve; ve();
+      // in / xuất Excel: đúng đối tượng đang chọn (Giảng viên → bảng chỉ có giảng viên…)
+      $('b-in-nd').onclick = () => { const dt = $('f-dt').value, l = loc(), gv = dt === 'Giảng viên';
+        window.PTN_IN.xemTruoc({ ten: 'Nguoi dung ' + (dt || 'tat ca') + ' ' + homNay(), trang: [window.PTN_IN.bang({ ten: (dt || 'Tất cả').slice(0, 31), huong: 'ngang',
+          tieuDe: 'DANH SÁCH ' + (dt ? dt.toUpperCase() : 'NGƯỜI DÙNG') + ' ĐĂNG KÝ TRANG DÙNG CHUNG PTN', phuDe: 'Xuất ngày ' + ngayVN(homNay()) + ' · ' + (dt || 'tất cả đối tượng') + ' · ' + l.length + ' người',
+          cot: [{ ten: 'STT', rong: 5, can: 'c' }, { ten: 'HỌ TÊN', rong: 24 }, { ten: gv ? 'MÃ VIÊN CHỨC' : 'MSSV / MÃ', rong: 13 }].concat(dt ? [] : [{ ten: 'ĐỐI TƯỢNG', rong: 14 }], gv ? [] : [{ ten: 'LỚP', rong: 12 }],
+            [{ ten: 'BỘ MÔN / NGÀNH', rong: 18 }, { ten: 'ĐIỆN THOẠI', rong: 12 }, { ten: 'EMAIL', rong: 24 }, { ten: 'NGÀY ĐĂNG KÝ', rong: 12 }, { ten: 'SỐ ĐƠN', rong: 8, can: 'c' }]),
+          dong: l.map((n, i) => [i + 1, n.ho_ten, n.ma_so].concat(dt ? [] : [n.doi_tuong], gv ? [] : [n.lop], [n.bo_mon, n.sdt, n.email, ngayVN(n.tg), n.so_don])) })] }); };
     }
     nd.querySelectorAll('[data-duyet]').forEach(b => { b.onclick = async (e) => { if (!confirm('Duyệt đề nghị này? Thông tin / máy của người dùng được cập nhật ngay.')) return;
       await chay(e.target, () => api('nd_duyet', { id: b.dataset.duyet, dong_y: true })); toast('Đã duyệt'); dieuHuong(); }; });
