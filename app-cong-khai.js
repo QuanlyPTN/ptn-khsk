@@ -17,6 +17,7 @@
     QR6: ['Cất đồ, mẫu thí nghiệm', '<b>GV, SV:</b> đăng ký sử dụng tủ để cất đồ, mẫu thí nghiệm.'],
     QR7: ['Khai đề tài → in đơn → GVHD ký → nộp PTN', '<b>SV:</b> khai hồ sơ đề tài Đồ án – KLTN – NCKH (nhóm, GVHD, phòng, thiết bị, dụng cụ) → in đơn → GVHD ký → nộp đơn về PTN.'],
     QR8: ['GV: thêm dụng cụ cho lớp TH<br>SV: thêm cho đề tài', '<b>GV:</b> đăng ký mượn thêm dụng cụ cho lớp thực hành.<br><b>SV:</b> mượn thêm phòng, thiết bị, dụng cụ cho Đồ án – KLTN – NCKH (nhập mã hồ sơ QR7).'] };
+  const HS_SUA = ['Chờ nộp bản ký', 'Đã nhận đơn ký']; // hồ sơ QR7 người tạo còn sửa được (PTN duyệt rồi thì khóa)
   const congDung = (q) => QR_CONG[q] ? '<div class="cd">' + QR_CONG[q][1] + '</div>' : '';
   const QR_AI = { QR1: 'Giảng viên, Sinh viên', QR5: 'Giảng viên, Sinh viên', QR6: 'Giảng viên, Sinh viên', QR8: 'Giảng viên, Sinh viên', QR7: 'Sinh viên', QR2: 'Giảng viên', QR3: 'Giảng viên', QR4: 'Giảng viên' };
   const QR_GV = ['QR2', 'QR3', 'QR4'];
@@ -170,7 +171,7 @@
     const hs = r.ho_so.filter(x => ['Đã duyệt – đang thực hiện', 'Gia hạn', 'Chờ trả đồ'].indexOf(x.trang_thai) >= 0 && x.den_ngay && x.den_ngay < hn);
     return dang.filter(d => d.qua_han).map(d => '<div class="warn han-qua">⚠ <b>Quá hạn trả</b>: ' + esc(ten(d)) + ' – hạn ' + esc(ngayVN(d.den_ngay)) + ' (quá ' + qua(d.den_ngay) + ' ngày)' +
         (d.nd.so_lan_doi ? '. PTN đã nhắc ' + d.nd.so_lan_doi + ' lần' : '') + '. Vui lòng trả ngay cho PTN hoặc liên hệ PTN để gia hạn.</div>').join('') +
-      hs.map(x => '<div class="warn han-qua">⚠ <b>Hồ sơ đề tài quá hạn</b>: ' + esc(x.id + ' – ' + x.ten) + ' – hết hạn ' + esc(ngayVN(x.den_ngay)) + '. Gia hạn ở mục "Sửa hồ sơ" hoặc trả đồ cho PTN.</div>').join('') +
+      hs.map(x => '<div class="warn han-qua">⚠ <b>Hồ sơ đề tài quá hạn</b>: ' + esc(x.id + ' – ' + x.ten) + ' – hết hạn ' + esc(ngayVN(x.den_ngay)) + '. Liên hệ PTN để gia hạn, hoặc trả đồ cho PTN.</div>').join('') +
       dang.filter(d => !d.qua_han && d.den_ngay.slice(0, 10) <= mai).map(d => '<div class="warn han-sap" style="background:#FFF8E1;border-color:#F2D58A;color:#6B4A00">⏰ <b>Sắp đến hạn trả</b>: ' + esc(ten(d)) + ' – hạn ' +
         (d.den_ngay.slice(0, 10) === hn ? 'hôm nay' : 'ngày mai') + ' ' + esc(ngayVN(d.den_ngay)) + '.</div>').join('');
   }
@@ -553,7 +554,7 @@
       esc(x.ten_loai + ' · GVHD ' + x.gvhd + ' · ' + x.nhom.length + ' thành viên' + (x.phong ? ' · ' + x.phong : '') + (x.den_ngay ? ' · đến ' + ngayVN(x.den_ngay) : '')) + '</div>' +
       (x.le_phi ? '<div class="note">Lệ phí: ' + esc(x.le_phi) + (x.thu_phi ? ' – <b>đã thu ' + Number(x.thu_phi.so_tien).toLocaleString('vi-VN') + ' đ</b>' : ' – chưa thu') + '</div>' : '') +
       (x.tep.length ? '<div class="note">Minh chứng: ' + x.tep.map(t => esc(t.ten)).join(', ') + '</div>' : '') + khoiDon(x).replace('<div class="card">', '<div>') +
-      (['Đã đóng', 'Từ chối'].indexOf(x.trang_thai) < 0 ? '<div class="dong-don"><a class="lnk" href="#/QR7/' + esc(x.id) + '">Sửa hồ sơ / gia hạn / thêm thành viên</a>' + (x.pl === 2 ? '<label class="lnk">+ Minh chứng<input type="file" data-mc="' + esc(x.id) + '" accept=".pdf,image/*" hidden></label>' : '') + '</div>' : '') + '</div>').join('');
+      (['Đã đóng', 'Từ chối'].indexOf(x.trang_thai) < 0 ? '<div class="dong-don">' + (HS_SUA.indexOf(x.trang_thai) >= 0 ? '<a class="lnk" href="#/QR7/' + esc(x.id) + '">Sửa hồ sơ / thêm thành viên</a>' : '<span class="note">🔒 PTN đã duyệt – không sửa được; cần đổi phòng, thiết bị, thành viên hoặc gia hạn: liên hệ PTN</span>') + (x.pl === 2 ? '<label class="lnk">+ Minh chứng<input type="file" data-mc="' + esc(x.id) + '" accept=".pdf,image/*" hidden></label>' : '') + '</div>' : '') + '</div>').join('');
     const dsQR = r.don.filter(d => !/^GV-/.test(d.qr)), dsGV = r.don.filter(d => /^GV-/.test(d.qr));
     const the = (d) => '<div class="card"><div class="dong-don"><span><span class="q">' + d.qr + '</span> <b>' + esc(d.id) + '</b></span>' + tagTT(d.trang_thai, d.qua_han) + '</div>' +
       '<div>' + esc(d.ten_qr) + '</div><div class="note">' + esc(chiTiet(d)) + '</div><div class="note">Gửi ' + ngayVN(d.tg) + (d.nguoi_xu_ly ? ' · xử lý: ' + esc(d.nguoi_xu_ly) : '') + '</div>' +
@@ -665,7 +666,7 @@
     if (!hoSo() || !hoSo().ma_so) return trangHoSo(true);
     try {
       if (/^QR[1-8]$/.test(p[0])) {
-        if (p[0] === 'QR7' && p[1]) { const r = await api('ck_cua_toi', { khoa: may().khoa }), x = r.ho_so.find(h => h.id === p[1]); return x ? trangQR7(x) : trangDonCuaToi(); }
+        if (p[0] === 'QR7' && p[1]) { const r = await api('ck_cua_toi', { khoa: may().khoa }), x = r.ho_so.find(h => h.id === p[1]); return x && HS_SUA.indexOf(x.trang_thai) >= 0 ? trangQR7(x) : trangDonCuaToi(); }
         return await trangQR(p[0]);
       }
       if (/^GV-(BH|SC|BS|TS)$/.test(p[0])) return await trangGV(p[0]); // GV-BG: đã bỏ (25/10/2026)

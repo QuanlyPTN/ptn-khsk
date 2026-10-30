@@ -79,7 +79,7 @@
       k.push(P('Tôi làm đơn này kính đề nghị BLĐ Khoa và bộ phận quản lý PTN cho phép mượn các dụng cụ sau để thực hiện ' + (kltn ? viec : 'đề tài nghiên cứu khoa học') + ':', { al: 'both' }), ...deTai,
         bang([700, 2700, 2771, 1000, 1000, 900], ['STT', 'Tên dụng cụ', 'Quy cách (đặc điểm, thông số chính, nhà sản xuất)', 'SL mượn', 'SL trả', 'Ghi chú'],
           (hs.dung_cu || []).map((d, i) => [i + 1, d.ten, d.quy_cach || '', (d.sl || '') + (d.dvt ? ' ' + d.dvt : ''), '', d.ghi_chu || '']), 4),
-        P([R('Lưu ý: ', { i: 1 }), 'Khi cần mượn thêm dụng cụ, quét mã QR8 → chọn "Đồ án – KLTN – NCKH" → nhập mã hồ sơ ', R(hs.id || '……………', { b: 1 }), '.'], { al: 'both' }), TRONG,
+        TRONG,
         P(loiMo + 'đồng ý thực hiện đầy đủ các cam kết sau:', { al: 'both' }),
         ...dsSo(['Trả đúng và đầy đủ các dụng cụ đã mượn của phòng thí nghiệm.', 'Tổng vệ sinh phòng thực hành, vệ sinh bên trong và bên ngoài máy, thiết bị đã sử dụng.',
           kltn ? 'Bồi thường những hư hỏng trong quá trình thực hiện ' + viec + '.' : 'Bồi thường những hư hỏng trong quá trình sử dụng.']), camOn);

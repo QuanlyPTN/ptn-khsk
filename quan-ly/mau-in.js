@@ -153,7 +153,7 @@
         { cao: 16, o: [{ v: 'STT', rs: 2, b: 1, can: 'c', vien: 1 }, { v: 'TÊN THIẾT BỊ', rs: 2, b: 1, can: 'c', vien: 1 }, { v: 'NSX', rs: 2, b: 1, can: 'c', vien: 1 }, { v: '', rs: 2, vien: 1 }, { v: 'SỐ LƯỢNG', cs: 3, b: 1, can: 'c', vien: 1 }, { v: 'GHI CHÚ', rs: 2, b: 1, can: 'c', vien: 1 }] },
         { cao: 16, o: ['MƯỢN', 'NHẬN', 'TRẢ'].map(v => ({ v, b: 1, can: 'c', vien: 1 })) });
       const tb = ((hs && hs.ten_tb) || []);
-      for (let i = 0; i < Math.max(5, tb.length); i++) hang.push({ cao: Math.max(18, caoChu(tb[i], 29.3, 12, 18)), o: [{ v: i + 1, can: 'c', vien: 1, co: 12 }, { v: tb[i] || '', vien: 1, co: 12 }].concat([0, 1, 2, 3, 4, 5].map(() => ({ v: '', vien: 1 }))) });
+      for (let i = 0; i < (tb.length || 5); i++) hang.push({ cao: Math.max(18, caoChu(tb[i], 29.3, 12, 18)), o: [{ v: i + 1, can: 'c', vien: 1, co: 12 }, { v: tb[i] || '', vien: 1, co: 12 }].concat([0, 1, 2, 3, 4, 5].map(() => ({ v: '', vien: 1 }))) });
     } else hang.push({ cao: 10, o: [{ v: '', cs: n }] });
     hang.push({ cao: 17, o: [{ v: '', cs: 4 }, { v: 'Ngày …….. Tháng …… năm 20……', cs: 4, can: 'c', i: 1, co: 12 }] },
       { cao: 25.25, o: [{ v: 'BÊN NHẬN', cs: 2, can: 'c', b: 1 }, { v: 'GIẢNG VIÊN HƯỚNG DẪN', cs: 3, can: 'c', b: 1 }, { v: 'BÊN GIAO', cs: 3, can: 'c', b: 1 }] },
@@ -231,6 +231,53 @@
     const dung = {}, trang = ds.map(x => { const t = duTruMon(Object.assign({ ky }, x)).trang[0]; let ten = t.ten.slice(0, 28), k = ten, i = 1; while (dung[k]) k = ten.slice(0, 25) + ' ' + (++i); dung[k] = 1; t.ten = k; return t; });
     return { ten: ds.length === 1 ? 'Phieu du tru ' + ds[0].mon.ten + ' ' + hk : 'Phieu du tru cac mon ' + hk, trang };
   }
+  // ---------------- Giấy xác nhận hoàn thành nghĩa vụ trả phòng, thiết bị và dụng cụ (hồ sơ QR7 đã đóng – SV nộp kèm báo cáo) ----------------
+  // hs = hs_ct (kèm bb_ct nếu có biên bản dụng cụ); bảng dụng cụ / thiết bị đúng số dòng đã khai, không dư dòng
+  function giayXacNhan(hs, qr) {
+    const n = 8, cot = [5.3, 29.3, 8.7, 8.3, 12.5, 8.7, 9, 16], b = (hs.bb_ct || {}).bb || {}, dong = (hs.bb_ct || {}).dong || [], h = hk2(b.hk);
+    const dongHS = (hs.xu_ly || []).filter(x => x.hd === 'Đóng hồ sơ').pop(), ngayDong = dongHS ? String(dongHS.tg).slice(0, 10) : '';
+    const no = (d) => r3((+d.ban_giao || 0) + (+d.bo_sung || 0) - (+d.tra || 0));
+    const trai = (v, k) => ({ cao: Math.max(15, caoChu(v, 63.8, 12, 15), caoChu(k, 33.7, 12, 15)), o: [{ v, cs: 5, b: 1, co: 12 }, { v: k, cs: 3, b: 1, co: 12, vien: 'tb' }] });
+    const tn = (hs.nhom || [])[0] || {}, tv = (hs.nhom || []).slice(1);
+    const hang = [{ cao: 18, o: [{ v: 'ĐẠI HỌC CÔNG NGHIỆP TP. HỒ CHÍ MINH', cs: 4, co: 11 }, { v: 'Mã hồ sơ: ' + hs.id, cs: 3, co: 12, vien: 'tl' }, { v: '', rs: 3, vien: 'trb' }] },
+      { cao: 18, o: [{ v: 'KHOA KHOA HỌC SỨC KHỎE', cs: 4, b: 1, co: 11 }, { v: 'Ngày đóng hồ sơ: ' + tg(ngayDong), cs: 3, co: 12, vien: 'l' }] },
+      { cao: 18, o: [{ v: 'Số: XN-' + hs.id, cs: 4, i: 1, co: 10 }, { v: 'Tình trạng: ' + (hs.trang_thai === 'Đã đóng' ? 'không còn nợ' : hs.trang_thai), cs: 3, co: 12, vien: 'lb' }] },
+      { cao: 10, o: [{ v: '', cs: n }] },
+      { cao: 40, o: [{ v: 'GIẤY XÁC NHẬN HOÀN THÀNH NGHĨA VỤ\nTRẢ PHÒNG, THIẾT BỊ VÀ DỤNG CỤ', cs: n, can: 'c', b: 1, co: 16 }] }];
+    if (h.nam) hang.push({ cao: 20, o: [{ v: 'HỌC KỲ ' + (h.ky || '......').toUpperCase() + ' NĂM HỌC ' + h.nam, cs: n, can: 'c', b: 1, co: 14 }] });
+    hang.push({ cao: 8, o: [{ v: '', cs: n }] }, trai('ĐỀ TÀI: ' + hs.ten, 'Loại: ' + (hs.ten_loai || '')), trai('TRƯỞNG NHÓM: ' + [tn.ho_ten, tn.ma_so, tn.sdt].filter(Boolean).join(' – '), 'Phòng: ' + (hs.phong || '—')),
+      trai('GVHD: ' + (hs.gvhd || ''), 'Thời gian: ' + (hs.tu_ngay ? tg(hs.tu_ngay) + ' → ' + tg(hs.den_ngay) : '—')));
+    if (tv.length) { const v = 'THÀNH VIÊN: ' + tv.map(m => m.ho_ten + ' – ' + m.ma_so).join('; '); hang.push({ cao: caoChu(v, 98, 12, 15), o: [{ v, cs: n, co: 12 }] }); }
+    const xn = 'Phòng thí nghiệm Khoa Khoa học Sức khỏe xác nhận nhóm thực hiện đề tài trên đã hoàn trả đầy đủ phòng thí nghiệm, thiết bị và dụng cụ đã đăng ký mượn, không còn nợ phòng thí nghiệm. Giấy này dùng để nộp kèm báo cáo đồ án / khóa luận / luận văn / đề tài NCKH.';
+    hang.push({ cao: 8, o: [{ v: '', cs: n }] }, { cao: caoChu(xn, 98, 12, 15), o: [{ v: xn, cs: n, co: 12, doc: 't' }] }, { cao: 8, o: [{ v: '', cs: n }] });
+    const o = (v, x) => Object.assign({ v, vien: 1, co: 12 }, x || {}), c = (v, x) => o(v, Object.assign({ can: 'c' }, x || {}));
+    // 1. Dụng cụ
+    hang.push({ cao: 17, o: [{ v: '1. Dụng cụ', cs: n, b: 1, co: 13 }] });
+    if (dong.length) {
+      hang.push({ cao: 16, o: ['STT', 'TÊN DỤNG CỤ', 'NSX', 'ĐVT'].map(v => c(v, { rs: 2, b: 1, co: 11 })).concat([c('SỐ LƯỢNG', { cs: 3, b: 1, co: 11 }), c('PTN XÁC NHẬN', { rs: 2, b: 1, co: 11 })]) },
+        { cao: 16, o: ['MƯỢN', 'TRẢ', 'NỢ'].map(v => c(v, { b: 1, co: 11 })) });
+      dong.forEach((d, i) => { const muon = r3((+d.ban_giao || 0) + (+d.bo_sung || 0)), k = no(d);
+        hang.push({ cao: Math.max(caoChu(d.ten, 29.3, 12, 18), caoChu(d.nsx, 8.7, 11, 18)), o: [c(i + 1), o(d.ten), c(d.nsx || '', { co: 11 }), c(d.dvt || ''), c(muon || ''), c(+d.tra ? r3(d.tra) : ''), c(k > 0 ? k : ''),
+          c(muon ? (k > 0 ? 'Còn nợ ' + k : 'Đã trả đủ') : 'Không mượn', { co: 11 })] }); });
+    } else hang.push({ cao: 16, o: [o('Không mượn dụng cụ.', { cs: n, i: 1 })] });
+    // 2. Thiết bị
+    const tb = hs.ten_tb || [];
+    hang.push({ cao: 8, o: [{ v: '', cs: n }] }, { cao: 17, o: [{ v: '2. Thiết bị', cs: n, b: 1, co: 13 }] });
+    if (tb.length) {
+      hang.push({ cao: 16, o: [c('STT', { b: 1, co: 11 }), c('TÊN THIẾT BỊ', { cs: 3, b: 1, co: 11 }), c('GHI CHÚ', { cs: 3, b: 1, co: 11 }), c('PTN XÁC NHẬN', { b: 1, co: 11 })] });
+      tb.forEach((t, i) => hang.push({ cao: Math.max(18, caoChu(t, 46.3, 12, 18)), o: [c(i + 1), o(t, { cs: 3 }), o('', { cs: 3 }), c('Đã trả', { co: 11 })] }));
+    } else hang.push({ cao: 16, o: [o('Không đăng ký mượn thiết bị.', { cs: n, i: 1 })] });
+    // 3. Phòng
+    hang.push({ cao: 8, o: [{ v: '', cs: n }] }, { cao: 17, o: [{ v: '3. Phòng thí nghiệm: ' + (hs.phong ? hs.phong + ' – đã bàn giao lại, vệ sinh sạch sẽ.' : 'không đăng ký mượn phòng.'), cs: n, b: 1, co: 13 }] });
+    hang.push({ cao: 12, o: [{ v: '', cs: n }] }, { cao: 17, o: [{ v: '', cs: 4 }, { v: 'TP. Hồ Chí Minh, ' + ngayChu(ngayDong), cs: 4, can: 'c', i: 1, co: 12 }] },
+      { cao: 20, o: [{ v: 'ĐẠI DIỆN NHÓM', cs: 4, can: 'c', b: 1 }, { v: 'PHÒNG THÍ NGHIỆM XÁC NHẬN', cs: 4, can: 'c', b: 1 }] },
+      { cao: 16, o: [{ v: '(Trưởng nhóm – ký, ghi rõ họ tên)', cs: 4, can: 'c', i: 1, co: 10 }, { v: '(Cán bộ PTN – ký, ghi rõ họ tên)', cs: 4, can: 'c', i: 1, co: 10 }] });
+    for (let i = 0; i < 4; i++) hang.push({ cao: 15, o: [{ v: '', cs: n }] });
+    hang.push({ cao: 16, o: [{ v: tn.ho_ten || '', cs: 4, can: 'c', b: 1 }, { v: '', cs: 4 }] });
+    const q = 64, caoKhung = 54 * 4 / 3;
+    return { ten: ('XN ' + hs.id).slice(0, 31), huong: 'doc', cot, hang, le: [0.33, 0.17, 0.3, 0.17],
+      anh: qr ? [{ dataUrl: qr.dataUrl || qr, cot: 7 + (pxCot(cot[7]) - q - 6) / pxCot(cot[7]), hang: (caoKhung - q) / 2 / 24, rong: q, cao: q, vi_tri: 'top:' + (caoKhung - q) / 2 * 0.75 + 'pt;right:6px' }] : [] };
+  }
   function bienBan(r, qr, hs) { return { ten: 'BBBG ' + (r.bb.loai === 'DC' ? 'dung cu ' : 'hoa chat ') + r.bb.id, trang: [r.bb.loai === 'DC' ? bienBanDC(r, qr, hs) : bienBanHC(r, qr)] }; }
-  window.PTN_MAU = { duTru, duTruThang, duTruMon, duTruMonNhieu, nhomDuTru, NHOM_DT, bienBan, bienBanHC, bienBanDC };
+  window.PTN_MAU = { duTru, duTruThang, duTruMon, duTruMonNhieu, nhomDuTru, NHOM_DT, bienBan, bienBanHC, bienBanDC, giayXacNhan };
 })();

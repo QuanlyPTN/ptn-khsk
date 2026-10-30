@@ -236,7 +236,9 @@
     const dsDon = window.PTN_PHU_LUC.danhSach(x);
     let h = '<div class="btns" style="margin-bottom:12px"><button class="btn sm" data-in="' + dsDon.map(d => d.ma).join(',') + '">🖨 Xem trước – in / tải Word ' + (dsDon.length > 1 ? 'tất cả ' + dsDon.length + ' đơn' : 'đơn') + '</button>' +
       (dsDon.length > 1 ? dsDon.map(d => '<button class="btn o sm" data-in="' + d.ma + '" title="' + esc(d.ten) + '">' + esc(d.ten.split(' – ')[0]) + '</button>').join('') : '') +
-      (x.bb ? '<button class="btn o sm" id="b-in-bb-hs">🖨 Biên bản dụng cụ</button>' : '') +
+      (tt === 'Đã đóng' ? '<button class="btn o sm" id="b-in-xn">🖨 Giấy xác nhận hoàn thành</button>' : x.bb ? '<button class="btn o sm" id="b-in-bb-hs">🖨 Biên bản dụng cụ</button>' : '') +
+      (tt !== 'Đã đóng' && tt !== 'Từ chối' && coQuyen('de-tai', 'xu_ly') ? '<button class="btn o sm" id="b-sua-hs" title="Sửa phòng, thời gian, thiết bị, thành viên nhóm – lưu lịch sử">✎ Sửa phòng, thiết bị, nhóm</button>' : '') +
+      (tt === 'Đã đóng' ? nut('mo_lai', '↺ Mở lại hồ sơ') : '') +
       (tt === 'Chờ nộp bản ký' ? nut('nhan_don', 'Đã nhận đơn ký', '') : '') + (tt === 'Chờ nộp bản ký' || tt === 'Đã nhận đơn ký' ? nut('duyet', 'Duyệt', '') + nut('tu_choi', 'Từ chối', 'red') : '') +
       (dang ? nut('gia_han', 'Gia hạn') + (tt !== 'Chờ trả đồ' ? nut('cho_tra', 'Chuyển chờ trả đồ') : '') : '') + (dang || tt === 'Đã nhận đơn ký' ? nut('dong', 'Đóng hồ sơ', '') : '') +
       (x.pl === 3 ? nut('thu_phi', 'Ghi đã thu phí') : '') + nut('ghi_chu', 'Ghi chú') + '<label class="btn o sm">Đính kèm (bản ký, minh chứng)<input type="file" id="tep-hs" hidden></label>' +
@@ -258,6 +260,8 @@
     nd.querySelectorAll('[data-tai]').forEach(b => { b.onclick = (e) => chay(e.target, () => taiVe(b.dataset.tai)); });
     nd.querySelectorAll('[data-in]').forEach(b => { b.onclick = (e) => chay(e.target, async () => window.PTN_PHU_LUC.xemTruoc(b.dataset.in.split(','), x, ((await anhQR(lienKet('de-tai/' + x.id))) || {}).dataUrl)); });
     if ($('b-in-bb-hs')) $('b-in-bb-hs').onclick = (e) => chay(e.target, () => moInBB([x.bb]));
+    if ($('b-in-xn')) $('b-in-xn').onclick = (e) => chay(e.target, async () => window.PTN_IN.xemTruoc({ ten: 'Giay xac nhan ' + x.id, trang: [window.PTN_MAU.giayXacNhan(x, await anhQR(lienKet('de-tai/' + x.id)))] }));
+    if ($('b-sua-hs')) $('b-sua-hs').onclick = (e) => chay(e.target, () => hopSuaHoSo(x));
     if ($('b-xoa-hs')) $('b-xoa-hs').onclick = async (e) => {
       if (!confirm('Xóa hồ sơ ' + x.id + ' – ' + x.ten + '?\nXóa cả biên bản dụng cụ của hồ sơ (nếu chưa giao đồ); thu hồi được ở Lịch sử tải file.')) return;
       await chay(e.target, () => api('hs_xoa', { id: x.id })); toast('Đã xóa hồ sơ ' + x.id); location.hash = '#/de-tai'; };
@@ -272,9 +276,48 @@
       if (hd === 'tu_choi' || hd === 'ghi_chu') { v.ghi_chu = prompt(hd === 'tu_choi' ? 'Lý do từ chối:' : 'Ghi chú:'); if (!v.ghi_chu) return; }
       if (hd === 'gia_han') { v.den_ngay = prompt('Gia hạn đến ngày (yyyy-mm-dd):', x.den_ngay); if (!v.den_ngay) return; }
       if (hd === 'thu_phi') { v.so_tien = prompt('Số tiền đã thu (đ):'); if (!v.so_tien) return; v.ngay = homNay(); }
+      if (hd === 'mo_lai') { v.ghi_chu = prompt('Lý do mở lại hồ sơ ' + x.id + ' (ghi vào lịch sử):'); if (!v.ghi_chu) return; }
       if (hd === 'dong' && !confirm('Đóng hồ sơ ' + x.id + '? (Hệ thống kiểm tra đã trả đủ dụng cụ, thiết bị, tủ, chìa khóa.)')) return;
       await chay(e.target, () => api('hs_xu_ly', v)); toast('Đã ghi: ' + b.textContent); dieuHuong();
     }; });
+  }
+
+  // PTN sửa hồ sơ: phòng, thời gian, thiết bị, thành viên nhóm (khớp đơn đã ký; GV quản lý phòng không cho mượn → bỏ bớt)
+  async function hopSuaHoSo(x) {
+    const tbAll = (await api('tb_ds')).filter(t => t.tinh_trang !== 'Đã thanh lý' && t.tinh_trang !== 'Ngưng sử dụng');
+    let tb = String(x.thiet_bi || '').split(',').filter(Boolean), nhom = x.nhom.map(m => Object.assign({}, m));
+    const phongCo = String(x.phong || '').split(/\s*,\s*/).filter(Boolean);
+    moHop('<h2>Sửa hồ sơ ' + esc(x.id) + '</h2><p class="note">Mọi thay đổi ghi vào lịch sử hồ sơ (người sửa, nội dung cũ → mới). Người tạo không sửa được sau khi PTN duyệt.</p><form id="f-sua-hs">' +
+      '<h3 style="margin:14px 0 6px">Phòng – thời gian</h3><div class="btns" style="flex-wrap:wrap">' + (S.dm.phong || []).map(p => '<label class="check" style="margin:0 10px 0 0"><input type="checkbox" name="ph" value="' + esc(p.ma) + '"' + (phongCo.indexOf(p.ma) >= 0 ? ' checked' : '') + '> ' + esc(p.ma) + '</label>').join('') + '</div>' +
+      '<div class="form-grid">' + o('tu_ngay', 'Từ ngày', { type: 'date', v: x.tu_ngay }) + o('den_ngay', 'Đến ngày', { type: 'date', v: x.den_ngay }) + '</div><label class="check"><input type="checkbox" name="ngoai_gio"' + (x.ngoai_gio === 'Có' ? ' checked' : '') + '> Có làm ngoài giờ</label>' +
+      '<h3 style="margin:14px 0 6px">Thiết bị</h3><div id="ds-tb"></div><div class="btns"><select id="them-tb" style="flex:1"></select><button type="button" class="btn o sm" id="b-them-tb">+ Thêm</button></div>' +
+      '<h3 style="margin:14px 0 6px">Thành viên nhóm</h3><div id="ds-tv"></div><button type="button" class="btn o sm" id="b-them-tv">+ Thêm thành viên</button>' +
+      '<label class="f" style="margin-top:10px"><span>Lý do sửa (ghi vào lịch sử)</span><input type="text" name="ly_do" placeholder="VD: GV quản lý phòng D11.02 không giải quyết cho mượn"></label>' +
+      '<div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu thay đổi</button></div></form>');
+    const f = $('f-sua-hs'), phongChon = () => [...f.querySelectorAll('[name=ph]:checked')].map(c => c.value);
+    const veTB = () => {
+      $('ds-tb').innerHTML = tb.length ? tb.map(id => { const t = tbAll.find(z => z.id === id) || { ten: id }; return '<div class="btns" style="justify-content:space-between"><span>• ' + esc(t.ten) + ' <span class="note">' + esc([t.ma_ts, t.phong].filter(Boolean).join(' · ')) + '</span></span><button type="button" class="btn red o sm" data-bo-tb="' + esc(id) + '">Bỏ</button></div>'; }).join('') : '<div class="note">Không mượn thiết bị.</div>';
+      $('ds-tb').querySelectorAll('[data-bo-tb]').forEach(b => { b.onclick = () => { tb = tb.filter(id => id !== b.dataset.boTb); veTB(); }; });
+      const ph = phongChon();
+      $('them-tb').innerHTML = '<option value="">— Thêm thiết bị (theo phòng đã chọn) —</option>' + tbAll.filter(t => tb.indexOf(t.id) < 0 && (!ph.length || ph.indexOf(t.phong) >= 0)).map(t => '<option value="' + esc(t.id) + '">' + esc(t.ten + (t.ma_ts ? ' – ' + t.ma_ts : '') + ' (' + (t.phong || '—') + ')') + '</option>').join('');
+    };
+    const docTV = () => { $('ds-tv').querySelectorAll('[data-tv]').forEach(r => { const i = +r.dataset.tv; ['ho_ten', 'ma_so', 'lop', 'sdt', 'email'].forEach(k => { nhom[i][k] = r.querySelector('[data-k=' + k + ']').value.trim(); }); nhom[i].truong_nhom = r.querySelector('[name=tn]').checked ? 1 : 0; }); };
+    const veTV = () => {
+      $('ds-tv').innerHTML = '<div class="tbl-wrap"><table><thead><tr><th>Trưởng nhóm</th><th>Họ tên</th><th>MSSV</th><th>Lớp</th><th>Điện thoại</th><th>Email</th><th></th></tr></thead><tbody>' +
+        nhom.map((m, i) => '<tr data-tv="' + i + '"><td style="text-align:center"><input type="radio" name="tn"' + (m.truong_nhom ? ' checked' : '') + '></td>' + ['ho_ten', 'ma_so', 'lop', 'sdt', 'email'].map(k => '<td><input type="text" data-k="' + k + '" value="' + esc(m[k] || '') + '" style="min-width:' + (k === 'ho_ten' || k === 'email' ? 150 : 90) + 'px"></td>').join('') +
+          '<td><button type="button" class="btn red o sm" data-bo-tv="' + i + '">Bỏ</button></td></tr>').join('') + '</tbody></table></div>';
+      $('ds-tv').querySelectorAll('[data-bo-tv]').forEach(b => { b.onclick = () => { docTV(); nhom.splice(+b.dataset.boTv, 1); veTV(); }; });
+    };
+    veTB(); veTV();
+    f.querySelectorAll('[name=ph]').forEach(c => { c.onchange = veTB; });
+    $('b-them-tb').onclick = () => { const v = $('them-tb').value; if (v) { tb.push(v); veTB(); } };
+    $('b-them-tv').onclick = () => { docTV(); nhom.push({ ho_ten: '', ma_so: '', lop: '', sdt: '', email: '' }); veTV(); };
+    f.onsubmit = async (e) => {
+      e.preventDefault(); docTV();
+      const hs = { phong: phongChon(), tu_ngay: f.tu_ngay.value, den_ngay: f.den_ngay.value, ngoai_gio: f.ngoai_gio.checked, thiet_bi: tb, nhom: nhom.filter(m => m.ho_ten || m.ma_so) };
+      if (hs.nhom.some(m => !m.ho_ten || !m.ma_so)) return toast('Thành viên phải có họ tên và MSSV', true);
+      await chay(f.querySelector('button.btn:not(.o)'), () => api('hs_sua', { id: x.id, hs, ly_do: f.ly_do.value.trim() })); toast('Đã lưu – ghi vào lịch sử hồ sơ'); dongHop(); dieuHuong();
+    };
   }
 
   // Dụng cụ của hồ sơ: sửa SL đăng ký / đã mượn / mượn thêm / đã trả ngay trên bảng (lưu vết người sửa, số cũ → mới)
