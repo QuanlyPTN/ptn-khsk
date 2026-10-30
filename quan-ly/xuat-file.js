@@ -105,11 +105,16 @@
           esc(soHien(o.v, o.dd)) + '</td>').join('') + '</tr>');
       const dau = t.lapLai ? hangHtml.slice(t.lapLai[0] - 1, t.lapLai[1]) : [], than = t.lapLai ? hangHtml.slice(0, t.lapLai[0] - 1).concat(hangHtml.slice(t.lapLai[1])) : hangHtml;
       // các hàng trước tiêu đề bảng in ở trang đầu; tiêu đề cột lặp lại ở mỗi trang
-      const truoc = t.lapLai ? hangHtml.slice(0, t.lapLai[0] - 1) : [], sau = t.lapLai ? hangHtml.slice(t.lapLai[1]) : than;
+      const truoc = t.lapLai ? hangHtml.slice(0, t.lapLai[0] - 1) : [];
+      // phần sau hàng kẻ ô cuối cùng (ngày lập, chữ ký): in thành một khối riêng, không tách trang, không lặp tiêu đề cột
+      let cuoiVien = -1; t.hang.forEach((h, r) => { if ((h.o || []).some(o => canh(o.vien))) cuoiVien = r; });
+      const tachKy = t.lapLai && cuoiVien >= t.lapLai[1] && cuoiVien < t.hang.length - 1;
+      const sau = t.lapLai ? hangHtml.slice(t.lapLai[1], tachKy ? cuoiVien + 1 : undefined) : than, khoiKy = tachKy ? hangHtml.slice(cuoiVien + 1) : [];
       const cg = '<colgroup>' + px.map(w => '<col style="width:' + w + 'px">').join('') + '</colgroup>';
       return '<section class="to ' + (ngang ? 'ngang' : 'doc') + '" style="page:p' + k + ';padding:' + le.join(' ') + '"><div class="noi" style="width:' + tuNhien + 'px;zoom:' + tyLe.toFixed(4) + '">' +
         (truoc.length ? '<table>' + cg + '<tbody>' + truoc.join('') + '</tbody></table>' : '') +
         '<table>' + cg + (dau.length ? '<thead>' + dau.join('') + '</thead>' : '') + '<tbody>' + sau.join('') + '</tbody></table>' +
+        (khoiKy.length ? '<table class="khoi-ky">' + cg + '<tbody>' + khoiKy.join('') + '</tbody></table>' : '') +
         (t.anh || []).map(a => '<img src="' + a.dataUrl + '" style="position:absolute;width:' + a.rong * 0.75 + 'pt;height:' + a.cao * 0.75 + 'pt;' + (a.vi_tri || 'top:0;right:0') + '">').join('') + '</div></section>';
     });
     return '<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><title>' + esc(tl.ten) + '</title><style>' +
@@ -119,7 +124,7 @@
       '@bottom-center{content:"Trang " counter(page) " / " counter(pages);font:9pt "Times New Roman",serif}}' +
       'body{margin:0;background:#E9ECF2;font-family:"Times New Roman",serif;color:#000}.to{position:relative;background:#fff;margin:14px auto;box-shadow:0 2px 10px rgba(0,0,0,.18);box-sizing:border-box;min-height:297mm}.to.ngang{min-height:210mm}' +
       '.noi{position:relative;margin:0 auto}.to.doc{width:210mm}.to.ngang{width:297mm}table{width:100%;border-collapse:collapse;table-layout:fixed}td{padding:1px 2px;overflow-wrap:anywhere;line-height:1.2}' +
-      '@media print{body{background:#fff}.to,.to.doc,.to.ngang{margin:0;padding:0!important;box-shadow:none;width:auto!important;min-height:0;break-after:page}.to:last-child{break-after:auto}thead{display:table-header-group}tr{break-inside:avoid}}' +
+      '@media print{body{background:#fff}.to,.to.doc,.to.ngang{margin:0;padding:0!important;box-shadow:none;width:auto!important;min-height:0;break-after:page}.to:last-child{break-after:auto}thead{display:table-header-group}tr{break-inside:avoid}.khoi-ky{break-inside:avoid;page-break-inside:avoid}}' +
       '</style></head><body>' + trang.join('') + '</body></html>';
   }
   // Hộp xem trước: In / Tải Excel / Đóng

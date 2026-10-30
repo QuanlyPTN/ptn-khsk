@@ -651,10 +651,20 @@
       '<li>Biên bản bàn giao và dự trù theo đợt cũng tự tính từ định mức này.</li></ul></div>' +
       '<div class="tools"><button class="btn sm" id="b-kh">⇪ Tải file định mức hóa chất (một hay nhiều môn)</button><button class="btn sm" id="b-dc">⇪ Tải file dụng cụ (một hoặc nhiều môn)</button><button class="btn o sm" id="b-mon">+ Môn</button>' + (laAdmin() ? '<button class="btn o sm" id="b-gop" title="Gộp môn trùng tên (do tải file tên viết khác) vào môn giữ lại">⇄ Gộp môn trùng</button><button class="btn red o sm" id="b-don" title="Xóa định mức, dự trù, biên bản lớp thực hành của các môn được chọn">🧹 Dọn dữ liệu</button>' : '') + (coQuyen('hoa-chat', 'xu_ly') ? '<button class="btn o sm" id="b-chuan-nhom" title="Xếp lại định mức hóa chất mọi môn về 3 nhóm: Hóa chất · Dược liệu · Vật tư tiêu hao">⇄ Chuẩn hóa nhóm (Hóa chất / Dược liệu / Vật tư tiêu hao)</button>' : '') + '</div>' +
       '<p class="note">Định mức hóa chất tính cho <b>1 sinh viên</b>; định mức dụng cụ tính cho <b>1 bộ / 1 lớp thực hành</b>. Đây là dữ liệu cốt lõi, dùng lại cho mọi học kỳ. Môn nào có file thì tải lên môn đó – biên bản bàn giao và dự trù của học kỳ đang chọn tự cập nhật.</p>' +
-      (ds.length ? '<div class="tbl-wrap"><table><thead><tr><th>Mã</th><th>Môn thực hành</th><th>Mã học phần</th><th class="num">Dòng hóa chất</th><th class="num">Dòng dụng cụ</th></tr></thead><tbody>' +
-        ds.map(m => '<tr class="click" data-ma="' + esc(m.ma) + '"><td class="mono">' + esc(m.ma) + '</td><td><b>' + esc(m.ten) + '</b></td><td class="mono">' + esc(m.ma_hp) + '</td><td class="num">' + (m.so_hc || '<span class="tag t-warn">0</span>') + '</td><td class="num">' + (m.so_dc || '—') + '</td></tr>').join('') + '</tbody></table></div>'
+      (ds.length && laAdmin() ? '<div class="btns" style="margin-bottom:6px"><button class="btn red o sm" id="b-xoa-mon" disabled>🗑 Xóa môn đã chọn</button><span class="note">Xóa hẳn môn kèm định mức, dự trù, biên bản lớp thực hành; thời khóa biểu giữ nguyên (bỏ gán môn). Thu hồi được ở Lịch sử tải file.</span></div>' : '') +
+      (ds.length ? '<div class="tbl-wrap"><table><thead><tr>' + (laAdmin() ? '<th style="width:28px"><input type="checkbox" id="chon-het-mon" title="Chọn tất cả"></th>' : '') + '<th>Mã</th><th>Môn thực hành</th><th>Mã học phần</th><th class="num">Dòng hóa chất</th><th class="num">Dòng dụng cụ</th></tr></thead><tbody>' +
+        ds.map(m => '<tr class="click" data-ma="' + esc(m.ma) + '">' + (laAdmin() ? '<td><input type="checkbox" data-chon-mon="' + esc(m.ma) + '"></td>' : '') + '<td class="mono">' + esc(m.ma) + '</td><td><b>' + esc(m.ten) + '</b></td><td class="mono">' + esc(m.ma_hp) + '</td><td class="num">' + (m.so_hc || '<span class="tag t-warn">0</span>') + '</td><td class="num">' + (m.so_dc || '—') + '</td></tr>').join('') + '</tbody></table></div>'
         : '<div class="card empty">Chưa có môn. Bấm "Nhập định mức hóa chất" và chọn file kế hoạch vật tư (ví dụ "KSK. KH vat HKI 2026.xlsm").</div>');
-    nd.querySelectorAll('tr[data-ma]').forEach(tr => { tr.onclick = () => { location.hash = '#/hoa-chat/mon/' + tr.dataset.ma; }; });
+    nd.querySelectorAll('tr[data-ma]').forEach(tr => { tr.onclick = (e) => { if (e.target.closest('input')) return; location.hash = '#/hoa-chat/mon/' + tr.dataset.ma; }; });
+    if ($('b-xoa-mon')) {
+      const capNhat = () => { const n = nd.querySelectorAll('[data-chon-mon]:checked').length; $('b-xoa-mon').disabled = !n; $('b-xoa-mon').textContent = '🗑 Xóa môn đã chọn' + (n ? ' (' + n + ')' : ''); };
+      nd.querySelectorAll('[data-chon-mon]').forEach(c => { c.onchange = capNhat; });
+      $('chon-het-mon').onchange = (e) => { nd.querySelectorAll('[data-chon-mon]').forEach(c => { c.checked = e.target.checked; }); capNhat(); };
+      $('b-xoa-mon').onclick = async (e) => {
+        const chon = [...nd.querySelectorAll('[data-chon-mon]:checked')].map(c => c.dataset.chonMon), ten = chon.map(m => ds.find(x => x.ma === m).ten);
+        if (!confirm('XÓA HẲN ' + chon.length + ' môn:\n• ' + ten.join('\n• ') + '\n\nXóa kèm định mức, dự trù mọi học kỳ, biên bản lớp thực hành (cả số liệu bàn giao), mã dự trù GV. Thời khóa biểu giữ nguyên (bỏ gán môn).\nThu hồi được ở Lịch sử tải file.')) return;
+        const r = await chay(e.target, () => api('mon_xoa', { ds: chon })); toast('Đã xóa ' + r.mon + ' môn · ' + r.dinh_muc + ' dòng định mức · ' + r.du_tru + ' dòng dự trù · ' + r.bien_ban + ' biên bản'); await capNhatDanhMuc(); dieuHuong(); };
+    }
     $('b-mon').onclick = () => hopMon(null);
     if ($('b-gop')) $('b-gop').onclick = () => {
       // gợi ý cặp có thể trùng: tên (bỏ dấu, "TH", số thứ tự) trùng hẳn hoặc tên này chứa tên kia
@@ -993,7 +1003,7 @@
     let h = '<div class="card"><h2>' + esc(p.ten) + '</h2><dl class="kv">' +
       [['Vị trí', p.vi_tri], ['Chức năng', p.chuc_nang], ['Cán bộ phụ trách', p.phu_trach], ['Diện tích', p.dien_tich ? p.dien_tich + ' m²' : ''], ['Ghi chú', p.ghi_chu]]
         .filter(x => x[1]).map(x => '<dt>' + x[0] + '</dt><dd>' + esc(x[1]) + '</dd>').join('') + '</dl></div>';
-    h += '<div class="card"><h2>Sơ đồ tủ (' + r.tu.length + ')</h2><div class="lockers">' + r.tu.map(t =>
+    h += '<div class="card"><div class="btns" style="justify-content:space-between"><h2 style="margin:0">Sơ đồ tủ (' + r.tu.length + ')</h2>' + (coQuyen('phong', 'xu_ly') ? '<button class="btn o sm" id="b-them-tu">+ Thêm tủ</button>' : '') + '</div><div class="lockers">' + r.tu.map(t =>
       '<div class="locker ' + (t.trang_thai === 'Đang dùng' ? 'dung' : t.trang_thai === 'Hỏng' ? 'hong' : '') + (t.trang_thai === 'Đang dùng' && t.han && t.han < hn ? ' qh' : '') + '" data-so="' + esc(t.so) + '" title="' + esc(t.trang_thai + (t.nguoi ? ' – ' + t.nguoi : '') + (t.han ? ' – hạn ' + ngayVN(t.han) : '')) + '">' +
       '<b>' + esc(t.so) + '</b><small>' + esc(t.trang_thai === 'Đang dùng' ? t.nguoi : t.trang_thai) + '</small></div>').join('') + '</div>' +
       '<div class="legend"><span><i></i>Trống</span><span><i style="background:var(--info-bg)"></i>Đang dùng</span><span><i style="background:var(--bad-bg)"></i>Hỏng</span><span><i style="outline:2px solid var(--warn)"></i>Quá hạn trả</span><span>Bấm vào tủ để giao / trả / báo hỏng</span></div></div>';
@@ -1002,6 +1012,9 @@
     nd.innerHTML = h;
     ganBangTB(nd);
     nd.querySelectorAll('.locker').forEach(el => { el.onclick = () => hopTu(r.tu.find(t => t.so === el.dataset.so)); });
+    if ($('b-them-tu')) $('b-them-tu').onclick = async (e) => {
+      const n = prompt('Thêm bao nhiêu tủ cho phòng ' + ma + '? (đang có ' + r.tu.length + ' tủ; tủ mới đánh số tiếp theo)', '1'); if (!n) return;
+      const x = await chay(e.target, () => api('tu_them', { phong: ma, so_luong: n })); toast('Đã thêm tủ ' + x.them.join(', ') + ' – phòng có ' + x.tong + ' tủ'); dieuHuong(); };
     if (window.PTN_QL.lichPhong) window.PTN_QL.lichPhong(ma, $('lich-phong'));
     if ($('b-sua-phong')) $('b-sua-phong').onclick = () => hopPhong(p);
     $('b-them-tb').onclick = () => hopThietBi(null, ma);
@@ -1013,7 +1026,7 @@
       o('tu_ngay', 'Từ ngày', { type: 'date', v: t.tu_ngay || homNay() }) + o('han', 'Hạn trả', { type: 'date', v: t.han }) + '</div></div>' +
       o('ghi_chu', 'Ghi chú', { v: t.ghi_chu }) +
       '<p class="note">Đơn QR6 khi cán bộ bấm "Giao chìa tủ" / "Trả tủ" sẽ tự cập nhật sơ đồ này.</p>' +
-      '<div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>', (root) => {
+      '<div class="modal-foot">' + (t.trang_thai !== 'Đang dùng' && coQuyen('phong', 'xu_ly') ? '<button type="button" class="btn red o" id="b-xoa-tu" style="margin-right:auto">🗑 Xóa tủ</button>' : '') + '<button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>', (root) => {
       const sel = root.querySelector('[name=trang_thai]'), box = $('tu-dung');
       const doi = () => box.classList.toggle('hide', sel.value !== 'Đang dùng');
       sel.onchange = doi; doi();
@@ -1024,6 +1037,9 @@
       await chay(e.submitter, () => api('tu_luu', { tu: v }));
       dongHop(); toast('Đã cập nhật tủ ' + t.so); dieuHuong();
     };
+    if ($('b-xoa-tu')) $('b-xoa-tu').onclick = async (e) => {
+      if (!confirm('Xóa tủ ' + t.so + ' của phòng ' + t.phong + '? (xóa nhầm: bấm "+ Thêm tủ" để thêm lại)')) return;
+      await chay(e.target, () => api('tu_xoa', { phong: t.phong, so: t.so })); dongHop(); toast('Đã xóa tủ ' + t.so); dieuHuong(); };
   }
 
   // ---------------- Tài sản ----------------
