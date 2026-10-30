@@ -230,7 +230,7 @@
     ['tong-quan', '◧', 'Hôm nay'], ['don', '✉', 'Đơn đăng ký QR1 – QR8'], ['de-tai', '✎', 'Hồ sơ đề tài KLTN – NCKH'], ['nguoi-dung', '☺', 'Người dùng trang dùng chung'], ['phong', '▦', 'Phòng thí nghiệm'], ['lich-phong-th', '▦', 'Lịch phòng thực hành'], ['tai-san', '⚙', 'Tài sản'],
     ['kiem-dinh', '✓', 'Kiểm định – bảo dưỡng'], ['hoa-chat', '⚗', 'Hóa chất – vật tư'], ['kho', '▣', 'Kho hóa chất D11.01'], ['kho-dl', '❀', 'Kho dược liệu D11'],
     ['bien-ban', '▤', 'Biên bản bàn giao'], ['bao-cao', '▥', 'Báo cáo – thống kê'], ['so', '☷', 'Sổ theo dõi – in ấn'], ['bieu-mau', '⎙', 'Biểu mẫu PTN'],
-    ['giang-vien', '☺', 'Giảng viên'], ['lich-su-tai', '↺', 'Lịch sử tải file'], ['don-qr', '✉', 'Đơn cũ (Google Form)'], ['cai-dat', '⚑', 'Cài đặt – mã QR tổng', 1], ['can-bo', '☺', 'Cán bộ', 1], ['nhat-ky', '☰', 'Nhật ký', 1], ['tai-khoan', '⚿', 'Tài khoản']
+    ['giang-vien', '☺', 'Giảng viên'], ['lich-su-tai', '↺', 'Lịch sử tải file'], ['cai-dat', '⚑', 'Cài đặt – mã QR tổng', 1], ['can-bo', '☺', 'Cán bộ', 1], ['nhat-ky', '☰', 'Nhật ký', 1], ['tai-khoan', '⚿', 'Tài khoản']
   ];
   const NHOM_MENU = { 'tong-quan': 'Vận hành', 'hoa-chat': 'Hóa chất – kho', 'bao-cao': 'Báo cáo – tài liệu', 'giang-vien': 'Hệ thống' };
   const TUYEN = {}; // trang do app-mo-rong.js đăng ký: { 'kho': (p) => … }
