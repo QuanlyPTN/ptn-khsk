@@ -115,6 +115,8 @@
   const D = window.PTN_DON;
   if (D && window.PTN_DON_QR && window.PTN_DON_QR.them) {
     const { R, GT, P, bang, ky, ngay } = D;
+    // bảng thiết bị / tài sản: in đúng số dòng người lập khai; phiếu trống (in để viết tay) mới đệm dòng trống
+    const bangDu = (g, dau, dong, toiThieu) => bang(g, dau, dong, dong.length ? 0 : toiThieu);
     const KHOANG = P(R('\u00a0')); // dòng trống có chiều cao cả trên bản xem trước (đoạn rỗng hiện cao 0)
     const dongNgay = (s) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ''); return 'TP. Hồ Chí Minh, ngày ' + (m ? m[3] + ' tháng ' + m[2] + ' năm ' + m[1] : '…… tháng …… năm 20……'); };
     const muc = (t) => P(R(t, { b: 1 }));
@@ -129,7 +131,7 @@
         P(['Họ và tên (Giảng viên): ', GT(d.ho_ten, 22), '   Bộ môn: ', GT(d.bo_mon, 14)]),
         P(['Phòng thực hành: ', GT(d.phong, 12), '   Ngày phát hiện sự cố: ', d.tu_ngay ? R(ngay(d.tu_ngay), { b: 1 }) : '……/……/20……']),
         muc('II. THIẾT BỊ BÁO HỎNG'),
-        bang([600, 2700, 1700, 700, 3371], ['STT', 'Tên thiết bị', 'Mã số/ Số serial', 'SL', 'Mô tả tình trạng hư hỏng/sự cố'], (n.tb || []).map((x, i) => [i + 1, x.ten, x.ma || '', soVN(x.sl), x.tinh_trang || '']), 3),
+        bangDu([600, 2700, 1700, 700, 3371], ['STT', 'Tên thiết bị', 'Mã số/ Số serial', 'SL', 'Mô tả tình trạng hư hỏng/sự cố'], (n.tb || []).map((x, i) => [i + 1, x.ten, x.ma || '', soVN(x.sl), x.tinh_trang || '']), 3),
         muc('III. MÔ TẢ CHI TIẾT DIỄN BIẾN SỰ CỐ (nếu có)'), vanBan(n.dien_bien),
         muc('IV. ĐỀ XUẤT HƯỚNG XỬ LÝ (nếu có)'), vanBan(n.de_xuat),
         muc('V. PHẦN TIẾP NHẬN VÀ XỬ LÝ CỦA THỢ'),
@@ -145,7 +147,7 @@
         P([R('Kính gửi: ', { i: 1 }), 'Ban lãnh đạo Khoa Khoa học Sức khỏe;'], { ind: { left: 1134 } }), P('Trưởng bộ môn, Phòng Thí nghiệm.', { ind: { left: 2268 } }), KHOANG,
         muc('1. Tóm tắt nội dung và đề nghị:'), P(cauMo(d), { al: 'both', ind: { firstLine: 567 } })],
         n.ly_do ? [P(['Nội dung: ', R(n.ly_do, { b: 1 })], { al: 'both', ind: { firstLine: 567 } })] : [], [
-        bang([700, 3600, 800, 2171, 1800], ['TT', 'Tên thiết bị', 'SL', cotTT, 'Ghi chú'], (n.tb || []).map((x, i) => [i + 1, x.ten, soVN(x.sl), x.tinh_trang || '', x.ghi_chu || '']), 4),
+        bangDu([700, 3600, 800, 2171, 1800], ['TT', 'Tên thiết bị', 'SL', cotTT, 'Ghi chú'], (n.tb || []).map((x, i) => [i + 1, x.ten, soVN(x.sl), x.tinh_trang || '', x.ghi_chu || '']), 4),
         P(trinh, { al: 'both', ind: { firstLine: 567 } }), P('Trân trọng cảm ơn./.', { al: 'both', ind: { firstLine: 567 } }),
         muc('2. Họ tên và chữ ký:'), ky([['GV ĐỀ NGHỊ', d.ho_ten], 'TRƯỞNG BỘ MÔN'], 3), KHOANG],
         n.y_kien ? [P([R('Ý kiến phụ trách PTN: ', { i: 1 }), R(n.y_kien, { b: 1 })], { al: 'both' })] : [], [
@@ -168,7 +170,7 @@
         muc('II. BÊN NHẬN (Giảng viên)'), P(['Họ và tên: ', GT(d.ho_ten, 22), '     Bộ môn: ', GT(d.bo_mon, 12)]),
         P(['Phòng sử dụng: ', GT(d.phong, 8), '     Thời gian sử dụng dự kiến: ', GT(tg, 18)]),
         muc('III. DANH MỤC THIẾT BỊ BÀN GIAO'),
-        bang([560, 2400, 1500, 700, 600, 1911, 1400], ['STT', 'Tên thiết bị', 'Mã số/ Số serial', 'ĐVT', 'SL', 'Tình trạng thiết bị lúc bàn giao', 'Ghi chú'],
+        bangDu([560, 2400, 1500, 700, 600, 1911, 1400], ['STT', 'Tên thiết bị', 'Mã số/ Số serial', 'ĐVT', 'SL', 'Tình trạng thiết bị lúc bàn giao', 'Ghi chú'],
           (n.tb || []).map((x, i) => [i + 1, x.ten, x.ma || '', x.dvt || '', soVN(x.sl), x.tinh_trang || '', x.ghi_chu || '']), 4),
         muc('IV. LƯU Ý')], LUU_Y.map(x => P('-  ' + x, { al: 'both' })), [
         ky([['BÊN NHẬN', d.ho_ten], ['BÊN GIAO', ht && ht.nguoi]], 3), KHOANG, ky(['TRƯỞNG BM', ['TRƯỞNG KHOA', (window.PTN_KY || {}).truong_khoa]], 3)]); };
@@ -181,7 +183,7 @@
         P(R(ra ? 'GIẤY BÁO MANG TÀI SẢN RA KHỎI CƠ QUAN' : 'GIẤY BÁO MANG TÀI SẢN VÀO CƠ QUAN', { b: 1, sz: 28 }), { al: 'center' }), KHOANG,
         P('Kính gửi:', { ind: { left: 1134 } })].concat((ra ? ['- Ban Giám hiệu;', '- Phòng Tổ chức – Hành chính;', '- Phòng QLKTX.'] : ['- Phòng Tổ chức – Hành chính;', '- Phòng QLKTX.']).map(x => P(x, { ind: { left: 1134 } })), [KHOANG,
         P(['Lý do: ', GT(n.ly_do, 38)], { al: 'both' }), KHOANG,
-        bang([600, 2700, 1300, 1000, 1735, 1736], ['TT', 'Danh mục', 'ID', 'Số lượng', 'Người giao (Họ tên và chữ ký)', 'Người nhận (Họ tên và chữ ký)'],
+        bangDu([600, 2700, 1300, 1000, 1735, 1736], ['TT', 'Danh mục', 'ID', 'Số lượng', 'Người giao (Họ tên và chữ ký)', 'Người nhận (Họ tên và chữ ký)'],
           (n.tb || []).map((x, i) => [i + 1, x.ten, x.ma || '', soVN(x.sl), ra ? nk : '', ra ? '' : nk]), 4), KHOANG],
         ra ? [ky(['Xác nhận của bảo vệ', 'Phòng Tổ chức – Hành chính', 'Ban Giám hiệu'], 4), ky([['Đại diện lãnh đạo bên giao', tk]], 3)]
           : [ky(['Xác nhận của bảo vệ', 'Phòng Tổ chức – Hành chính', ['Đại diện lãnh đạo bên nhận', tk]], 4)]); };

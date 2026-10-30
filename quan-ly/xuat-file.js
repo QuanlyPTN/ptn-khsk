@@ -119,7 +119,7 @@
       '@bottom-center{content:"Trang " counter(page) " / " counter(pages);font:9pt "Times New Roman",serif}}' +
       'body{margin:0;background:#E9ECF2;font-family:"Times New Roman",serif;color:#000}.to{position:relative;background:#fff;margin:14px auto;box-shadow:0 2px 10px rgba(0,0,0,.18);box-sizing:border-box;min-height:297mm}.to.ngang{min-height:210mm}' +
       '.noi{position:relative;margin:0 auto}.to.doc{width:210mm}.to.ngang{width:297mm}table{width:100%;border-collapse:collapse;table-layout:fixed}td{padding:1px 2px;overflow-wrap:anywhere;line-height:1.2}' +
-      '@media print{body{background:#fff}.to{margin:0;padding:0!important;box-shadow:none;width:auto!important;min-height:0;break-after:page}.to:last-child{break-after:auto}thead{display:table-header-group}tr{break-inside:avoid}}' +
+      '@media print{body{background:#fff}.to,.to.doc,.to.ngang{margin:0;padding:0!important;box-shadow:none;width:auto!important;min-height:0;break-after:page}.to:last-child{break-after:auto}thead{display:table-header-group}tr{break-inside:avoid}}' +
       '</style></head><body>' + trang.join('') + '</body></html>';
   }
   // Hộp xem trước: In / Tải Excel / Đóng
@@ -147,9 +147,11 @@
       for (let i = 1; i < n; i++) { c += rong[i - 1]; const lech = Math.abs(c - tong / 2); if (lech < tot) { tot = lech; a = i; } }
     }
     const b = n - a;
-    return [{ cao: 16, o: [{ v: trai[0], cs: a, can: 'c', co: 11 }, { v: phai[0], cs: b, can: 'c', b: 1, co: 11 }] },
-      { cao: 16, o: [{ v: trai[1], cs: a, can: 'c', b: 1, co: 11 }, { v: phai[1], cs: b, can: 'c', b: 1, co: 11 }] },
-      { cao: 16, o: [{ v: trai[2] || '', cs: a, can: 'c', co: 11 }, { v: phai[2] || '', cs: b, can: 'c', i: 1, co: 11 }] }];
+    // nửa trang hẹp (bảng ít cột, khổ dọc) → chữ đầu trang cỡ 10 để tên trường, quốc hiệu nằm trên một dòng
+    const hep = rong && Math.min(rong.slice(0, a).reduce((x, y) => x + y, 0), rong.slice(a).reduce((x, y) => x + y, 0)) < 50, co = hep ? 10 : 11;
+    return [{ cao: 16, o: [{ v: trai[0], cs: a, can: 'c', co }, { v: phai[0], cs: b, can: 'c', b: 1, co }] },
+      { cao: 16, o: [{ v: trai[1], cs: a, can: 'c', b: 1, co }, { v: phai[1], cs: b, can: 'c', b: 1, co }] },
+      { cao: 16, o: [{ v: trai[2] || '', cs: a, can: 'c', co }, { v: phai[2] || '', cs: b, can: 'c', i: 1, co }] }];
   }
   // Khối chữ ký: ds = [[chức danh, mô tả, họ tên]], chia đều n cột
   // họ tên in dưới chữ ký: lấy theo chức danh khi chưa ghi sẵn (PTN_KY do trang quản lý / công khai nạp từ Cài đặt)

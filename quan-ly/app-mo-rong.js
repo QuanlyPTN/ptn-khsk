@@ -78,24 +78,30 @@
   const dsMuonThem = (d) => (d.nd.dung_cu_ds || []).map(x => x.ten + ' – SL ' + fmt(x.sl) + (x.ghi_chu ? ' (' + x.ghi_chu + ')' : ''))
     .concat(!d.nd.dung_cu_ds && d.nd.dung_cu ? String(d.nd.dung_cu).split(/\s*;\s*/).filter(Boolean) : []);
   const mucDichQR1 = (d) => [d.nd.noi_dung, d.nd.muc_dich].filter(Boolean).join(' · ');
+  // các tháng có đơn (mới nhất trước) – lọc / xuất theo tháng
+  const thangDon = (ds) => ds.map(d => String(d.tg || '').slice(0, 7)).filter((t, i, a) => /^\d{4}-\d{2}$/.test(t) && a.indexOf(t) === i).sort().reverse();
+  const duocXoa = () => laAdmin() || coQuyen('xoa-don', 'xu_ly'); // xóa dữ liệu QR: admin hoặc cán bộ được cấp quyền riêng
   async function manDon(p) {
     const qr = /^QR[1-8]$/.test(p[1] || '') ? p[1] : 'QR1';
     if (qr === 'QR7') { location.hash = '#/de-tai'; return; }
     const tabs = Object.keys(QR_TEN).map(k => '<a class="btn sm ' + (k === qr ? 'chon' : 'o') + '" href="' + (k === 'QR7' ? '#/de-tai' : '#/don/' + k) + '" title="' + esc(QR_TEN[k]) + '">' + k + '</a>').join('');
-    const nd = trang('Đơn ' + qr + ' · ' + esc(QR_TEN[qr]), '<button class="btn o sm" id="b-xuat">Xuất Excel</button>', '<span class="btns">' + tabs + '</span>');
+    const nd = trang('Đơn ' + qr + ' · ' + esc(QR_TEN[qr]), '<button class="btn o sm" id="b-xuat" title="Theo tháng đang chọn (hoặc tất cả)">Xuất Excel / in</button>', '<span class="btns">' + tabs + '</span>');
     const ds = await api('don_ds', { qr }); S.cache.don = ds;
     const dem = (f) => ds.filter(f).length, mo = (d) => ['Đã trả – hoàn tất', 'Đã cấp phát', 'Từ chối'].indexOf(d.trang_thai) < 0;
     nd.innerHTML = '<div class="tools"><input type="search" id="q" placeholder="Tìm tên, MSSV, mã đơn, phòng, nội dung…"><select id="f-tt">' +
       [['chua', 'Chưa xong (' + dem(mo) + ')'], ['Chờ duyệt', 'Chờ duyệt (' + dem(d => d.trang_thai === 'Chờ duyệt') + ')'], ['Đã duyệt', 'Đã duyệt (' + dem(d => d.trang_thai === 'Đã duyệt') + ')'],
         ['dang', 'Đang mượn / đang dùng (' + dem(d => d.trang_thai === 'Đang mượn' || d.trang_thai === 'Đang dùng') + ')'], ['qh', 'Quá hạn (' + dem(d => d.qua_han) + ')'],
         qr === 'QR3' ? ['Đã cấp phát', 'Đã cấp phát (' + dem(d => d.trang_thai === 'Đã cấp phát') + ')'] : ['Đã trả – hoàn tất', 'Hoàn tất (' + dem(d => d.trang_thai === 'Đã trả – hoàn tất') + ')'], ['Từ chối', 'Từ chối (' + dem(d => d.trang_thai === 'Từ chối') + ')'], ['', 'Tất cả (' + ds.length + ')']]
-        .map(x => '<option value="' + x[0] + '">' + x[1] + '</option>').join('') + '</select><label class="check" style="margin:0"><input type="checkbox" id="f-nghi"> Nghi đăng ký thay</label></div><div id="kq"></div>';
+        .map(x => '<option value="' + x[0] + '">' + x[1] + '</option>').join('') + '</select>' +
+      // tháng gửi đơn: xem, xuất Excel / in theo tháng hoặc tất cả
+      '<select id="f-th" title="Tháng gửi đơn"><option value="">Tất cả các tháng (' + ds.length + ')</option>' + thangDon(ds).map(t => '<option value="' + t + '">Tháng ' + t.slice(5) + '/' + t.slice(0, 4) + ' (' + ds.filter(d => String(d.tg).slice(0, 7) === t).length + ')</option>').join('') + '</select>' +
+      '<label class="check" style="margin:0"><input type="checkbox" id="f-nghi"> Nghi đăng ký thay</label>' + (duocXoa() ? '<button class="btn red o sm" id="b-xoa-chon" disabled>🗑 Xóa đơn đã chọn</button>' : '') + '</div><div id="kq"></div>';
     const ve = () => {
-      const q = boDau($('q').value), tt = $('f-tt').value, nghi = $('f-nghi').checked;
-      const l = ds.filter(d => (!q || boDau([d.id, d.ho_ten, d.ma_so, d.sdt, tomTat(d)].join(' ')).indexOf(q) >= 0) && (!nghi || d.nghi) &&
+      const q = boDau($('q').value), tt = $('f-tt').value, nghi = $('f-nghi').checked, th = $('f-th').value;
+      const l = ds.filter(d => (!th || String(d.tg).slice(0, 7) === th) && (!q || boDau([d.id, d.ho_ten, d.ma_so, d.sdt, tomTat(d)].join(' ')).indexOf(q) >= 0) && (!nghi || d.nghi) &&
         (tt === '' || (tt === 'chua' ? mo(d) : tt === 'dang' ? (d.trang_thai === 'Đang mượn' || d.trang_thai === 'Đang dùng') : tt === 'qh' ? d.qua_han : d.trang_thai === tt)));
-      $('kq').innerHTML = !l.length ? '<div class="card empty">Không có đơn nào.</div>' : '<div class="tbl-wrap"><table><thead><tr><th>Mã đơn</th><th>Gửi lúc</th><th>Người đăng ký</th>' + (qr === 'QR1' ? '<th>Phòng</th><th>Thiết bị – dụng cụ mượn thêm</th>' : '<th>Nội dung</th>') + '<th>Thời gian</th><th>Trạng thái</th><th></th></tr></thead><tbody>' +
-        l.slice(0, 500).map(d => '<tr class="click" data-id="' + esc(d.id) + '"><td class="mono">' + esc(d.id) + '</td><td style="white-space:nowrap">' + ngayVN(d.tg) + '</td><td><b>' + esc(d.ho_ten) + '</b><div class="note">' + esc(d.ma_so + ' · ' + d.doi_tuong) + '</div>' +
+      $('kq').innerHTML = !l.length ? '<div class="card empty">Không có đơn nào.</div>' : '<div class="tbl-wrap"><table><thead><tr>' + (duocXoa() ? '<th style="width:28px"><input type="checkbox" id="chon-het-don" title="Chọn tất cả đơn đang hiện"></th>' : '') + '<th>Mã đơn</th><th>Gửi lúc</th><th>Người đăng ký</th>' + (qr === 'QR1' ? '<th>Phòng</th><th>Thiết bị – dụng cụ mượn thêm</th>' : '<th>Nội dung</th>') + '<th>Thời gian</th><th>Trạng thái</th><th></th></tr></thead><tbody>' +
+        l.slice(0, 500).map(d => '<tr class="click" data-id="' + esc(d.id) + '">' + (duocXoa() ? '<td><input type="checkbox" data-chon-don="' + esc(d.id) + '"></td>' : '') + '<td class="mono">' + esc(d.id) + '</td><td style="white-space:nowrap">' + ngayVN(d.tg) + '</td><td><b>' + esc(d.ho_ten) + '</b><div class="note">' + esc(d.ma_so + ' · ' + d.doi_tuong) + '</div>' +
           (d.nghi ? '<span class="tag t-bad" title="Một máy gửi cho nhiều người, hoặc một người gửi từ nhiều máy">⚠ nghi đăng ký thay</span>' : '') + (d.nd.dang_ky_thay ? ' <span class="tag t-gray">SV đăng ký thay GV</span>' : '') + '</td>' + (qr === 'QR1'
             ? '<td style="white-space:nowrap">' + dsPhongDon(d).map(x => '<div><b>' + esc(x) + '</b></div>').join('') + '</td><td>' +
               (dsMuonThem(d).length ? dsMuonThem(d).map(x => '<div>• ' + esc(x) + '</div>').join('') : '<div class="note">—</div>') +
@@ -103,21 +109,33 @@
             : '<td>' + esc(tomTat(d)).slice(0, 200) + '</td>') + '<td>' + thoiGian(d) + '</td><td>' + tagTT(d.trang_thai, d.qua_han) + '</td><td class="btns">' + nutNhanh(d) + '</td></tr>').join('') +
         '</tbody></table></div>' + (l.length > 500 ? '<p class="note">Hiện 500 / ' + l.length + ' đơn – lọc thêm để xem.</p>' : '');
       S.cache.donIds = l.slice(0, 500).map(d => d.id);
-      $('kq').querySelectorAll('tr[data-id]').forEach(tr => { tr.onclick = (e) => { if (e.target.closest('button')) return; hopDon(tr.dataset.id); }; });
+      $('kq').querySelectorAll('tr[data-id]').forEach(tr => { tr.onclick = (e) => { if (e.target.closest('button') || e.target.closest('input')) return; hopDon(tr.dataset.id); }; });
+      if (duocXoa()) {
+        const capNhatXoa = () => { const n = $('kq').querySelectorAll('[data-chon-don]:checked').length; $('b-xoa-chon').disabled = !n; $('b-xoa-chon').textContent = '🗑 Xóa đơn đã chọn' + (n ? ' (' + n + ')' : ''); };
+        $('kq').querySelectorAll('[data-chon-don]').forEach(c => { c.onchange = capNhatXoa; });
+        if ($('chon-het-don')) $('chon-het-don').onchange = (e) => { $('kq').querySelectorAll('[data-chon-don]').forEach(c => { c.checked = e.target.checked; }); capNhatXoa(); };
+        capNhatXoa();
+      }
       $('kq').querySelectorAll('[data-nhanh]').forEach(b => { b.onclick = async (e) => {
         const [id, hd] = b.dataset.nhanh.split(':'), d = ds.find(x => x.id === id);
         if (hd === 'mo') return hopDon(id);
         await chay(e.target, () => api('don_xu_ly', { id, hd })); toast(b.textContent + ': ' + id); dieuHuong();
       }; });
     };
-    ['q', 'f-tt', 'f-nghi'].forEach(id => { $(id).oninput = ve; $(id).onchange = ve; });
+    ['q', 'f-tt', 'f-nghi', 'f-th'].forEach(id => { $(id).oninput = ve; $(id).onchange = ve; });
     ve();
-    $('b-xuat').onclick = () => window.PTN_IN.xemTruoc({ ten: 'Don ' + qr + ' ' + homNay(), trang: [window.PTN_IN.bang({ ten: 'Don ' + qr, huong: 'ngang', tieuDe: 'DANH SÁCH ĐƠN ' + qr + ' – ' + QR_TEN[qr].toUpperCase(),
-      phuDe: 'Xuất ngày ' + ngayVN(homNay()) + ' · ' + ds.length + ' đơn', cot: [{ ten: 'STT', rong: 5, can: 'c' }, { ten: 'MÃ ĐƠN', rong: 10 }, { ten: 'GỬI LÚC', rong: 15 }, { ten: 'HỌ TÊN', rong: 20 }, { ten: 'MSSV / MÃ VC', rong: 12 }, { ten: 'ĐIỆN THOẠI', rong: 12 },
+    if ($('b-xoa-chon')) $('b-xoa-chon').onclick = async (e) => {
+      const ids = [...$('kq').querySelectorAll('[data-chon-don]:checked')].map(c => c.dataset.chonDon); if (!ids.length) return;
+      if (!confirm('Xóa ' + ids.length + ' đơn: ' + ids.join(', ') + '?\nĐơn biến mất khỏi danh sách, thống kê, Đơn của tôi; thu hồi được ở Lịch sử tải file.')) return;
+      const r = await chay(e.target, () => api('don_xoa', { ids })); toast('Đã xóa ' + r.so_don + ' đơn'); dieuHuong(); };
+    // xuất Excel / in: theo tháng đang chọn (hoặc tất cả)
+    $('b-xuat').onclick = () => { const th = $('f-th').value, dsX = ds.filter(d => !th || String(d.tg).slice(0, 7) === th), nhanTh = th ? 'tháng ' + th.slice(5) + '/' + th.slice(0, 4) : 'tất cả các tháng';
+      window.PTN_IN.xemTruoc({ ten: 'Don ' + qr + ' ' + (th || homNay()), trang: [window.PTN_IN.bang({ ten: 'Don ' + qr, huong: 'ngang', tieuDe: 'DANH SÁCH ĐƠN ' + qr + ' – ' + QR_TEN[qr].toUpperCase() + (th ? ' – THÁNG ' + th.slice(5) + '/' + th.slice(0, 4) : ''),
+      phuDe: 'Xuất ngày ' + ngayVN(homNay()) + ' · ' + nhanTh + ' · ' + dsX.length + ' đơn', cot: [{ ten: 'STT', rong: 5, can: 'c' }, { ten: 'MÃ ĐƠN', rong: 10 }, { ten: 'GỬI LÚC', rong: 15 }, { ten: 'HỌ TÊN', rong: 20 }, { ten: 'MSSV / MÃ VC', rong: 12 }, { ten: 'ĐIỆN THOẠI', rong: 12 },
         ...(qr === 'QR1' ? [{ ten: 'PHÒNG', rong: 14 }, { ten: 'THIẾT BỊ – DỤNG CỤ MƯỢN THÊM', rong: 30 }, { ten: 'NỘI DUNG – MỤC ĐÍCH', rong: 20 }] : [{ ten: 'NỘI DUNG', rong: 42 }]),
         { ten: 'THỜI GIAN', rong: 22 }, { ten: 'TRẠNG THÁI', rong: 15 }, { ten: 'NGƯỜI XỬ LÝ', rong: 15 }],
-      dong: ds.map((d, i) => [i + 1, d.id, ngayVN(d.tg), d.ho_ten, d.ma_so, d.sdt].concat(qr === 'QR1' ? [dsPhongDon(d).join('\n'), dsMuonThem(d).join('\n'), mucDichQR1(d)] : [tomTat(d)],
-        [thoiGian(d), d.trang_thai + (d.qua_han ? ' (quá hạn)' : ''), d.nguoi_xu_ly])) })] });
+      dong: dsX.map((d, i) => [i + 1, d.id, ngayVN(d.tg), d.ho_ten, d.ma_so, d.sdt].concat(qr === 'QR1' ? [dsPhongDon(d).join('\n'), dsMuonThem(d).join('\n'), mucDichQR1(d)] : [tomTat(d)],
+        [thoiGian(d), d.trang_thai + (d.qua_han ? ' (quá hạn)' : ''), d.nguoi_xu_ly])) })] }); };
     if (p[2]) hopDon(decodeURIComponent(p[2]));
   }
   function nutNhanh(d) {
@@ -161,9 +179,12 @@
       (d.tep.length ? '<ul class="files">' + d.tep.map(f => '<li><span>📄 ' + esc(f.ten) + '</span><button class="btn o sm" data-tai="' + esc(f.id) + '">Tải về</button></li>').join('') + '</ul>' : '') +
       '<h2 style="margin-top:12px">Lịch sử xử lý</h2><ul class="timeline">' + d.xu_ly.slice().reverse().map(x => '<li><div class="when">' + ngayVN(x.tg) + ' · ' + esc(x.nguoi) + '</div><div class="what">' + esc(x.hd) + '</div>' + (x.nd ? '<div class="note">' + esc(x.nd) + '</div>' : '') + '</li>').join('') + '</ul>' +
       (d.lich_su.length ? '<p class="note">Đơn khác của người này: ' + d.lich_su.map(x => x.qr + ' ' + x.id + ' (' + x.trang_thai + ')').join(' · ') + '</p>' : '') +
-      '<div class="modal-foot"><button class="btn o" data-dong>Đóng</button></div>';
+      '<div class="modal-foot">' + (duocXoa() ? '<button class="btn red o" id="b-xoa-don" style="margin-right:auto">🗑 Xóa đơn</button>' : '') + '<button class="btn o" data-dong>Đóng</button></div>';
     moHop(h);
     const body = $('modal-body');
+    if ($('b-xoa-don')) $('b-xoa-don').onclick = async (e) => {
+      if (!confirm('Xóa đơn ' + d.id + ' (' + d.ho_ten + ')?\nĐơn biến mất khỏi danh sách, thống kê, Đơn của tôi; thu hồi được ở Lịch sử tải file.')) return;
+      await chay(e.target, () => api('don_xoa', { ids: [d.id] })); toast('Đã xóa đơn ' + d.id); dongHop(); dieuHuong(); };
     body.querySelectorAll('[data-nav]').forEach(b => { b.onclick = () => { if (b.dataset.nav) hopDon(b.dataset.nav); }; });
     if ($('b-in-don')) $('b-in-don').onclick = (e) => chay(e.target, async () => window.PTN_DON_QR.xemTruoc(d, ((await anhQR(lienKet('don/' + d.qr + '/' + d.id))) || {}).dataUrl));
     if ($('b-in-bb8')) $('b-in-bb8').onclick = (e) => chay(e.target, async () => window.PTN_DON_QR.xemTruoc(d, ((await anhQR(lienKet('don/' + d.qr + '/' + d.id))) || {}).dataUrl, 1));
@@ -185,17 +206,27 @@
     if (p[1]) return manHoSo(decodeURIComponent(p[1]));
     const nd = trang('Hồ sơ đề tài KLTN – NCKH (QR7)');
     const ds = await api('hs_ds');
-    nd.innerHTML = '<div class="tools"><input type="search" id="q" placeholder="Tìm mã, tên đề tài, GVHD, MSSV…"><select id="f-tt"><option value="chua">Chưa đóng</option>' + S.dm.trang_thai_hs.map(t => '<option>' + esc(t) + '</option>').join('') + '<option value="">Tất cả</option></select></div><div id="kq"></div>' +
+    nd.innerHTML = '<div class="tools"><input type="search" id="q" placeholder="Tìm mã, tên đề tài, GVHD, MSSV…"><select id="f-tt"><option value="chua">Chưa đóng</option>' + S.dm.trang_thai_hs.map(t => '<option>' + esc(t) + '</option>').join('') + '<option value="">Tất cả</option></select>' +
+      '<select id="f-th" title="Tháng tạo hồ sơ"><option value="">Tất cả các tháng (' + ds.length + ')</option>' + thangDon(ds).map(t => '<option value="' + t + '">Tháng ' + t.slice(5) + '/' + t.slice(0, 4) + ' (' + ds.filter(x => String(x.tg).slice(0, 7) === t).length + ')</option>').join('') + '</select>' +
+      '<button class="btn o sm" id="b-xuat-hs" title="Theo bộ lọc đang chọn">Xuất Excel / in</button></div><div id="kq"></div>' +
       '<p class="note">Sinh viên tạo hồ sơ ở QR7 trên trang công khai. Đơn giấy có mã QR ở góc – quét bằng điện thoại để mở đúng hồ sơ.</p>';
+    const loc = () => {
+      const q = boDau($('q').value), tt = $('f-tt').value, th = $('f-th').value;
+      return ds.filter(x => (!th || String(x.tg).slice(0, 7) === th) && (!q || boDau([x.id, x.ten, x.gvhd, x.nhom.map(m => m.ho_ten + ' ' + m.ma_so).join(' ')].join(' ')).indexOf(q) >= 0) && (tt === '' || (tt === 'chua' ? ['Đã đóng', 'Từ chối'].indexOf(x.trang_thai) < 0 : x.trang_thai === tt)));
+    };
     const ve = () => {
-      const q = boDau($('q').value), tt = $('f-tt').value;
-      const l = ds.filter(x => (!q || boDau([x.id, x.ten, x.gvhd, x.nhom.map(m => m.ho_ten + ' ' + m.ma_so).join(' ')].join(' ')).indexOf(q) >= 0) && (tt === '' || (tt === 'chua' ? ['Đã đóng', 'Từ chối'].indexOf(x.trang_thai) < 0 : x.trang_thai === tt)));
+      const l = loc();
       $('kq').innerHTML = !l.length ? '<div class="card empty">Không có hồ sơ.</div>' : '<div class="tbl-wrap"><table><thead><tr><th>Mã</th><th>Đề tài</th><th>Trưởng nhóm</th><th>GVHD</th><th>Phòng – thời gian</th><th>Trạng thái</th></tr></thead><tbody>' +
         l.map(x => '<tr class="click" data-href="#/de-tai/' + esc(x.id) + '"><td class="mono">' + esc(x.id) + '</td><td><b>' + esc(x.ten) + '</b><div class="note">' + esc(x.ten_loai + ' · ' + x.nhom.length + ' thành viên') + '</div></td><td>' + esc((x.nhom[0] || {}).ho_ten) + '<div class="note">' + esc((x.nhom[0] || {}).ma_so) + '</div></td><td>' + esc(x.gvhd) +
           '</td><td>' + esc(x.phong) + (x.den_ngay ? '<div class="note">' + ngayVN(x.tu_ngay) + ' → ' + ngayVN(x.den_ngay) + '</div>' : '') + '</td><td>' + tagTT(x.trang_thai) + '</td></tr>').join('') + '</tbody></table></div>';
       ganLink($('kq')); Q.ganDieuHuong(l.map(x => '#/de-tai/' + x.id), 'hồ sơ');
     };
-    $('q').oninput = ve; $('f-tt').onchange = ve; ve();
+    $('q').oninput = ve; $('f-tt').onchange = ve; $('f-th').onchange = ve; ve();
+    $('b-xuat-hs').onclick = () => { const th = $('f-th').value, l = loc();
+      window.PTN_IN.xemTruoc({ ten: 'Ho so de tai ' + (th || homNay()), trang: [window.PTN_IN.bang({ ten: 'Ho so de tai', huong: 'ngang', tieuDe: 'DANH SÁCH HỒ SƠ ĐỀ TÀI KLTN – NCKH (QR7)' + (th ? ' – THÁNG ' + th.slice(5) + '/' + th.slice(0, 4) : ''),
+        phuDe: 'Xuất ngày ' + ngayVN(homNay()) + ' · ' + (th ? 'tháng ' + th.slice(5) + '/' + th.slice(0, 4) : 'tất cả các tháng') + ' · ' + $('f-tt').selectedOptions[0].textContent.toLowerCase() + ' · ' + l.length + ' hồ sơ',
+        cot: [{ ten: 'STT', rong: 5, can: 'c' }, { ten: 'MÃ HỒ SƠ', rong: 12 }, { ten: 'NGÀY TẠO', rong: 11 }, { ten: 'ĐỀ TÀI', rong: 34 }, { ten: 'LOẠI', rong: 14 }, { ten: 'NHÓM (HỌ TÊN – MSSV)', rong: 30 }, { ten: 'GVHD', rong: 18 }, { ten: 'PHÒNG – THỜI GIAN', rong: 22 }, { ten: 'TRẠNG THÁI', rong: 16 }],
+        dong: l.map((x, i) => [i + 1, x.id, ngayVN(x.tg), x.ten, x.ten_loai, x.nhom.map(m => m.ho_ten + ' – ' + m.ma_so).join('\n'), x.gvhd, [x.phong, x.den_ngay ? ngayVN(x.tu_ngay) + ' → ' + ngayVN(x.den_ngay) : ''].filter(Boolean).join('\n'), x.trang_thai]) })] }); };
   }
   async function manHoSo(id) {
     const nd = trang('Hồ sơ ' + esc(id), '', '<a href="#/de-tai">Hồ sơ đề tài</a> ›');
@@ -208,7 +239,8 @@
       (x.bb ? '<button class="btn o sm" id="b-in-bb-hs">🖨 Biên bản dụng cụ</button>' : '') +
       (tt === 'Chờ nộp bản ký' ? nut('nhan_don', 'Đã nhận đơn ký', '') : '') + (tt === 'Chờ nộp bản ký' || tt === 'Đã nhận đơn ký' ? nut('duyet', 'Duyệt', '') + nut('tu_choi', 'Từ chối', 'red') : '') +
       (dang ? nut('gia_han', 'Gia hạn') + (tt !== 'Chờ trả đồ' ? nut('cho_tra', 'Chuyển chờ trả đồ') : '') : '') + (dang || tt === 'Đã nhận đơn ký' ? nut('dong', 'Đóng hồ sơ', '') : '') +
-      (x.pl === 3 ? nut('thu_phi', 'Ghi đã thu phí') : '') + nut('ghi_chu', 'Ghi chú') + '<label class="btn o sm">Đính kèm (bản ký, minh chứng)<input type="file" id="tep-hs" hidden></label></div>';
+      (x.pl === 3 ? nut('thu_phi', 'Ghi đã thu phí') : '') + nut('ghi_chu', 'Ghi chú') + '<label class="btn o sm">Đính kèm (bản ký, minh chứng)<input type="file" id="tep-hs" hidden></label>' +
+      (duocXoa() ? '<button class="btn red o sm" id="b-xoa-hs" title="Xóa hồ sơ (thu hồi được ở Lịch sử tải file)">🗑 Xóa hồ sơ</button>' : '') + '</div>';
     h += '<div class="grid g2"><div><div class="card"><h2>' + esc(x.ten) + '</h2><dl class="kv"><dt>Loại</dt><dd>' + esc(x.ten_loai) + '</dd><dt>GVHD</dt><dd>' + esc(x.gvhd) + '</dd>' + (x.bo_mon ? '<dt>Bộ môn – khoa</dt><dd>' + esc(x.bo_mon) + '</dd>' : '') +
       '<dt>Đơn</dt><dd>' + esc(window.PTN_PHU_LUC.danhSach(x).map(d => d.ten).join('; ')) + '</dd>' + (x.phong ? '<dt>Phòng</dt><dd>' + String(x.phong).split(/\s*,\s*/).map(p => '<a href="#/phong/' + esc(p) + '">' + esc(p) + '</a>').join(', ') + (x.ngoai_gio === 'Có' ? ' · có làm ngoài giờ' : '') + '</dd><dt>Thời gian</dt><dd>' + ngayVN(x.tu_ngay) + ' → ' + hanTag(x.den_ngay) + '</dd>' : '') +
       (x.muc_dich ? '<dt>Mục đích</dt><dd>' + esc(x.muc_dich) + '</dd>' : '') + (x.pl === 3 ? '<dt>Lệ phí</dt><dd>' + esc(x.le_phi || '—') + (x.thu_phi ? ' · <b>đã thu ' + tien(x.thu_phi.so_tien) + '</b> (' + ngayVN(x.thu_phi.ngay) + ', ' + esc(x.thu_phi.nguoi) + ')' : ' · <span class="tag t-warn">chưa thu</span>') + '</dd>' : '') +
@@ -226,6 +258,9 @@
     nd.querySelectorAll('[data-tai]').forEach(b => { b.onclick = (e) => chay(e.target, () => taiVe(b.dataset.tai)); });
     nd.querySelectorAll('[data-in]').forEach(b => { b.onclick = (e) => chay(e.target, async () => window.PTN_PHU_LUC.xemTruoc(b.dataset.in.split(','), x, ((await anhQR(lienKet('de-tai/' + x.id))) || {}).dataUrl)); });
     if ($('b-in-bb-hs')) $('b-in-bb-hs').onclick = (e) => chay(e.target, () => moInBB([x.bb]));
+    if ($('b-xoa-hs')) $('b-xoa-hs').onclick = async (e) => {
+      if (!confirm('Xóa hồ sơ ' + x.id + ' – ' + x.ten + '?\nXóa cả biên bản dụng cụ của hồ sơ (nếu chưa giao đồ); thu hồi được ở Lịch sử tải file.')) return;
+      await chay(e.target, () => api('hs_xoa', { id: x.id })); toast('Đã xóa hồ sơ ' + x.id); location.hash = '#/de-tai'; };
     $('tep-hs').onchange = async (e) => {
       const f = e.target.files[0]; if (!f) return;
       await chay(null, () => guiTep(x.id, f, tt === 'Chờ nộp bản ký' ? 'Đơn đã ký' : 'Tệp hồ sơ'));
@@ -526,7 +561,7 @@
       $('b-x').onclick = () => { const IN = window.PTN_IN, th = r.thang.slice(5) + '/' + r.thang.slice(0, 4);
         IN.xemTruoc({ ten: 'Bao cao su dung thiet bi PTN thang ' + r.thang, trang: [
           IN.bang({ ten: 'Tong hop', tieuDe: 'BÁO CÁO TÌNH HÌNH SỬ DỤNG THIẾT BỊ PHÒNG THÍ NGHIỆM – THÁNG ' + th, phuDe: 'Số ngày làm việc: ' + r.ngay_lam_viec + ' · giờ sử dụng tính từ nhật ký QR5',
-            cot: [{ ten: 'CHỈ TIÊU', rong: 46 }, { ten: 'SỐ LIỆU', rong: 18 }],
+            cot: [{ ten: 'CHỈ TIÊU', rong: 48 }, { ten: 'SỐ LIỆU', rong: 42 }], // hai cột gần bằng nhau: đầu trang chia đôi theo cột – quốc hiệu, tiêu đề, chữ ký không bị bóp
             dong: [['Số thiết bị quản lý', t.so_tb], ['Thiết bị có sử dụng trong tháng', t.co_dung], ['Lượt sử dụng (QR5)', t.so_lan], ['Tổng giờ sử dụng', t.so_gio], ['Lượt cho mượn', t.so_muon], ['Lần báo hỏng', t.hong], ['Lần sửa chữa', t.sua], ['Lần kiểm định', t.kiem_dinh], ['Chi phí sửa chữa, kiểm định (đ)', t.chi_phi]]
               .concat([{ nhom: 'Đơn đăng ký trong tháng' }]).concat(r.don.map(d => [d.qr + ' – ' + d.ten, d.so])).concat([{ nhom: 'Sử dụng theo phòng (lượt QR1, QR4, QR5 · giờ thiết bị)' }]).concat(r.phong.map(p => [p.ma + ' – ' + p.ten, p.luot + ' lượt · ' + (fmt(p.tb) || 0) + ' giờ'])),
             ky: [['NGƯỜI LẬP', '(Ký, ghi rõ họ tên)'], ['TRƯỞNG KHOA', '(Ký, ghi rõ họ tên)']] }),
