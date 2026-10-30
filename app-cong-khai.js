@@ -7,6 +7,17 @@
   const QR_TEN = { QR1: 'Mượn phòng; mượn – trả thiết bị, dụng cụ trong ngày', QR2: 'Giảng viên mượn thiết bị dài ngày', QR3: 'Cấp hóa chất – vật tư bổ sung',
     QR4: 'Mượn chìa khóa tại phòng Bảo vệ', QR5: 'Nhật ký sử dụng phòng, thiết bị', QR6: 'Đăng ký sử dụng tủ', QR7: 'Hồ sơ đề tài KLTN – NCKH', QR8: 'Đăng ký mượn thêm dụng cụ' };
   // đối tượng dùng mã (nhãn góc ô); QR2, QR3, QR4 nằm ở nhóm "Giảng viên – thiết bị"
+  // công dụng từng mã (anh Phú duyệt 30/10/2026): [dòng ngắn trên ô mã, ghi chú đầy đủ ở đầu biểu mẫu]
+  const QR_CONG = {
+    QR1: ['Thực hành, ôn tập – dùng xong trả trong ngày', '<b>GV, SV:</b> mượn phòng; mượn – trả thiết bị, dụng cụ dùng trong ngày (thực hành, ôn tập…).'],
+    QR2: ['Mang thiết bị đi, dùng dài ngày', '<b>GV:</b> mượn thiết bị mang đi, dùng dài ngày (cho lớp, đồ án SV hướng dẫn, đề tài cá nhân).'],
+    QR3: ['Cấp thêm ngoài dự trù buổi thực hành', '<b>GV:</b> đề nghị cấp thêm hóa chất – vật tư ngoài dự trù của buổi thực hành.'],
+    QR4: ['Mượn – trả chìa khóa phòng', '<b>GV:</b> mượn chìa khóa phòng tại phòng Bảo vệ, trả chìa sau khi dùng xong.'],
+    QR5: ['Bắt buộc quét trước khi dùng thiết bị', '<b>GV, SV:</b> <b>bắt buộc quét trước khi dùng thiết bị</b> – ghi nhật ký sử dụng phòng, thiết bị.'],
+    QR6: ['Cất đồ, mẫu thí nghiệm', '<b>GV, SV:</b> đăng ký sử dụng tủ để cất đồ, mẫu thí nghiệm.'],
+    QR7: ['Khai đề tài → in đơn → GVHD ký → nộp PTN', '<b>SV:</b> khai hồ sơ đề tài Đồ án – KLTN – NCKH (nhóm, GVHD, phòng, thiết bị, dụng cụ) → in đơn → GVHD ký → nộp đơn về PTN.'],
+    QR8: ['GV: thêm dụng cụ cho lớp TH<br>SV: thêm cho đề tài', '<b>GV:</b> đăng ký mượn thêm dụng cụ cho lớp thực hành.<br><b>SV:</b> mượn thêm phòng, thiết bị, dụng cụ cho Đồ án – KLTN – NCKH (nhập mã hồ sơ QR7).'] };
+  const congDung = (q) => QR_CONG[q] ? '<div class="cd">' + QR_CONG[q][1] + '</div>' : '';
   const QR_AI = { QR1: 'Giảng viên, Sinh viên', QR5: 'Giảng viên, Sinh viên', QR6: 'Giảng viên, Sinh viên', QR8: 'Giảng viên, Sinh viên', QR7: 'Sinh viên', QR2: 'Giảng viên', QR3: 'Giảng viên', QR4: 'Giảng viên' };
   const QR_GV = ['QR2', 'QR3', 'QR4'];
   const BIEU = { DT: '<path d="M9 3h6"/><path d="M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/><path d="M7 14h10"/>', QR1: '<path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 21v-6h6v6"/>', QR2: '<path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2z"/>',
@@ -150,7 +161,7 @@
   const MAU_TT = { 'Chờ duyệt': 'c', 'Đã duyệt': 'i', 'Đang xử lý': 'w', 'Hoàn tất': 'o', 'Đang mượn': 'w', 'Đang dùng': 'w', 'Đã trả – hoàn tất': 'o', 'Đã cấp phát': 'o', 'Từ chối': 'b', 'Chờ nộp bản ký': 'c', 'Đã nhận đơn ký': 'i',
     'Đã duyệt – đang thực hiện': 'w', 'Gia hạn': 'w', 'Chờ trả đồ': 'w', 'Đã đóng': 'o' };
   const tagTT = (t, qh) => '<span class="tag t-' + (qh ? 'b' : MAU_TT[t] || 'c') + '">' + esc(qh ? 'Quá hạn' : t) + '</span>';
-  const oQR = (q) => '<a class="tile" href="#/' + q + '">' + bieu(q) + (QR_AI[q] ? '<span class="ai">' + QR_AI[q] + '</span>' : '') + '<span class="q">' + q + '</span>' + QR_TEN[q] + '</a>';
+  const oQR = (q) => '<a class="tile" href="#/' + q + '">' + bieu(q) + (QR_AI[q] ? '<span class="ai">' + QR_AI[q] + '</span>' : '') + '<span class="q">' + q + '</span>' + QR_TEN[q] + (QR_CONG[q] ? '<span class="cd2">' + QR_CONG[q][0] + '</span>' : '') + '</a>';
   // thông báo hạn trả cho người đăng ký: đơn đang mượn / đang dùng quá hạn hoặc đến hạn hôm nay – ngày mai; hồ sơ đề tài quá hạn
   function canhBaoHan(r) {
     const hn = homNay(), mai = homNay(1), qua = (s) => Math.max(1, Math.round((new Date(hn) - new Date(String(s).slice(0, 10))) / 864e5));
@@ -225,7 +236,7 @@
     await danhMuc();
     const p = hoSo(), gv = p.doi_tuong === 'Giảng viên';
     if (qr === 'QR7') return trangQR7();
-    let h = '<h2>' + qr + ' – ' + esc(QR_TEN[qr]) + '</h2><div class="pre"><b>✓ Người đăng ký:</b> ' + esc(p.ho_ten + ' · ' + p.ma_so + ' · ' + p.sdt) + ' <a class="lnk" href="#/ho-so">Sửa</a></div>';
+    let h = '<h2>' + qr + ' – ' + esc(QR_TEN[qr]) + '</h2>' + congDung(qr) + '<div class="pre"><b>✓ Người đăng ký:</b> ' + esc(p.ho_ten + ' · ' + p.ma_so + ' · ' + p.sdt) + ' <a class="lnk" href="#/ho-so">Sửa</a></div>';
     if ((qr === 'QR2' || qr === 'QR4') && !gv) h += '<div class="warn">' + qr + ' dành cho giảng viên. Nếu bạn là giảng viên, sửa "Đối tượng" trong thông tin cá nhân.</div>';
     const ds = await hoSoCuaToi().catch(() => []);
     const chonHS = ds.length ? chonO('hs', 'Thuộc hồ sơ đề tài (nếu có)', ds.map(x => [x.id, x.id + ' – ' + x.ten])) : '';
@@ -439,7 +450,7 @@
     const dsLoai = S.dm.loai_de_tai.map(l => [l.ma, l.ten]);
     // bộ môn – khoa: theo hồ sơ đang sửa, không thì đoán theo bộ môn của người đăng ký
     const bmChon = x.bo_mon ? (BM_KHOA.indexOf(x.bo_mon) >= 0 ? x.bo_mon : '~khac') : (BM_KHOA.find(b => p.bo_mon && b.indexOf(p.bo_mon) === 0) || '');
-    const h = '<h2>QR7 – ' + (sua ? 'Sửa hồ sơ ' + esc(sua.id) : 'Hồ sơ đề tài KLTN – NCKH') + '</h2>' +
+    const h = '<h2>QR7 – ' + (sua ? 'Sửa hồ sơ ' + esc(sua.id) : 'Hồ sơ đề tài KLTN – NCKH') + '</h2>' + (sua ? '' : congDung('QR7')) +
       '<div class="card note">Điền một lần → hệ thống tạo sẵn đơn đúng mẫu Phụ lục (1A – 3) → tải về, in, ký, đề nghị GVHD ký → nộp bản giấy cho PTN. Cán bộ quét mã trên đơn để mở đúng hồ sơ.</div>' +
       '<form class="card" id="f" autocomplete="off"><div class="sec">Đề tài</div>' + (sua ? '<input type="hidden" name="loai" value="' + esc(x.loai) + '"><p><b>Loại:</b> ' + esc(x.ten_loai) + '</p>' : chon('loai', 'Loại đề tài', dsLoai, { v: x.loai, req: 1 })) +
       nhap('ten', 'Tên đề tài', { v: x.ten, req: 1, area: 1 }) + nhap('gvhd', 'Giảng viên hướng dẫn', { v: x.gvhd, req: 1 }) +
