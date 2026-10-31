@@ -122,8 +122,8 @@
     k.push(P(R(ngayDon(hs), { i: 1 }), { al: 'right' }));
     if (ma[1] === 'B') { // mượn nhiều phòng: mỗi phòng một dòng để giảng viên quản lý phòng đó ký (in sẵn cán bộ phụ trách nếu có)
       const ds = phongMuon(hs.phong).split(', ').filter(Boolean).map(m => (hs.phong_ds || []).find(p => p.ma === m) || { ma: m });
-      k.push(ky(['ĐẠI DIỆN BÊN MƯỢN', 'GIẢNG VIÊN HƯỚNG DẪN'], 3), TRONG, P(R('XÁC NHẬN CỦA GIẢNG VIÊN QUẢN LÝ PHÒNG', { b: 1 }), { al: 'center' }),
-        bangPL([600, 1150, 3921, 3400], ['STT', 'Phòng', 'Tên phòng', 'GV quản lý phòng (ký, ghi rõ họ tên)'], ds.map((p, i) => [i + 1, p.ma, p.ten || '', '\n\n\n' + (p.phu_trach || '')]), 2, true));
+      k.push(ky(['ĐẠI DIỆN BÊN MƯỢN', 'GIẢNG VIÊN HƯỚNG DẪN'], 5), TRONG, P(R('XÁC NHẬN CỦA GIẢNG VIÊN QUẢN LÝ PHÒNG', { b: 1 }), { al: 'center' }),
+        bangPL([550, 950, 2471, 3400, 1700], ['STT', 'Phòng', 'Tên phòng', 'GV quản lý phòng', 'Ký tên'], ds.map((p, i) => [i + 1, p.ma, p.ten || '', (p.phu_trach || '').replace(/ \/ /g, '\n'), '\n\n\n']), 2, true));
     } else k.push(ky(['ĐẠI DIỆN BÊN MƯỢN', 'GIẢNG VIÊN HƯỚNG DẪN', { A: 'QUẢN LÝ PTN', C: 'QUẢN LÝ PTN MƯỢN TB' }[ma[1]]], 3));
     return k;
   }
