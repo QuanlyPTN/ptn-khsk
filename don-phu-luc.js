@@ -60,7 +60,7 @@
         P(['Lớp: ', GT(tn.lop, 20), ' Khoa: ', GT(hs.bo_mon, 22)], { al: 'both' }), P(['Điện thoại: ', GT(tn.sdt, 14), ' Email: ', GT(tn.email, 24)], { al: 'both' }),
         P(['Hiện nay tôi đang thực hiện: ', GT(hs.ten, 32)], { al: 'both' }), P(['Giảng viên hướng dẫn: ', GT(hs.gvhd, 34)], { al: 'both' }),
         P(['Kính đề nghị Ban lãnh đạo Khoa Khoa học Sức khỏe cho phép tôi được sử dụng phòng với mục đích làm thí nghiệm – nghiên cứu: ', GT(hs.muc_dich, 46)], { al: 'both' }),
-        P(['Tại phòng ', GT(hs.phong, 8), ' thuộc Khoa Khoa học Sức khỏe.'], { al: 'both' }),
+        P(['Tại phòng ', GT(phongMuon(hs.phong), 8), ' thuộc Khoa Khoa học Sức khỏe.'], { al: 'both' }),
         P(['Bắt đầu từ ngày: ', hs.tu_ngay ? R(ngay(hs.tu_ngay), { b: 1 }) : '……………………', ' Đến hết ngày: ', hs.den_ngay ? R(ngay(hs.den_ngay), { b: 1 }) : '……………………'], { al: 'both' }),
         P(['Lệ phí (nếu có): ', GT(hs.le_phi, 40)], { al: 'both' }),
         P('Tôi cam kết thực hiện đúng nội quy, quy định, phí sử dụng phòng thí nghiệm và hoàn toàn chịu trách nhiệm về những hư hỏng hoặc mất mát tài sản trong quá trình làm việc tại phòng thí nghiệm.', { al: 'both' }),
@@ -84,7 +84,7 @@
         ...dsSo(['Trả đúng và đầy đủ các dụng cụ đã mượn của phòng thí nghiệm.', 'Tổng vệ sinh phòng thực hành, vệ sinh bên trong và bên ngoài máy, thiết bị đã sử dụng.',
           kltn ? 'Bồi thường những hư hỏng trong quá trình thực hiện ' + viec + '.' : 'Bồi thường những hư hỏng trong quá trình sử dụng.']), camOn);
     } else {
-      if (ma[1] === 'B') k.push(P(['Tôi làm đơn này kính đề nghị BLĐ Khoa và bộ phận quản lý PTN cho phép mượn phòng ', GT(hs.phong, 5), ' để thực hiện ' + viec + '.'], { al: 'both' }),
+      if (ma[1] === 'B') k.push(P(['Tôi làm đơn này kính đề nghị BLĐ Khoa và bộ phận quản lý PTN cho phép mượn phòng ', GT(phongMuon(hs.phong), 5), ' để thực hiện ' + viec + '.'], { al: 'both' }),
         P(['Thời gian sử dụng: từ ngày ', hs.tu_ngay ? R(ngay(hs.tu_ngay), { b: 1 }) : '……/……/20……', ' đến ngày ', hs.den_ngay ? R(ngay(hs.den_ngay), { b: 1 }) : '……/……/20……', hs.ngoai_gio === 'Có' ? ' (có làm ngoài giờ hành chính)' : '']), ...deTai);
       else k.push(P('Tôi làm đơn này kính đề nghị BLĐ Khoa và bộ phận quản lý PTN cho phép sử dụng các thiết bị sau để thực hiện ' + (kltn ? viec : 'đề tài nghiên cứu khoa học') + ':', { al: 'both' }), ...deTai,
         bang([700, 3171, 1700, 2000, 1500], ['STT', 'Tên thiết bị', 'Phòng', 'Xác nhận GV QLP', 'Ghi chú'], (hs.ten_tb || []).map((t2, i) => [i + 1, t2, hs.phong || '', '', '']), 3), TRONG);
@@ -95,6 +95,9 @@
       ky(['ĐẠI DIỆN BÊN MƯỢN', 'GIẢNG VIÊN HƯỚNG DẪN', { A: 'QUẢN LÝ PTN', B: 'GV QUẢN LÝ PHÒNG', C: 'QUẢN LÝ PTN MƯỢN TB' }[ma[1]]], 3));
     return k;
   }
+  // đơn mượn phòng (1B, 2B, 3): không ghi phòng điều phối chung – sinh viên chỉ vào để dùng thiết bị, không bố trí thí nghiệm
+  const PHONG_DIEU_PHOI = ['D11.01'];
+  const phongMuon = (s) => String(s || '').split(/\s*,\s*/).filter(p => p && PHONG_DIEU_PHOI.indexOf(p.toUpperCase()) < 0).join(', ');
   // đầu đơn: Trường – Khoa | Quốc hiệu (như mẫu)
   const HD_GRID = [4500, 4571];
   const HD = [[R('ĐẠI HỌC CÔNG NGHIỆP TP. HỒ CHÍ MINH', { sz: 20 }), R('KHOA KHOA HỌC SỨC KHỎE', { b: 1, sz: 24 }), R('–––––––––––', { sz: 22 })],
