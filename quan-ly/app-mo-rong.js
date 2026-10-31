@@ -184,9 +184,11 @@
       (d.tep.length ? '<ul class="files">' + d.tep.map(f => '<li><span>📄 ' + esc(f.ten) + '</span><button class="btn o sm" data-tai="' + esc(f.id) + '">Tải về</button></li>').join('') + '</ul>' : '') +
       '<h2 style="margin-top:12px">Lịch sử xử lý</h2><ul class="timeline">' + d.xu_ly.slice().reverse().map(x => '<li><div class="when">' + ngayVN(x.tg) + ' · ' + esc(x.nguoi) + '</div><div class="what">' + esc(x.hd) + '</div>' + (x.nd ? '<div class="note">' + esc(x.nd) + '</div>' : '') + '</li>').join('') + '</ul>' +
       (d.lich_su.length ? '<p class="note">Đơn khác của người này: ' + d.lich_su.map(x => x.qr + ' ' + x.id + ' (' + x.trang_thai + ')').join(' · ') + '</p>' : '') +
-      '<div class="modal-foot">' + (duocXoa() ? '<button class="btn red o" id="b-xoa-don" style="margin-right:auto">🗑 Xóa đơn</button>' : '') + '<button class="btn o" data-dong>Đóng</button></div>';
+      '<div class="modal-foot">' + (duocXoa() ? '<button class="btn red o" id="b-xoa-don" style="margin-right:auto">🗑 Xóa đơn</button>' : '') +
+      (coQuyen('thong-bao', 'xu_ly') && d.ma_so && Q.soanThongBao ? '<button class="btn o" id="b-nhan-tb" title="Gửi thông báo tới trang dùng chung của người đăng ký">✉ Nhắn người này</button>' : '') + '<button class="btn o" data-dong>Đóng</button></div>';
     moHop(h);
     const body = $('modal-body');
+    if ($('b-nhan-tb')) $('b-nhan-tb').onclick = () => Q.soanThongBao({ nguoi: [d.ma_so], tieu_de: 'Về đơn ' + d.qr + ' ' + d.id });
     if ($('b-xoa-don')) $('b-xoa-don').onclick = async (e) => {
       if (!confirm('Xóa đơn ' + d.id + ' (' + d.ho_ten + ')?\nĐơn biến mất khỏi danh sách, thống kê, Đơn của tôi; thu hồi được ở Lịch sử tải file.')) return;
       await chay(e.target, () => api('don_xoa', { ids: [d.id] })); toast('Đã xóa đơn ' + d.id); dongHop(); dieuHuong(); };
@@ -245,7 +247,8 @@
         const l = loc();
         $('kq').innerHTML = !l.length ? '<div class="card empty">Chưa có người dùng.</div>' : '<div class="tbl-wrap"><table><thead><tr><th>Họ tên</th><th>MSSV / mã</th><th>Đối tượng – lớp</th><th>Điện thoại</th><th>Máy</th><th>Đăng ký</th><th class="num">Số đơn</th><th></th></tr></thead><tbody>' +
           l.slice(0, 500).map(n => '<tr><td><b>' + esc(n.ho_ten) + '</b>' + (n.email ? '<div class="note">' + esc(n.email) + '</div>' : '') + '</td><td class="mono">' + esc(n.ma_so) + '</td><td>' + esc([n.doi_tuong, n.lop, n.bo_mon].filter(Boolean).join(' · ')) + '</td><td>' + esc(n.sdt) + '</td><td class="mono">' + esc(n.ma_may) + '</td><td>' + ngayVN(n.tg) + '</td><td class="num">' + n.so_don + '</td><td class="btns">' +
-            '<button class="btn o sm" data-ls="' + esc(n.ma_so) + '">Lịch sử</button>' + (xl ? '<button class="btn o sm" data-sua="' + esc(n.ma_so) + '">Sửa</button><button class="btn red o sm" data-bo="' + esc(n.ma_so) + '" title="Bỏ đăng ký: máy / người này đăng ký lại từ đầu">Bỏ đăng ký</button>' : '') + '</td></tr>').join('') + '</tbody></table></div>';
+            '<button class="btn o sm" data-ls="' + esc(n.ma_so) + '">Lịch sử</button>' + (coQuyen('thong-bao', 'xu_ly') && Q.soanThongBao ? '<button class="btn o sm" data-nhan-tb="' + esc(n.ma_so) + '" title="Gửi thông báo tới người này">✉ Nhắn</button>' : '') + (xl ? '<button class="btn o sm" data-sua="' + esc(n.ma_so) + '">Sửa</button><button class="btn red o sm" data-bo="' + esc(n.ma_so) + '" title="Bỏ đăng ký: máy / người này đăng ký lại từ đầu">Bỏ đăng ký</button>' : '') + '</td></tr>').join('') + '</tbody></table></div>';
+        $('kq').querySelectorAll('[data-nhan-tb]').forEach(b => { b.onclick = () => Q.soanThongBao({ nguoi: [b.dataset.nhanTb] }); });
         $('kq').querySelectorAll('[data-ls]').forEach(b => { b.onclick = () => { const n = r.nguoi.find(x => x.ma_so === b.dataset.ls);
           moHop('<h2>Lịch sử – ' + esc(n.ho_ten) + '</h2><ul class="timeline">' + n.lich_su.slice().reverse().map(l => '<li><div class="when">' + ngayVN(l.tg) + ' · ' + esc(l.nguoi) + '</div><div class="what">' + esc(l.hd) + '</div>' + (l.nd ? '<div class="note">' + esc(l.nd) + '</div>' : '') + '</li>').join('') + '</ul><div class="modal-foot"><button class="btn o" data-dong>Đóng</button></div>'); }; });
         $('kq').querySelectorAll('[data-sua]').forEach(b => { b.onclick = () => { const n = r.nguoi.find(x => x.ma_so === b.dataset.sua);

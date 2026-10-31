@@ -179,7 +179,8 @@
     $('hb').classList.add('hide'); nutLui(false);
     const p = hoSo();
     let h = '<div class="card prof"><div class="av">' + esc((p.ho_ten || '?').trim().split(' ').pop().charAt(0)) + '</div><div class="i"><b>' + esc(p.ho_ten) + '</b><span>' + esc([p.ma_so, ngGui().doi_tuong, p.lop].filter(Boolean).join(' · ')) +
-      '</span></div><a class="lnk" href="#/ho-so">Thông tin</a></div><div id="tb"></div><div class="tieu-de-nhom">Đăng ký – biểu mẫu</div><div class="grid">' +
+      '</span></div><a class="lnk" href="#/ho-so">Thông tin</a></div>' +
+      (chuaDoc().length ? '<a class="warn" href="#/thong-bao" style="display:block;background:#EEF3FE;border-color:#CFDCF8;color:#1C3A8A;text-decoration:none">🔔 Bạn có <b>' + chuaDoc().length + '</b> thông báo mới từ PTN – bấm để xem</a>' : '') + '<div id="tb"></div><div class="tieu-de-nhom">Đăng ký – biểu mẫu</div><div class="grid">' +
       Object.keys(QR_TEN).filter(q => QR_GV.indexOf(q) < 0).map(oQR).join('') +
       '</div><div class="tieu-de-nhom">Giảng viên – thiết bị</div><div class="grid">' + QR_GV.map(oQR).join('') +
       Object.keys(GV().LOAI).filter(q => !GV().LOAI[q].ngung).map(q => '<a class="tile" href="#/' + q + '">' + bieu(q) + '<span class="qv">' + q + '</span>' + esc(GV().LOAI[q].ten) + '</a>').join('') +
@@ -206,11 +207,38 @@
   const tuMayChu = (n) => { const o = { ho_ten: n.ho_ten, doi_tuong: n.doi_tuong, ma_so: n.ma_so, lop: n.lop || '', bo_mon: n.bo_mon || '', sdt: n.sdt, email: n.email || '' };
     const m = /^Khác – (.+)$/.exec(n.doi_tuong || ''); if (m) { o.doi_tuong = 'Khác'; o.doi_tuong_khac = m[1]; } return o; };
   const ngTu = (v) => { const p = Object.assign({}, v); if (p.doi_tuong === 'Khác' && p.doi_tuong_khac) p.doi_tuong = 'Khác – ' + p.doi_tuong_khac; delete p.doi_tuong_khac; return p; };
+  // ---------- Thông báo của PTN (máy chủ trả kèm ck_nguoi_dung): chuông 🔔 trên đầu trang, trang danh sách, khung nổi cho tin quan trọng ----------
+  const chuaDoc = () => (S.tb || []).filter(t => !t.da_doc);
+  function capChuong() {
+    const n = chuaDoc().length; $('hchuong').classList.toggle('hide', !S.nd);
+    $('hchuong-so').textContent = n > 99 ? '99+' : n; $('hchuong-so').classList.toggle('hide', !n);
+  }
+  function docTB(ids) {
+    ids = ids.filter(id => (S.tb || []).some(t => t.id === id && !t.da_doc)); if (!ids.length) return;
+    (S.tb || []).forEach(t => { if (ids.indexOf(t.id) >= 0) t.da_doc = 1; }); capChuong();
+    api('ck_doc_tb', { khoa: may().khoa, ids }).catch(() => null);
+  }
+  const theTB = (t) => '<div class="tbao' + (t.da_doc ? '' : ' moi') + (t.muc === 'quan_trong' ? ' qt' : '') + '"><h3>' + (t.muc === 'quan_trong' ? '❗ ' : '') + esc(t.tieu_de) + (t.da_doc ? '' : ' <span class="tag t-info" style="font-size:11px">mới</span>') + '</h3>' +
+    (t.noi_dung ? '<div class="nd">' + esc(t.noi_dung) + '</div>' : '') + (t.lien_ket ? '<div style="margin-top:6px"><a class="lnk" href="' + esc(t.lien_ket) + '"' + (/^https?:/.test(t.lien_ket) ? ' target="_blank" rel="noopener"' : '') + '>Xem chi tiết ›</a></div>' : '') +
+    '<div class="tg">' + (t.tu_dong ? 'Tin tự động · ' : 'PTN · ') + esc(String(t.tg || '').slice(0, 16).replace(/^(\d{4})-(\d{2})-(\d{2})/, '$3/$2/$1')) + '</div></div>';
+  function trangThongBao() {
+    $('hb').classList.remove('hide'); nutLui(true);
+    const ds = S.tb || [], moi = chuaDoc();
+    M('<h2>Thông báo</h2>' + (!ds.length ? '<div class="card note">Chưa có thông báo nào.</div>' : ds.map(theTB).join('')) + '<a class="btn o" href="#/">Về trang chủ</a>');
+    docTB(moi.map(t => t.id)); // mở danh sách = đã xem các tin mới
+  }
+  // tin quan trọng chưa đọc: hiện khung nổi ngay khi mở trang, bấm "Đã đọc" mới tắt
+  function noiQuanTrong() {
+    if (document.querySelector('.noi-tb') || /^#\/thong-bao/.test(location.hash)) return;
+    const t = chuaDoc().find(x => x.muc === 'quan_trong'); if (!t) return;
+    document.body.insertAdjacentHTML('beforeend', '<div class="noi-tb"><div>' + theTB(t) + '<button class="btn" id="b-da-doc" style="width:100%">Đã đọc</button></div></div>');
+    $('b-da-doc').onclick = () => { document.querySelector('.noi-tb').remove(); docTB([t.id]); noiQuanTrong(); };
+  }
   // đồng bộ với máy chủ (mỗi lần mở trang): máy đã đăng ký → dùng thông tin trên máy chủ (kể cả sau khi PTN duyệt sửa)
   async function dongBoNguoi() {
     if (S.ndXong) return S.nd;
     const r = await api('ck_nguoi_dung', { khoa: may().khoa });
-    S.nd = r.nd; S.yc = r.yeu_cau || []; S.ndXong = true;
+    S.nd = r.nd; S.yc = r.yeu_cau || []; S.tb = r.thong_bao || []; S.ndXong = true; capChuong();
     if (r.nd) { ghi('khsk_ho_so', tuMayChu(r.nd)); S.hs = null; }
     return r.nd;
   }
@@ -749,6 +777,7 @@
     // thông tin cá nhân: máy chủ là gốc (gắn với máy này); chưa đăng ký → nhập / xác nhận một lần
     let nd = S.nd; try { nd = await dongBoNguoi(); } catch (e) { /* mất mạng: dùng thông tin đã lưu trên máy */ nd = hoSo() && hoSo().ma_so ? true : null; }
     if (!nd) return trangHoSo(true);
+    setTimeout(noiQuanTrong, 500); // tin quan trọng chưa đọc: khung nổi sau khi trang hiện
     try {
       if (/^QR[1-8]$/.test(p[0])) {
         if (p[0] === 'QR7' && p[1]) { const r = await api('ck_cua_toi', { khoa: may().khoa }), x = r.ho_so.find(h => h.id === p[1]); return x && HS_SUA.indexOf(x.trang_thai) >= 0 ? trangQR7(x) : trangDonCuaToi(); }
@@ -759,6 +788,7 @@
       if (p[0] === 'ho-so') return trangHoSo(false);
       if (p[0] === 'don-cua-toi') return await trangDonCuaToi();
       if (p[0] === 'bieu-mau') return trangBieuMau();
+      if (p[0] === 'thong-bao') return trangThongBao();
       return await trangChu();
     } catch (e) { M('<div class="warn">' + esc(e.message) + '</div><a class="btn o" href="#/">Về trang chủ</a>'); }
   }
