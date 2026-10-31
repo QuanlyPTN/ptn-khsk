@@ -132,7 +132,28 @@
   const MON_TAY = '__tay'; // QR3: chọn "Môn khác – nhập thủ công"
   const PHONG_TB_QR2 = 'D11.01'; // QR2: chỉ cho mượn thiết bị đặt tại phòng này
   const dsPhong = () => S.dm.phong.map(p => [p.ma, '<b>' + esc(p.ma) + '</b> – ' + esc(p.ten)]);
-  const dsTB = (phong) => S.dm.thiet_bi.filter(t => !phong || t.phong === phong).map(t => [t.id, esc(t.ten) + (t.ma_ts ? ' <span class="note">' + esc(t.ma_ts) + '</span>' : '') + (phong ? '' : ' <span class="note">· ' + esc(t.phong || '—') + '</span>') + (t.ban ? ' <span class="note">(đang bận / hỏng)</span>' : ''), t.ban]);
+  // phòng gom theo tòa – tầng (F4, F5… D10): bấm nhóm thì hiện phòng của nhóm; phòng đã chọn ở mọi nhóm vẫn giữ (ô chọn ẩn vẫn nằm trong form)
+  const TEN_NHOM_PHONG = {};
+  const nhomPhong = (ma) => { const m = /^([A-Z])0*(\d+)/.exec(ma || ''); return m ? m[1] + m[2] : 'Khác'; };
+  const chonPhongNhom = (nhan, o) => {
+    const nhom = []; S.dm.phong.forEach(p => { const k = nhomPhong(p.ma); let g = nhom.find(x => x.k === k); if (!g) nhom.push(g = { k, ds: [] }); g.ds.push(p); });
+    return truong(nhan, '<div class="nhom-phong">' + nhom.map(g => '<button type="button" class="np" data-np="' + esc(g.k) + '">' + esc(TEN_NHOM_PHONG[g.k] || g.k) + '<b class="np-so"></b></button>').join('') + '</div>' +
+      '<div class="h" id="np-goi-y">Bấm tòa – tầng để hiện các phòng.</div>' +
+      nhom.map(g => '<div class="np-ds hide" data-np-ds="' + esc(g.k) + '">' + g.ds.map(p => '<label class="opt"><input type="checkbox" name="phong" value="' + esc(p.ma) + '" data-nhieu="1"><span><b>' + esc(p.ma) + '</b> – ' + esc(p.ten) + '</span></label>').join('') + '</div>').join('') +
+      '<div class="note" id="np-chon"></div>', o);
+  };
+  function ganNhomPhong(form) {
+    if (!form.querySelector('[data-np]')) return;
+    const dem = () => { const chon = [...form.querySelectorAll('[name=phong]:checked')].map(i => i.value);
+      form.querySelectorAll('[data-np]').forEach(b => { const n = chon.filter(m => nhomPhong(m) === b.dataset.np).length; b.querySelector('.np-so').textContent = n || ''; });
+      $('np-chon').innerHTML = chon.length ? 'Đã chọn: <b>' + chon.map(esc).join(', ') + '</b>' : ''; };
+    form.querySelectorAll('[data-np]').forEach(b => { b.onclick = () => { const mo = !b.classList.contains('on');
+      form.querySelectorAll('[data-np]').forEach(x => x.classList.toggle('on', mo && x === b));
+      form.querySelectorAll('[data-np-ds]').forEach(d => d.classList.toggle('hide', !(mo && d.dataset.npDs === b.dataset.np)));
+      $('np-goi-y').classList.toggle('hide', mo); }; });
+    form.addEventListener('change', (e) => { if (e.target.name === 'phong') dem(); }); dem();
+  }
+  const dsTB = (phong) => S.dm.thiet_bi.filter(t => !phong || t.phong === phong).map(t => [t.id, esc(t.ten) + (t.khung_gio ? ' <span class="kg-nhan">⏱ mượn theo khung ' + esc(t.khung_gio) + ' phút</span>' : '') + (t.ma_ts ? ' <span class="note">' + esc(t.ma_ts) + '</span>' : '') + (phong ? '' : ' <span class="note">· ' + esc(t.phong || '—') + '</span>') + (t.ban ? ' <span class="note">(đang bận / hỏng)</span>' : ''), t.ban]);
   // QR2, QR3: môn thực hành – giảng viên (gộp các lớp / nhóm cùng môn, cùng GV; giá trị = một lớp học phần đại diện)
   // QR3 (loai 'hc'): chỉ môn đã có biên bản hóa chất → số liệu ghi vào biên bản của môn
   const dsMonGV = (loai) => { const da = {}, out = []; S.dm.lop.filter(l => !loai || l['bb_' + loai]).forEach(l => { const k = l.ten_mon + '|' + (l.gv || ''); if (da[k]) return; da[k] = 1;
@@ -359,9 +380,9 @@
     switch (qr) {
       case 'QR1':
         f = chon('noi_dung', 'Nội dung đăng ký', ['Mượn phòng', 'Mượn thiết bị – dụng cụ', 'Mượn phòng + thiết bị – dụng cụ'], { v: 'Mượn phòng', req: 1 }) +
-          chon('phong', 'Phòng (chọn được nhiều phòng)', dsPhong(), { nhieu: 1, req: 1 }) + nhap('ngay', 'Ngày sử dụng', { type: 'date', v: homNay(), req: 1 }) +
+          chonPhongNhom('Phòng (chọn được nhiều phòng)', { req: 1 }) + nhap('ngay', 'Ngày sử dụng', { type: 'date', v: homNay(), req: 1 }) +
           '<div class="hai">' + nhap('gio_bd', 'Giờ bắt đầu', { type: 'time', v: gioNay(), req: 1 }) + nhap('gio_kt', 'Giờ trả', { type: 'time', v: gioNay(180), req: 1 }) + '</div>' +
-          '<div id="o-tb"></div>' + truong('Thiết bị, dụng cụ cần mượn thêm', '<div class="h">Tên, số lượng (bắt buộc), ghi chú – mỗi thứ một khung.</div><div id="dc-them"></div><button type="button" class="lnk" id="them-dc">+ Thêm thiết bị, dụng cụ</button>') + nhap('muc_dich', 'Mục đích sử dụng', { req: 1 }) +
+          '<div id="o-tb"></div><div id="o-khung"></div>' + truong('Thiết bị, dụng cụ cần mượn thêm', '<div class="h">Tên, số lượng (bắt buộc), ghi chú – mỗi thứ một khung.</div><div id="dc-them"></div><button type="button" class="lnk" id="them-dc">+ Thêm thiết bị, dụng cụ</button>') + nhap('muc_dich', 'Mục đích sử dụng', { req: 1 }) +
           nhap('gvhd', 'Giảng viên hướng dẫn / giảng viên dạy thực hành');
         break;
       case 'QR2':
@@ -411,7 +432,37 @@
         break;
     }
     M(h + '<form class="card" id="f" autocomplete="off">' + f + camKet(qr) + '<div id="err" class="err"></div><button class="btn" id="sb">Gửi đăng ký</button></form>');
-    const form = $('f'); danhDau(form);
+    const form = $('f'); danhDau(form); ganNhomPhong(form);
+    // khung giờ của thiết bị mượn theo khung (QR1): lịch ngày đã chọn – khung trống chọn được, tối đa 2 khung liền nhau / thiết bị
+    const KH = {};
+    const veKhung = async () => {
+      const box = $('o-khung'); if (!box) return;
+      const ngay = (form.querySelector('[name=ngay]') || {}).value, ids = [...form.querySelectorAll('[name=thiet_bi]:checked')].map(i => i.value).filter(id => (S.dm.thiet_bi.find(t => t.id === id) || {}).khung_gio);
+      Object.keys(KH).forEach(id => { if (ids.indexOf(id) < 0) delete KH[id]; });
+      const gio = (khoa) => ['gio_bd', 'gio_kt'].forEach(n => { const i = form.querySelector('[name=' + n + ']'); if (i) { i.readOnly = khoa; i.classList.toggle('khoa', khoa); } });
+      if (!ids.length || !ngay) { box.innerHTML = ''; gio(false); return; }
+      box.innerHTML = '<div class="spin"></div>';
+      let r; try { r = await api('ck_lich_khung', { ngay, tb: ids }); } catch (e) { box.innerHTML = '<div class="warn">' + esc(e.message) + '</div>'; return; }
+      const NHAN = { trong: '', da_dk: 'Đã có người đăng ký', qua: 'Đã qua giờ', khoa: 'Khóa' };
+      r.thiet_bi.forEach(t => { KH[t.id] = (KH[t.id] || []).filter(k => (t.khung.find(x => x.k === k) || {}).tt === 'trong'); });
+      const dienGio = () => { const ks = [].concat(...Object.values(KH)); gio(!!ks.length); if (!ks.length) return;
+        form.querySelector('[name=gio_bd]').value = ks.map(k => k.slice(0, 5)).sort()[0]; form.querySelector('[name=gio_kt]').value = ks.map(k => k.slice(6)).sort().pop(); };
+      box.innerHTML = r.thiet_bi.map(t => truong('Khung giờ mượn – ' + esc(t.ten) + ' (' + esc(t.khung_gio) + ' phút / khung)',
+        (r.nghi ? '<div class="warn">Ngày ' + esc(ngay.split('-').reverse().join('/')) + ' là ngày nghỉ – chọn ngày từ thứ 2 đến thứ 7.</div>' : '') +
+        '<div class="khung">' + t.khung.map(k => '<button type="button" class="kg kg-' + k.tt + ((KH[t.id] || []).indexOf(k.k) >= 0 ? ' chon' : '') + '" data-kg-tb="' + esc(t.id) + '" data-kg="' + esc(k.k) + '"' + (k.tt !== 'trong' ? ' disabled' : '') + '>' +
+          esc(k.k.replace('-', ' – ')) + (NHAN[k.tt] ? '<small>' + esc(k.ly_do || NHAN[k.tt]) + '</small>' : '') + '</button>').join('') + '</div>' +
+        '<div class="h">Chọn tối đa ' + r.toi_da + ' khung liền nhau. Đến PTN nhận thiết bị đúng giờ: quá ' + r.phut_tu_dong + ' phút từ giờ bắt đầu khung chưa nhận thì đơn tự đóng, khung mở cho người khác.</div>', { req: 1 })).join('');
+      box.querySelectorAll('[data-kg]').forEach(b => { b.onclick = () => {
+        const t = r.thiet_bi.find(x => x.id === b.dataset.kgTb), hop = t.khung.map(x => x.k), k = b.dataset.kg; let c = (KH[t.id] || []).slice();
+        if (c.indexOf(k) >= 0) c = c.filter(x => x !== k);
+        else { c.push(k); c.sort((a, z) => hop.indexOf(a) - hop.indexOf(z));
+          const lien = c.every((x, i) => !i || (hop.indexOf(x) === hop.indexOf(c[i - 1]) + 1 && x.slice(0, 5) === c[i - 1].slice(6)));
+          if (c.length > r.toi_da || !lien) c = [k]; }
+        KH[t.id] = c; box.querySelectorAll('[data-kg-tb="' + t.id + '"]').forEach(x => x.classList.toggle('chon', c.indexOf(x.dataset.kg) >= 0)); dienGio(); }; });
+      dienGio();
+    };
+    form.khungChon = () => { const o = {}; Object.keys(KH).forEach(id => { if (KH[id].length) o[id] = KH[id]; }); return o; };
+    form.khungThieu = () => [...form.querySelectorAll('[name=thiet_bi]:checked')].map(i => S.dm.thiet_bi.find(t => t.id === i.value)).filter(t => t && t.khung_gio && !(KH[t.id] || []).length).map(t => t.ten);
     const phongChon = () => [...form.querySelectorAll('[name=phong]:checked')].map(i => i.value);
     // thiết bị của các phòng đã chọn (giữ lựa chọn cũ khi đổi phòng)
     const veTB = () => { if (!$('o-tb')) return; const ps = phongChon(), cu = [...form.querySelectorAll('[name=thiet_bi]:checked')].map(i => i.value);
@@ -466,6 +517,7 @@
     }
     form.addEventListener('change', (e) => {
       if (e.target.name === 'phong') { if (qr === 'QR6') veTu(); else veTB(); }
+      if (qr === 'QR1' && ['phong', 'thiet_bi', 'ngay'].indexOf(e.target.name) >= 0) veKhung();
       if (e.target.name === 'lop_hp' || e.target.name === 'nhanh' || e.target.name === 'hs_chon' || e.target.name === 'hs_ma') veDong();
       if (e.target.name === 'dung_cho') { $('o-lop').classList.toggle('hide', e.target.value !== 'lop'); $('o-hs').classList.toggle('hide', e.target.value !== 'hs'); if ($('o-ca-nhan')) $('o-ca-nhan').classList.toggle('hide', e.target.value !== 'ca_nhan'); }
     });
@@ -508,7 +560,8 @@
           if (v.den_ngay > max) { $('err').textContent = 'Mượn thiết bị dài ngày tối đa 03 tháng – ngày trả muộn nhất ' + max.split('-').reverse().join('/'); return; } }
         if (v.dung_cho === 'lop' && !v.lop_hp && !v.mon_tu_nhap) { $('err').textContent = 'Chọn (hoặc gõ) môn thực hành – giảng viên'; return; }
       }
-      if (qr === 'QR1') { d.dung_cu = docDong('dc-them'); const thieu = d.dung_cu.find(x => !(+x.sl > 0)); if (thieu) { $('err').textContent = 'Nhập số lượng cho "' + thieu.ten + '"'; return; } }
+      if (qr === 'QR1') { d.dung_cu = docDong('dc-them'); const thieu = d.dung_cu.find(x => !(+x.sl > 0)); if (thieu) { $('err').textContent = 'Nhập số lượng cho "' + thieu.ten + '"'; return; }
+        const kt = form.khungThieu(); if (kt.length) { $('err').textContent = 'Chọn khung giờ cho thiết bị "' + kt[0] + '"'; return; } d.khung = form.khungChon(); }
       if (['QR1', 'QR4', 'QR5', 'QR6'].indexOf(qr) >= 0 && !(v.phong || []).length) { $('err').textContent = 'Chọn ít nhất một phòng'; return; }
       if (qr === 'QR6') { // mỗi phòng một tủ
         d.tu_ds = v.phong.map(p => ({ phong: p, so: v['tu_' + p] || '' })); Object.keys(d).filter(k => /^tu_[A-Z]/.test(k)).forEach(k => delete d[k]);

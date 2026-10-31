@@ -1086,6 +1086,9 @@
     ['ngay_nhan', 'Ngày nhận / đưa vào sử dụng', { type: 'date' }], ['nguyen_gia', 'Nguyên giá (VNĐ)', { ph: 'Chỉ nhập số' }],
     ['kd_gan', 'Kiểm định gần nhất', { type: 'date' }], ['kd_chu_ky', 'Chu kỳ kiểm định (tháng)', { type: 'number' }], ['kd_ke', 'Kiểm định kế tiếp', { type: 'date', help: 'Để trống: tự tính từ ngày gần nhất + chu kỳ' }],
     ['bd_gan', 'Bảo dưỡng gần nhất', { type: 'date' }], ['bd_chu_ky', 'Chu kỳ bảo dưỡng (tháng)', { type: 'number' }], ['bd_ke', 'Bảo dưỡng kế tiếp', { type: 'date' }],
+    ['khung_gio', 'Mượn theo khung giờ (QR1)', { full: 1, select: [['', 'Không – mượn tự do (thiết bị đủ điều phối)'], ['30', '30 phút / khung'], ['45', '45 phút / khung'], ['60', '1 giờ / khung'],
+      ['90', '1 giờ 30 phút / khung'], ['120', '2 giờ / khung'], ['150', '2 giờ 30 phút / khung'], ['180', '3 giờ / khung']],
+      help: 'Thiết bị ít, nhiều nhóm cần: người mượn chọn khung trống (sáng 7h–11h30, chiều 13h–16h30, thứ 2 – thứ 7), tối đa 2 khung liền nhau; quá 10 phút từ giờ bắt đầu khung chưa nhận thì đơn tự đóng' }],
     ['thong_so', 'Thông số kỹ thuật', { area: 1, full: 1 }], ['ghi_chu', 'Ghi chú', { full: 1 }]
   ];
   function hopThietBi(tb, phongMacDinh) {
@@ -1118,10 +1121,11 @@
     const ttin = [['ID', x.id], ['Mã tài sản', x.ma_ts || '— chưa có —'], ['Phòng', x.phong ? x.phong + ' – ' + phongTen(x.phong) : '— chưa xếp phòng —'], ['Loại', x.loai],
       ['Hãng / model', [x.hang, x.model].filter(Boolean).join(' · ')], ['Số serial', x.serial], ['Xuất xứ', x.xuat_xu], ['Nguồn vốn', x.nguon_von], ['Năm SX', x.nam_sx],
       ['Ngày nhận', ngayVN(x.ngay_nhan)], ['Nguyên giá', tien(x.nguyen_gia)], ['Người đang mượn', x.nguoi_muon ? x.nguoi_muon + (x.han_tra ? ' – hạn ' + ngayVN(x.han_tra) : '') : ''],
-      ['Thông số', x.thong_so], ['Ghi chú', x.ghi_chu], ['Cập nhật', x.cap_nhat ? ngayVN(x.cap_nhat) + ' – ' + x.nguoi_cap_nhat : '']].filter(k => k[1]);
+      ['Mượn theo khung giờ', +x.khung_gio > 0 ? x.khung_gio + ' phút / khung' : ''], ['Thông số', x.thong_so], ['Ghi chú', x.ghi_chu], ['Cập nhật', x.cap_nhat ? ngayVN(x.cap_nhat) + ' – ' + x.nguoi_cap_nhat : '']].filter(k => k[1]);
     h += '<div class="grid g2"><div><div class="card"><h2>Thông tin</h2><dl class="kv">' + ttin.map(k => '<dt>' + k[0] + '</dt><dd>' + esc(k[1]) + '</dd>').join('') + '</dl></div>' +
       '<div class="card"><h2>Kiểm định – bảo dưỡng</h2><dl class="kv"><dt>Kiểm định gần nhất</dt><dd>' + (ngayVN(x.kd_gan) || '—') + (x.kd_chu_ky ? ' · chu kỳ ' + esc(x.kd_chu_ky) + ' tháng' : '') + '</dd><dt>Kiểm định kế tiếp</dt><dd>' + hanTag(x.kd_ke) + '</dd>' +
       '<dt>Bảo dưỡng gần nhất</dt><dd>' + (ngayVN(x.bd_gan) || '—') + (x.bd_chu_ky ? ' · chu kỳ ' + esc(x.bd_chu_ky) + ' tháng' : '') + '</dd><dt>Bảo dưỡng kế tiếp</dt><dd>' + hanTag(x.bd_ke) + '</dd></dl></div>' +
+      (+x.khung_gio > 0 ? '<div class="card" id="lich-khung"></div>' : '') +
       '<div class="card"><h2>Tệp đính kèm (' + r.tep.length + ')</h2>' + (r.tep.length ? '<ul class="files">' + r.tep.map(f => '<li><span>📄 ' + esc(f.ten) + '<br><span class="note">' + esc((f.mo_ta ? f.mo_ta + ' · ' : '') + ngayVN(f.tao) + ' · ' + f.nguoi + ' · ' + Math.ceil(f.kich_thuoc / 1024) + ' KB') + '</span></span><span class="btns"><button class="btn o sm" data-tai="' + esc(f.id) + '">Tải về</button>' + (laAdmin() ? '<button class="btn red sm" data-xoa-tep="' + esc(f.id) + '">Xóa</button>' : '') + '</span></li>').join('') + '</ul>' : '<div class="note">Chưa có. Có thể đính kèm phiếu xuất kho, biên bản bàn giao, giấy kiểm định, hóa đơn sửa chữa…</div>') + '</div></div>' +
       '<div class="card"><h2>Dòng thời gian</h2><ul class="timeline">' + r.su_kien.map(s => '<li><div class="when">' + ngayVN(s.ngay) + ' · ' + esc(s.nguoi) + '</div><div class="what">' + esc(s.ten_loai) +
         (s.tu || s.den ? ' <span class="note">' + esc([s.tu, s.den].filter(Boolean).join(' → ')) + '</span>' : '') + '</div>' + (s.noi_dung ? '<div>' + esc(s.noi_dung) + '</div>' : '') + (s.chi_phi ? '<div class="note">Chi phí: ' + tien(s.chi_phi) + '</div>' : '') + '</li>').join('') + '</ul></div></div>';
@@ -1129,6 +1133,17 @@
     $('sk-loai').onchange = (e) => { if (e.target.value) hopSuKien(x, e.target.value); e.target.value = ''; };
     $('b-sua').onclick = () => hopThietBi(x);
     $('b-tep').onclick = () => hopTep(x);
+    // lịch mượn theo khung giờ: khung trống / đã có người giữ (mã đơn, người đăng ký) theo ngày
+    const veKhung = async (ngay) => {
+      const l = await api('tb_khung', { id: x.id, ngay }), TT = { trong: ['t-ok', 'Trống'], da_dk: ['t-warn', 'Đã đăng ký'], qua: ['t-gray', 'Đã qua giờ'], khoa: ['t-gray', 'Khóa'] };
+      $('lich-khung').innerHTML = '<h2>Lịch mượn theo khung giờ (' + esc(x.khung_gio) + ' phút / khung)</h2><div class="btns" style="margin-bottom:8px"><input type="date" id="lk-ngay" value="' + l.ngay + '"></div>' +
+        '<div class="tbl-wrap"><table><thead><tr><th>Khung</th><th>Trạng thái</th><th>Đơn – người đăng ký</th></tr></thead><tbody>' + l.khung.map(k => '<tr><td class="mono">' + esc(k.k) + '</td><td><span class="tag ' + TT[k.tt][0] + '">' + TT[k.tt][1] + '</span>' +
+          (k.ly_do ? '<div class="note">' + esc(k.ly_do) + '</div>' : '') + '</td><td>' + (k.don ? '<a href="#" data-don-k="' + esc(k.don) + '">' + esc(k.don) + '</a> · ' + esc(k.ho_ten) + ' <span class="note">(' + esc(k.ma_so) + ' · ' + esc(k.tt_don) + ')</span>' : '') + '</td></tr>').join('') +
+        '</tbody></table></div><p class="note">Quá 10 phút từ giờ bắt đầu khung mà chưa bấm "Đã giao" thì đơn tự đóng, khung trống lại cho người khác.</p>';
+      $('lk-ngay').onchange = (e) => veKhung(e.target.value);
+      $('lich-khung').querySelectorAll('[data-don-k]').forEach(a => { a.onclick = (e) => { e.preventDefault(); location.hash = '#/don/QR1'; setTimeout(() => window.PTN_QL.hopDon && window.PTN_QL.hopDon(a.dataset.donK), 600); }; });
+    };
+    if ($('lich-khung')) veKhung(homNay());
     $('b-tem').onclick = () => window.PTN_QL.inTem([x], 'tb');
     if ($('b-xoa')) $('b-xoa').onclick = async (e) => {
       const ly = prompt('Chỉ xóa khi nhập nhầm / trùng. Máy hỏng, bỏ đi → dùng sự kiện "Thanh lý".\nNhập lý do xóa:');

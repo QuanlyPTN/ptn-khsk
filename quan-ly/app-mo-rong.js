@@ -79,7 +79,7 @@
   const PHONG_KHO_TB = 'D11.01';
   const dsPhongDon = (d) => String(d.phong || '').split(/\s*,\s*/).filter(Boolean);
   const duoiKho = ' – phòng ' + PHONG_KHO_TB;
-  const dsMuonThem = (d) => (d.ten_tb || []).filter(x => x.endsWith(duoiKho)).map(x => x.slice(0, -duoiKho.length) + ' – SL 1 (thiết bị kho ' + PHONG_KHO_TB + ')')
+  const dsMuonThem = (d) => (d.khung_txt ? ['⏱ Khung giờ – ' + d.khung_txt] : []).concat((d.ten_tb || []).filter(x => x.endsWith(duoiKho)).map(x => x.slice(0, -duoiKho.length) + ' – SL 1 (thiết bị kho ' + PHONG_KHO_TB + ')'))
     .concat((d.nd.dung_cu_ds || []).map(x => x.ten + ' – SL ' + fmt(x.sl) + (x.ghi_chu ? ' (' + x.ghi_chu + ')' : '')))
     .concat(!d.nd.dung_cu_ds && d.nd.dung_cu ? String(d.nd.dung_cu).split(/\s*;\s*/).filter(Boolean) : []);
   const mucDichQR1 = (d) => [d.nd.noi_dung, d.nd.muc_dich].filter(Boolean).join(' · ');
@@ -1533,7 +1533,8 @@
   }
 
   // ---------------- Đăng ký trang ----------------
-  Q.taiMauKho = taiMauKho; // tạo bộ file mẫu (kiem-thu)
+  Q.taiMauKho = taiMauKho;
+  Q.hopDon = (id) => hopDon(id); // mở hộp đơn từ trang khác (lịch khung giờ của thiết bị) // tạo bộ file mẫu (kiem-thu)
   Object.assign(Q.TUYEN, {
     'tong-quan': manHomNay, 'don': manDon, 'de-tai': manDeTai, 'nguoi-dung': manNguoiDung, 'kho': (p) => manKho(p, 'HC'), 'kho-dl': manKhoDL, 'bao-cao': manBaoCao, 'so': manSo, 'cai-dat': manCaiDat, 'bien-ban': manBB
   });
