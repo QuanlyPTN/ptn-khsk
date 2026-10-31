@@ -33,12 +33,38 @@
   const GHI_CHU_BT = ' Việc bồi thường (nếu có) được xử lý theo Điều 18 Quy định quản lý, sử dụng phòng TN – TH của Khoa, độc lập với việc công nhận kết quả học tập. Chúng tôi chân thành cảm ơn.';
   const dsSo = (ds) => ds.map((x, i) => P((i + 1) + '. ' + x, { al: 'both', ind: { firstLine: 567 } }));
   // bảng có viền: grid (twip), dau = tiêu đề cột, dong = các dòng (thêm dòng trống cho đủ toiThieu, cột 1 là STT)
-  const bang = (grid, dau, dong, toiThieu) => {
+  // giu = true: giữ nguyên độ rộng cột (bảng ký tên); còn lại cột tự co giãn theo nội dung người nhập
+  const bang = (grid, dau, dong, toiThieu, giu) => {
     const them = Array.from({ length: Math.max(0, toiThieu - dong.length) }, (_, i) => [dong.length + i + 1].concat(dau.slice(1).map(() => '')));
-    return { bang: { grid, dau, dong: dong.concat(them) } };
+    dong = dong.map(r => r.map(c => typeof c === 'string' && c.indexOf('@') > 0 ? c.replace(/@/g, '@\u200B') : c)); // email dài: xuống dòng sau @
+    return { bang: { grid: giu ? grid : coGian(grid, dau, dong), dau, dong: dong.concat(them) } };
   };
+  // độ rộng cột theo nội dung: tổng bằng bề rộng bảng ban đầu; cột nhiều chữ (email, tên, quy cách) rộng ra, cột ngắn (STT, SL, MSSV) co lại;
+  // mỗi cột đủ chứa từ dài nhất (tối đa ~28 ký tự), chữ dài hơn thì xuống dòng. Bảng chưa có dữ liệu giữ độ rộng mẫu.
+  const CHU = 118, DEM = 180, CO_MIN = 450;
+  function coGian(grid, dau, dong) {
+    const tong = grid.reduce((a, b) => a + b, 0), n = grid.length;
+    if (!dong.some(r => r.slice(1).some(c => String(c == null ? '' : c).trim()))) return grid;
+    const dong1 = (s) => String(s == null ? '' : s).replace(/\u200B/g, ' ').split('\n'), dai = (s) => Math.max(0, ...dong1(s).map(l => l.length));
+    const tu = (s) => Math.max(0, ...dong1(s).join(' ').split(/\s+/).map(w => w.length));
+    const min = [], can = [];
+    for (let j = 0; j < n; j++) {
+      const o = dong.map(r => r[j]);
+      const rong = !o.some(c => String(c == null ? '' : c).trim()); // cột để viết tay (SL trả, ghi chú…): giữ độ rộng mẫu
+      min[j] = Math.max(CO_MIN, tu(dau[j]) * 145 + DEM, Math.min(28, Math.max(0, ...o.map(tu))) * CHU + DEM);
+      can[j] = rong ? Math.max(min[j], grid[j]) : Math.max(min[j], Math.min(60, Math.max(...o.map(dai))) * CHU + DEM);
+      if (!rong && Math.max(...o.map(dai)) <= 22) min[j] = can[j]; // chữ ngắn (họ tên, MSSV, điện thoại): không xuống dòng – cột dài (email, quy cách) nhường chỗ
+    }
+    const sMin = min.reduce((a, b) => a + b, 0), sCan = can.reduce((a, b) => a + b, 0);
+    let w;
+    if (sCan <= tong) w = can.map((c, j) => c + (tong - sCan) * grid[j] / tong); // dư chỗ: chia thêm theo tỷ lệ mẫu
+    else if (sMin <= tong) w = min.map((m, j) => m + (tong - sMin) * (can[j] - m) / (sCan - sMin)); // thiếu chỗ: ưu tiên cột nhiều chữ
+    else w = min.map(m => m * tong / sMin);
+    w = w.map(Math.floor); w[n - 1] += tong - w.reduce((a, b) => a + b, 0);
+    return w;
+  }
   // Phụ lục: bảng có dữ liệu in đúng số dòng; bảng trống chừa toiThieu dòng để viết tay (đơn QR vẫn dùng bang)
-  const bangPL = (grid, dau, dong, toiThieu) => bang(grid, dau, dong, dong.length ? 0 : toiThieu);
+  const bangPL = (grid, dau, dong, toiThieu, giu) => bang(grid, dau, dong, dong.length ? 0 : toiThieu, giu);
   // chân trang góc phải dưới của trang A4: các dòng chữ (Mẫu / Phụ lục, mã đơn / mã hồ sơ) + mã QR bên phải
   const chan = (...dong) => ({ chan: dong.map(d => [].concat(d)) });
   // khối ký: cot = chức danh hoặc [chức danh, họ tên in dưới chữ ký]
@@ -93,8 +119,12 @@
       k.push(P(loiMo + 'cam kết thực hiện đầy đủ, đúng nội quy phòng thí nghiệm như sau:', { al: 'both' }), ...dsSo(CAM_KET_SD),
         P(R('Sau khi hoàn thành ' + (kltn ? viec : 'đề tài') + ', chúng tôi cam kết:', { b: 1 }), { al: 'both' }), ...dsSo(CAM_KET_SAU), camOn);
     }
-    k.push(P(R(ngayDon(hs), { i: 1 }), { al: 'right' }),
-      ky(['ĐẠI DIỆN BÊN MƯỢN', 'GIẢNG VIÊN HƯỚNG DẪN', { A: 'QUẢN LÝ PTN', B: 'GV QUẢN LÝ PHÒNG', C: 'QUẢN LÝ PTN MƯỢN TB' }[ma[1]]], 3));
+    k.push(P(R(ngayDon(hs), { i: 1 }), { al: 'right' }));
+    if (ma[1] === 'B') { // mượn nhiều phòng: mỗi phòng một dòng để giảng viên quản lý phòng đó ký (in sẵn cán bộ phụ trách nếu có)
+      const ds = phongMuon(hs.phong).split(', ').filter(Boolean).map(m => (hs.phong_ds || []).find(p => p.ma === m) || { ma: m });
+      k.push(ky(['ĐẠI DIỆN BÊN MƯỢN', 'GIẢNG VIÊN HƯỚNG DẪN'], 3), TRONG, P(R('XÁC NHẬN CỦA GIẢNG VIÊN QUẢN LÝ PHÒNG', { b: 1 }), { al: 'center' }),
+        bangPL([600, 1150, 3921, 3400], ['STT', 'Phòng', 'Tên phòng', 'GV quản lý phòng (ký, ghi rõ họ tên)'], ds.map((p, i) => [i + 1, p.ma, p.ten || '', '\n\n\n' + (p.phu_trach || '')]), 2, true));
+    } else k.push(ky(['ĐẠI DIỆN BÊN MƯỢN', 'GIẢNG VIÊN HƯỚNG DẪN', { A: 'QUẢN LÝ PTN', C: 'QUẢN LÝ PTN MƯỢN TB' }[ma[1]]], 3));
     return k;
   }
   // đơn mượn phòng (1B, 2B, 3): không ghi phòng điều phối chung – sinh viên chỉ vào để dùng thiết bị, không bố trí thí nghiệm
