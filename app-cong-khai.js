@@ -180,7 +180,7 @@
     const p = hoSo();
     let h = '<div class="card prof"><div class="av">' + esc((p.ho_ten || '?').trim().split(' ').pop().charAt(0)) + '</div><div class="i"><b>' + esc(p.ho_ten) + '</b><span>' + esc([p.ma_so, ngGui().doi_tuong, p.lop].filter(Boolean).join(' · ')) +
       '</span></div><a class="lnk" href="#/ho-so">Thông tin</a></div>' +
-      (chuaDoc().length ? '<a class="warn" href="#/thong-bao" style="display:block;background:#EEF3FE;border-color:#CFDCF8;color:#1C3A8A;text-decoration:none">🔔 Bạn có <b>' + chuaDoc().length + '</b> thông báo mới từ PTN – bấm để xem</a>' : '') + '<div id="tb"></div><div class="tieu-de-nhom">Đăng ký – biểu mẫu</div><div class="grid">' +
+      '<div id="tb-moi"></div><div id="tb"></div><div class="tieu-de-nhom">Đăng ký – biểu mẫu</div><div class="grid">' +
       Object.keys(QR_TEN).filter(q => QR_GV.indexOf(q) < 0).map(oQR).join('') +
       '</div><div class="tieu-de-nhom">Giảng viên – thiết bị</div><div class="grid">' + QR_GV.map(oQR).join('') +
       Object.keys(GV().LOAI).filter(q => !GV().LOAI[q].ngung).map(q => '<a class="tile" href="#/' + q + '">' + bieu(q) + '<span class="qv">' + q + '</span>' + esc(GV().LOAI[q].ten) + '</a>').join('') +
@@ -189,7 +189,7 @@
       '<a class="tile t2" href="#/bieu-mau">' + bieu('mau') + '<span><b>Biểu mẫu PTN</b><br><span class="note">Mẫu đơn, phiếu trống</span></span></a></div>' +
       (navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ? '' : '<div class="card note" style="margin-top:14px"><b>Cài như ứng dụng:</b> iPhone (Safari): bấm Chia sẻ → <i>Thêm vào MH chính</i>. Android (Chrome): bấm ⋮ → <i>Thêm vào màn hình chính</i>.</div>') +
       '<p class="note" style="text-align:center;margin-top:18px"><a href="' + (DEMO ? 'quan-ly/chay-thu.html' : 'quan-ly/') + '">Cán bộ PTN đăng nhập</a></p>';
-    M(h);
+    M(h); veDongTB();
     try {
       const dm = await danhMuc(true);
       if (dm.thong_bao && $('tb')) $('tb').innerHTML = '<div class="warn" style="background:#FFF8E1;border-color:#F2D58A;color:#6B4A00">📢 ' + esc(dm.thong_bao) + '</div>';
@@ -215,7 +215,7 @@
   }
   function docTB(ids) {
     ids = ids.filter(id => (S.tb || []).some(t => t.id === id && !t.da_doc)); if (!ids.length) return;
-    (S.tb || []).forEach(t => { if (ids.indexOf(t.id) >= 0) t.da_doc = 1; }); capChuong();
+    (S.tb || []).forEach(t => { if (ids.indexOf(t.id) >= 0) t.da_doc = 1; }); capChuong(); veDongTB();
     api('ck_doc_tb', { khoa: may().khoa, ids }).catch(() => null);
   }
   const theTB = (t) => '<div class="tbao' + (t.da_doc ? '' : ' moi') + (t.muc === 'quan_trong' ? ' qt' : '') + '"><h3>' + (t.muc === 'quan_trong' ? '❗ ' : '') + esc(t.tieu_de) + (t.da_doc ? '' : ' <span class="tag t-info" style="font-size:11px">mới</span>') + '</h3>' +
@@ -227,6 +227,19 @@
     M('<h2>Thông báo</h2>' + (!ds.length ? '<div class="card note">Chưa có thông báo nào.</div>' : ds.map(theTB).join('')) + '<a class="btn o" href="#/">Về trang chủ</a>');
     docTB(moi.map(t => t.id)); // mở danh sách = đã xem các tin mới
   }
+  // dòng "Bạn có n thông báo mới" ở trang chủ (vẽ lại mỗi lần lấy thông báo)
+  function veDongTB() {
+    const o = $('tb-moi'), n = chuaDoc().length; if (!o) return;
+    o.innerHTML = n ? '<a class="warn" href="#/thong-bao" style="display:block;background:#EEF3FE;border-color:#CFDCF8;color:#1C3A8A;text-decoration:none">🔔 Bạn có <b>' + n + '</b> thông báo mới từ PTN – bấm để xem</a>' : '';
+  }
+  // lấy thông báo mới khi trang đang mở: mở lại ứng dụng từ nền và mỗi 60 giây (chỉ đọc, không ghi dữ liệu)
+  async function lamMoiTB() {
+    if (!S.nd || document.hidden) return;
+    S.ndXong = false;
+    try { await dongBoNguoi(); noiQuanTrong(); } catch (e) { /* mất mạng: thử lại lần sau */ }
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) lamMoiTB(); });
+  setInterval(lamMoiTB, 60000);
   // tin quan trọng chưa đọc: hiện khung nổi ngay khi mở trang, bấm "Đã đọc" mới tắt
   function noiQuanTrong() {
     if (document.querySelector('.noi-tb') || /^#\/thong-bao/.test(location.hash)) return;
@@ -236,9 +249,9 @@
   }
   // đồng bộ với máy chủ (mỗi lần mở trang): máy đã đăng ký → dùng thông tin trên máy chủ (kể cả sau khi PTN duyệt sửa)
   async function dongBoNguoi() {
-    if (S.ndXong) return S.nd;
+    if (S.ndXong && Date.now() - (S.ndLuc || 0) < 20000) return S.nd; // lấy lại sau 20 giây: thông báo mới, PTN vừa duyệt sửa thông tin
     const r = await api('ck_nguoi_dung', { khoa: may().khoa });
-    S.nd = r.nd; S.yc = r.yeu_cau || []; S.tb = r.thong_bao || []; S.ndXong = true; capChuong();
+    S.nd = r.nd; S.yc = r.yeu_cau || []; S.tb = r.thong_bao || []; S.ndXong = true; S.ndLuc = Date.now(); capChuong(); veDongTB();
     if (r.nd) { ghi('khsk_ho_so', tuMayChu(r.nd)); S.hs = null; }
     return r.nd;
   }
