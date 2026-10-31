@@ -175,12 +175,21 @@
       dang.filter(d => !d.qua_han && d.den_ngay.slice(0, 10) <= mai).map(d => '<div class="warn han-sap" style="background:#FFF8E1;border-color:#F2D58A;color:#6B4A00">⏰ <b>Sắp đến hạn trả</b>: ' + esc(ten(d)) + ' – hạn ' +
         (d.den_ngay.slice(0, 10) === hn ? 'hôm nay' : 'ngày mai') + ' ' + esc(ngayVN(d.den_ngay)) + '.</div>').join('');
   }
+  // giờ làm việc hành chính của PTN (hiện ở trang chủ) – sửa ở đây khi PTN đổi giờ
+  const GIO_LAM_VIEC = { ngay: 'Thứ 2 – Thứ 7', ca: [['Sáng', '07:00', '11:30'], ['Chiều', '13:00', '16:30']] };
+  function theGioLamViec() {
+    const vn = new Date(Date.now() + (new Date().getTimezoneOffset() + 420) * 60000), thu = vn.getDay(), hm = String(vn.getHours()).padStart(2, '0') + ':' + String(vn.getMinutes()).padStart(2, '0');
+    const mo = thu >= 1 && thu <= 6 && GIO_LAM_VIEC.ca.some(c => hm >= c[1] && hm < c[2]);
+    const gio = (s) => s.replace(':00', 'h').replace(':', 'h');
+    return '<div class="card gio-lv"><div><b>🕘 Giờ làm việc PTN</b> <span class="tag ' + (mo ? 't-ok">Đang trong giờ làm việc' : 't-gray">Ngoài giờ làm việc') + '</span></div>' +
+      '<div class="note" style="margin-top:4px">' + GIO_LAM_VIEC.ca.map(c => c[0] + ': <b>' + gio(c[1]) + ' – ' + gio(c[2]) + '</b>').join(' · ') + ' · ' + GIO_LAM_VIEC.ngay + '</div></div>';
+  }
   async function trangChu() {
     $('hb').classList.add('hide'); nutLui(false);
     const p = hoSo();
     let h = '<div class="card prof"><div class="av">' + esc((p.ho_ten || '?').trim().split(' ').pop().charAt(0)) + '</div><div class="i"><b>' + esc(p.ho_ten) + '</b><span>' + esc([p.ma_so, ngGui().doi_tuong, p.lop].filter(Boolean).join(' · ')) +
       '</span></div><a class="lnk" href="#/ho-so">Thông tin</a></div>' +
-      '<div id="tb-moi"></div><div id="tb"></div><div class="tieu-de-nhom">Đăng ký – biểu mẫu</div><div class="grid">' +
+      theGioLamViec() + '<div id="tb-moi"></div><div id="tb"></div><div class="tieu-de-nhom">Đăng ký – biểu mẫu</div><div class="grid">' +
       Object.keys(QR_TEN).filter(q => QR_GV.indexOf(q) < 0).map(oQR).join('') +
       '</div><div class="tieu-de-nhom">Giảng viên – thiết bị</div><div class="grid">' + QR_GV.map(oQR).join('') +
       Object.keys(GV().LOAI).filter(q => !GV().LOAI[q].ngung).map(q => '<a class="tile" href="#/' + q + '">' + bieu(q) + '<span class="qv">' + q + '</span>' + esc(GV().LOAI[q].ten) + '</a>').join('') +
