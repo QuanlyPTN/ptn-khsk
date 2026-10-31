@@ -37,6 +37,8 @@
     const them = Array.from({ length: Math.max(0, toiThieu - dong.length) }, (_, i) => [dong.length + i + 1].concat(dau.slice(1).map(() => '')));
     return { bang: { grid, dau, dong: dong.concat(them) } };
   };
+  // Phụ lục: bảng có dữ liệu in đúng số dòng; bảng trống chừa toiThieu dòng để viết tay (đơn QR vẫn dùng bang)
+  const bangPL = (grid, dau, dong, toiThieu) => bang(grid, dau, dong, dong.length ? 0 : toiThieu);
   // chân trang góc phải dưới của trang A4: các dòng chữ (Mẫu / Phụ lục, mã đơn / mã hồ sơ) + mã QR bên phải
   const chan = (...dong) => ({ chan: dong.map(d => [].concat(d)) });
   // khối ký: cot = chức danh hoặc [chức danh, họ tên in dưới chữ ký]
@@ -71,13 +73,13 @@
       P('Kính gửi:  - Ban lãnh đạo Khoa Khoa học Sức khỏe;', { al: 'both', ind: { left: 1134 } }), P('- Bộ phận quản lý Phòng thí nghiệm Khoa.', { al: 'both', ind: { left: 2268 } }),
       P(['Tôi tên: ', GT(tn.ho_ten, 14), ' (đại diện nhóm)   MSSV: ', GT(tn.ma_so, 5)]), P(['Lớp: ', GT(tn.lop, 6), '  Điện thoại: ', GT(tn.sdt, 5), '  Email: ', GT(tn.email, 8)]),
       P(['Bộ môn/Khoa: ', GT(hs.bo_mon, 27)]), P(R('Danh sách nhóm thực hiện:', { b: 1 }), { al: 'both' }),
-      bang([700, 3000, 1600, 1600, 2171], ['STT', 'Họ và tên', 'MSSV', 'Điện thoại', 'Email'], (hs.nhom || []).map((m, i) => [i + 1, m.ho_ten, m.ma_so, m.sdt, m.email]), 3), TRONG);
+      bangPL([700, 3000, 1600, 1600, 2171], ['STT', 'Họ và tên', 'MSSV', 'Điện thoại', 'Email'], (hs.nhom || []).map((m, i) => [i + 1, m.ho_ten, m.ma_so, m.sdt, m.email]), 3), TRONG);
     const deTai = [P(['Đề tài: ', GT(hs.ten, 30)]), P(['GVHD: ', GT(hs.gvhd, 31)])];
     const loiMo = 'Chúng tôi rất mong được sự đồng ý của thầy/cô để có thể tiến hành thực hiện đề tài trong thời gian sớm nhất và ';
     const camOn = P([R('Ghi chú:', { i: 1 }), GHI_CHU_BT], { al: 'both' }); // theo Phụ lục 1A–2C của Quy định (Điều 18)
     if (ma[1] === 'A') {
       k.push(P('Tôi làm đơn này kính đề nghị BLĐ Khoa và bộ phận quản lý PTN cho phép mượn các dụng cụ sau để thực hiện ' + (kltn ? viec : 'đề tài nghiên cứu khoa học') + ':', { al: 'both' }), ...deTai,
-        bang([700, 2700, 2771, 1000, 1000, 900], ['STT', 'Tên dụng cụ', 'Quy cách (đặc điểm, thông số chính, nhà sản xuất)', 'SL mượn', 'SL trả', 'Ghi chú'],
+        bangPL([700, 2700, 2771, 1000, 1000, 900], ['STT', 'Tên dụng cụ', 'Quy cách (đặc điểm, thông số chính, nhà sản xuất)', 'SL mượn', 'SL trả', 'Ghi chú'],
           (hs.dung_cu || []).map((d, i) => [i + 1, d.ten, d.quy_cach || '', (d.sl || '') + (d.dvt ? ' ' + d.dvt : ''), '', d.ghi_chu || '']), 4),
         TRONG,
         P(loiMo + 'đồng ý thực hiện đầy đủ các cam kết sau:', { al: 'both' }),
@@ -87,7 +89,7 @@
       if (ma[1] === 'B') k.push(P(['Tôi làm đơn này kính đề nghị BLĐ Khoa và bộ phận quản lý PTN cho phép mượn phòng ', GT(phongMuon(hs.phong), 5), ' để thực hiện ' + viec + '.'], { al: 'both' }),
         P(['Thời gian sử dụng: từ ngày ', hs.tu_ngay ? R(ngay(hs.tu_ngay), { b: 1 }) : '……/……/20……', ' đến ngày ', hs.den_ngay ? R(ngay(hs.den_ngay), { b: 1 }) : '……/……/20……', hs.ngoai_gio === 'Có' ? ' (có làm ngoài giờ hành chính)' : '']), ...deTai);
       else k.push(P('Tôi làm đơn này kính đề nghị BLĐ Khoa và bộ phận quản lý PTN cho phép sử dụng các thiết bị sau để thực hiện ' + (kltn ? viec : 'đề tài nghiên cứu khoa học') + ':', { al: 'both' }), ...deTai,
-        bang([700, 3171, 1700, 2000, 1500], ['STT', 'Tên thiết bị', 'Phòng', 'Xác nhận GV QLP', 'Ghi chú'], (hs.ten_tb || []).map((t2, i) => [i + 1, t2, hs.phong || '', '', '']), 3), TRONG);
+        bangPL([700, 3171, 1700, 2000, 1500], ['STT', 'Tên thiết bị', 'Phòng', 'Xác nhận GV QLP', 'Ghi chú'], (hs.ten_tb || []).map((t2, i) => [i + 1, t2, (hs.phong_tb || [])[i] || '', '', '']), 3), TRONG);
       k.push(P(loiMo + 'cam kết thực hiện đầy đủ, đúng nội quy phòng thí nghiệm như sau:', { al: 'both' }), ...dsSo(CAM_KET_SD),
         P(R('Sau khi hoàn thành ' + (kltn ? viec : 'đề tài') + ', chúng tôi cam kết:', { b: 1 }), { al: 'both' }), ...dsSo(CAM_KET_SAU), camOn);
     }
