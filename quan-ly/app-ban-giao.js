@@ -1,10 +1,10 @@
-/* Bàn giao thiết bị cho phòng (PTN → giảng viên quản lý phòng): danh sách biên bản, lập / sửa nháp, xác nhận bàn giao, in theo mẫu, bản ký, bàn giao lại.
+/* Bàn giao thiết bị cho phòng (PTN → giảng viên quản lý phòng): danh sách biên bản, lập / sửa nháp, xác nhận bàn giao, in theo mẫu, bản ký, bàn giao lại, nhận trả thiết bị.
    Máy chủ: apps-script/22_BanGiaoTB.gs. Trang: #/ban-giao-tb (danh sách), #/ban-giao-tb/moi, #/ban-giao-tb/<mã>, #/ban-giao-tb/<mã>/sua. Phân quyền theo mục Tài sản. */
 (function () {
   'use strict';
   const Q = window.PTN_QL;
   const { S, $, api, chay, trang, moHop, dongHop, o, giaTri, esc, toast, ngayVN, homNay, boDau, coQuyen, dieuHuong, napQR, napXlsx, guiTep, taiVe, lienKet, laAdmin } = Q;
-  const MAU = { 'Nháp': 't-gray', 'Đã bàn giao': 't-info', 'Đã nhận bản ký': 't-ok', 'Đã thay thế': 't-gray' };
+  const MAU = { 'Nháp': 't-gray', 'Đã bàn giao': 't-info', 'Đã nhận bản ký': 't-ok', 'Đã thay thế': 't-gray', 'Đã trả': 't-gray' };
   const tagTT = (t) => '<span class="tag ' + (MAU[t] || 't-gray') + '">' + esc(t) + '</span>';
   const xl = () => coQuyen('tai-san', 'xu_ly');
   async function anhQR(id) { try { const QR = await napQR(), q = QR(0, 'M'); q.addData(lienKet('ban-giao-tb/' + id)); q.make(); return q.createDataURL(4, 1); } catch (e) { return ''; } }
@@ -37,21 +37,25 @@
     const nd = trang('Biên bản ' + esc(id), '', '<a href="#/tai-san">Tài sản</a> › <a href="#/ban-giao-tb">Bàn giao thiết bị</a> ›');
     const b = await api('bgtb_ct', { id }), nhap = b.trang_thai === 'Nháp', daGiao = ['Đã bàn giao', 'Đã nhận bản ký'].indexOf(b.trang_thai) >= 0;
     $('main').querySelector('h1').innerHTML = 'Biên bản ' + esc(b.id) + ' ' + tagTT(b.trang_thai);
+    const tbs = [].concat(...b.dong.map(d => d.tb_ct)), conLai = tbs.filter(t => !t.tra && t.ten !== '(đã xóa)');
     nd.innerHTML = '<div class="btns" style="margin-bottom:12px"><button class="btn o sm" id="b-in">🖨 Xem trước – in</button><button class="btn o sm" id="b-word">Tải Word</button>' +
       (xl() && nhap ? '<a class="btn o sm" href="#/ban-giao-tb/' + esc(b.id) + '/sua">✎ Sửa nháp</a><button class="btn sm" id="b-xn">✓ Xác nhận bàn giao</button><button class="btn red sm" id="b-xoa">Xóa nháp</button>' : '') +
       (xl() && daGiao ? '<label class="btn o sm">Đính kèm bản ký<input type="file" id="tep-bb" hidden></label>' + (b.trang_thai === 'Đã bàn giao' ? '<button class="btn sm" id="b-ky">Đã nhận bản ký</button>' : '') +
+        (conLai.length ? '<button class="btn sm" id="b-tra" title="GV trả thiết bị: máy lấy từ phòng khác về phòng cũ, máy nhập tay về kho PTN">↩ Nhận trả thiết bị</button>' : '') +
         (b.thay_bang ? '' : '<button class="btn o sm" id="b-lai" title="Đổi GV quản lý phòng / điều chuyển: lập biên bản mới kế thừa danh mục">Bàn giao lại</button>') : '') +
       (!nhap && laAdmin() ? '<button class="btn red o sm" id="b-xoa" title="Chỉ admin: xóa biên bản và bản scan; thiết bị giữ nguyên trong Tài sản">🗑 Xóa biên bản</button>' : '') + '</div>' +
       (nhap ? '<div class="card" style="border-color:#E8C77A;background:#FFFBEF">Biên bản <b>nháp</b>: kiểm tra danh mục rồi bấm <b>✓ Xác nhận bàn giao</b> – thiết bị mới được tạo trong Tài sản, thiết bị chuyển về phòng ' + esc(b.phong) + '. Sau đó in ký giấy, đính kèm bản scan rồi bấm <b>Đã nhận bản ký</b>' + (b.ma_so_nhan ? ' – giảng viên nhận được thông báo ở Đơn của tôi' : '') + '.</div>' : '') +
       '<div class="grid g2"><div class="card"><dl class="kv">' + [['Ngày bàn giao', ngayVN(b.ngay)], ['Phòng nhận', b.phong + ' – ' + b.ten_phong], ['Bên giao', b.ben_giao + ' (Quản lý PTN)'],
-        ['Bên nhận', b.ben_nhan + (b.ma_so_nhan ? ' · ' + b.ma_so_nhan : ' · chưa gắn tài khoản trang dùng chung') + ' – ' + b.chuc_vu_nhan], ['Số thiết bị', b.so_tb], ['Ghi chú', b.ghi_chu],
+        ['Bên nhận', b.ben_nhan + (b.ma_so_nhan ? ' · ' + b.ma_so_nhan : ' · chưa gắn tài khoản trang dùng chung') + ' – ' + b.chuc_vu_nhan], ['Số thiết bị', b.so_tb + (b.tra.length ? ' (GV đã trả ' + b.tra.length + ')' : '')], ['Ghi chú', b.ghi_chu],
         ['Thay cho biên bản', b.thay_cho], ['Thay bằng biên bản', b.thay_bang]].filter(x => x[1] !== '' && x[1] != null).map(x => '<dt>' + x[0] + '</dt><dd>' + esc(String(x[1])) + '</dd>').join('') +
         '</dl></div>' +
       '<div class="card"><h2>Bản ký, tệp (' + b.tep.length + ')</h2>' + (b.tep.length ? '<ul class="files">' + b.tep.map(f => '<li><span>📄 ' + esc(f.ten) + '</span><button class="btn o sm" data-tai="' + esc(f.id) + '">Tải về</button></li>').join('') + '</ul>' : '<div class="note">Chưa có.</div>') +
       '<h2 style="margin-top:12px">Lịch sử</h2>' + b.xu_ly.slice().reverse().map(x => '<div class="note">' + ngayVN(x.tg) + ' ' + String(x.tg).slice(11, 16) + ' · <b>' + esc(x.hd) + '</b> · ' + esc(x.nguoi) + (x.nd ? ' – ' + esc(x.nd) : '') + '</div>').join('') + '</div></div>' +
+      (b.tra.length ? '<div class="card"><h2>Thiết bị GV đã trả (' + b.tra.length + ')</h2><div class="tbl-wrap"><table><thead><tr><th>Ngày trả</th><th>Thiết bị</th><th>Trả về</th><th>Tình trạng khi trả</th><th>Ghi chú</th><th>Người nhận</th></tr></thead><tbody>' +
+        b.tra.map(x => '<tr><td>' + ngayVN(x.ngay) + '</td><td><a href="#/tai-san/' + esc(x.tb) + '">' + esc(x.ten) + '</a></td><td>' + esc(x.ve) + '</td><td>' + esc(x.tinh_trang) + '</td><td>' + esc(x.ghi_chu) + '</td><td>' + esc(x.nguoi) + '</td></tr>').join('') + '</tbody></table></div></div>' : '') +
       '<div class="card"><h2>Danh mục thiết bị bàn giao</h2><div class="tbl-wrap"><table><thead><tr><th>STT</th><th>Tên thiết bị</th><th>Model</th><th>ĐVT</th><th class="num">SL</th><th>Tình trạng lúc bàn giao</th><th>Ghi chú</th><th>Thiết bị trong Tài sản</th></tr></thead><tbody>' +
       b.dong.map((d, i) => '<tr><td>' + (i + 1) + '</td><td><b>' + esc(d.ten) + '</b></td><td>' + esc(d.model) + '</td><td>' + esc(d.dvt) + '</td><td class="num">' + esc(d.sl) + '</td><td>' + esc(d.tinh_trang) + '</td><td>' + esc(d.ghi_chu) + '</td><td>' +
-        (d.tb_ct.length ? d.tb_ct.map(t => '<a href="#/tai-san/' + esc(t.id) + '">' + esc(t.id) + '</a>' + (t.ma_ts ? ' · ' + esc(t.ma_ts) : '') + ' <span class="note">' + esc(t.phong || '') + '</span>').join('<br>') : '<span class="note">Thiết bị mới – tạo khi xác nhận</span>') + '</td></tr>').join('') +
+        (d.tb_ct.length ? d.tb_ct.map(t => '<a href="#/tai-san/' + esc(t.id) + '">' + esc(t.id) + '</a>' + (t.ma_ts ? ' · ' + esc(t.ma_ts) : '') + ' <span class="note">' + esc(t.phong || 'Kho PTN') + '</span>' + (t.tra ? ' <span class="tag t-gray">đã trả ' + ngayVN(t.tra.ngay) + '</span>' : '')).join('<br>') : '<span class="note">Thiết bị mới – tạo khi xác nhận</span>') + '</td></tr>').join('') +
       '</tbody></table></div></div>';
     nd.querySelectorAll('[data-tai]').forEach(x => { x.onclick = (e) => chay(e.target, () => taiVe(x.dataset.tai)); });
     $('b-in').onclick = (e) => chay(e.target, () => inBB(b));
@@ -62,10 +66,25 @@
       const dm = await api('bgtb_dm'), ph = dm.phong.find(x => x.ma === b.phong) || {}, can = !ph.phu_trach || b.thay_cho || ph.phu_trach.indexOf(b.ben_nhan) < 0;
       moHop('<h2>Xác nhận bàn giao ' + esc(b.id) + '</h2><p>Bàn giao <b>' + b.so_tb + '</b> thiết bị cho phòng <b>' + esc(b.phong) + '</b> – ' + esc(b.ben_nhan) + '. Sau khi xác nhận:</p><ul class="note">' +
         '<li>Thiết bị mới được tạo trong Tài sản (SL nhiều → mỗi máy một hồ sơ "Tên #1, #2…").</li><li>Thiết bị có sẵn chuyển về phòng ' + esc(b.phong) + '; dòng thời gian từng máy ghi số biên bản.</li>' +
-        (b.ma_so_nhan ? '<li>Giảng viên nhận được thông báo để xác nhận ở trang dùng chung.</li>' : '') + (b.thay_cho ? '<li>Biên bản ' + esc(b.thay_cho) + ' chuyển "Đã thay thế".</li>' : '') + '</ul>' +
+        (b.thay_cho ? '<li>Biên bản ' + esc(b.thay_cho) + ' chuyển "Đã thay thế".</li>' : '') + '</ul>' +
         '<label class="check"><input type="checkbox" id="cap-gv"' + (can ? ' checked' : '') + '> Ghi <b>' + esc(b.ben_nhan) + '</b> là GV quản lý phòng ' + esc(b.phong) + (ph.phu_trach ? ' (hiện ghi: ' + esc(ph.phu_trach) + ')' : ' (phòng chưa ghi GV quản lý)') + '</label>' +
         '<div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn" id="b-xn-ok">Xác nhận bàn giao</button></div>');
       $('b-xn-ok').onclick = async (e) => { await chay(e.target, () => api('bgtb_xac_nhan', { id: b.id, cap_nhat_gv: $('cap-gv').checked ? 1 : 0 })); dongHop(); toast('Đã bàn giao ' + b.so_tb + ' thiết bị'); dieuHuong(); };
+    };
+    if ($('b-tra')) $('b-tra').onclick = () => {
+      const tt = (t) => '<select data-tt="' + esc(t.id) + '"><option value="">Giữ nguyên (' + esc(t.tinh_trang || '') + ')</option>' + b.tinh_trang_tb.map(x => '<option>' + esc(x) + '</option>').join('') + '</select>';
+      moHop('<h2>Nhận trả thiết bị – ' + esc(b.id) + '</h2><p class="note">' + esc(b.ben_nhan) + ' trả thiết bị phòng ' + esc(b.phong) + '. Đánh dấu máy được trả, kiểm tra tình trạng. Máy lấy từ phòng khác tự về phòng cũ, máy nhập tay về kho PTN (chưa xếp phòng) – ra khỏi danh sách tài sản phòng ' + esc(b.phong) + '.</p>' +
+        '<label class="f"><span>Ngày trả</span><input type="date" id="tra-ngay" value="' + homNay() + '"></label>' +
+        '<div class="tbl-wrap"><table><thead><tr><th><input type="checkbox" id="tra-het" checked></th><th>Thiết bị</th><th>Trả về</th><th>Tình trạng khi trả</th><th>Ghi chú</th></tr></thead><tbody>' +
+        conLai.map(t => { const kho = /Đang cho mượn|Đã thanh lý/.test(t.tinh_trang); return '<tr><td><input type="checkbox" data-tra="' + esc(t.id) + '"' + (kho ? ' disabled' : ' checked') + '></td><td><b>' + esc(t.ten) + '</b>' + (t.ma_ts ? ' <span class="note">' + esc(t.ma_ts) + '</span>' : '') + (kho ? '<br><span class="err">' + esc(t.tinh_trang) + (/mượn/.test(t.tinh_trang) ? ' – nhận trả máy mượn trước' : '') + '</span>' : '') + '</td><td>' + esc(t.ve || '') + '</td><td>' + tt(t) + '</td><td><input type="text" data-gc="' + esc(t.id) + '" placeholder="Thiếu phụ kiện, hư hỏng…"></td></tr>'; }).join('') +
+        '</tbody></table></div><div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn" id="b-tra-ok">Nhận trả</button></div>');
+      $('tra-het').onchange = (e) => document.querySelectorAll('[data-tra]:not(:disabled)').forEach(x => { x.checked = e.target.checked; });
+      $('b-tra-ok').onclick = async (e) => {
+        const ds = [...document.querySelectorAll('[data-tra]:checked')].map(x => ({ tb: x.dataset.tra, tinh_trang: document.querySelector('[data-tt="' + x.dataset.tra + '"]').value, ghi_chu: document.querySelector('[data-gc="' + x.dataset.tra + '"]').value }));
+        if (!ds.length) return toast('Chọn thiết bị giảng viên trả', true);
+        const r = await chay(e.target, () => api('bgtb_tra', { id: b.id, ngay: $('tra-ngay').value, ds })); dongHop();
+        toast('Đã nhận trả ' + ds.length + ' thiết bị' + (r.trang_thai === 'Đã trả' ? ' – biên bản đã trả hết' : '')); dieuHuong();
+      };
     };
     if ($('b-ky')) $('b-ky').onclick = async (e) => { if (!b.tep.length) return toast('Đính kèm bản scan biên bản đã ký trước', true); if (!confirm('Ghi "Đã nhận bản ký"? ' + (b.ma_so_nhan ? 'Giảng viên ' + b.ben_nhan + ' nhận được thông báo kèm biên bản và bản scan.' : '')))  return; await chay(e.target, () => api('bgtb_ban_ky', { id: b.id })); toast('Đã ghi nhận bản ký'); dieuHuong(); };
     if ($('b-lai')) $('b-lai').onclick = async (e) => {

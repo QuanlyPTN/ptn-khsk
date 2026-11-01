@@ -726,10 +726,11 @@
     nut.disabled = false; nut.textContent = cu;
   }
   // thẻ biên bản bàn giao thiết bị (Đơn của tôi của giảng viên nhận) – chỉ biên bản PTN đã nhận bản ký, để xem / tải, không cần xác nhận
-  const theBG = (b) => '<div class="card"><div class="dong-don"><span><span class="q">BG</span> <b>' + esc(b.id) + '</b></span><span class="tag ' + (b.trang_thai === 'Đã thay thế' ? 't-gray' : 't-info') + '">' + esc(b.trang_thai) + '</span></div>' +
+  const theBG = (b) => '<div class="card"><div class="dong-don"><span><span class="q">BG</span> <b>' + esc(b.id) + '</b></span><span class="tag ' + (/thay thế|Đã trả/.test(b.trang_thai) ? 't-gray' : 't-info') + '">' + esc(b.trang_thai) + '</span></div>' +
     '<div>Biên bản bàn giao thiết bị – phòng <b>' + esc(b.phong) + '</b> ' + esc(b.ten_phong || '') + '</div><div class="note">Ngày ' + ngayVN(b.ngay) + ' · bên giao ' + esc(b.ben_giao) + ' · ' + b.so_tb + ' thiết bị</div>' +
     '<div style="margin:6px 0">' + b.dong.map((d, i) => '<div class="note">' + (i + 1) + '. <b>' + esc(d.ten) + '</b>' + (d.model ? ' – ' + esc(d.model) : '') + ' · SL ' + esc(d.sl) + ' · ' + esc(d.tinh_trang) +
       ((d.tb_ct || []).some(t => t.ma_ts) ? ' · ' + d.tb_ct.map(t => t.ma_ts).filter(Boolean).map(esc).join(', ') : '') + '</div>').join('') + '</div>' +
+    ((b.tra || []).length ? '<div class="note">↩ Đã trả PTN ' + b.tra.length + '/' + b.so_tb + ' thiết bị: ' + b.tra.map(x => esc(x.ten) + ' (' + ngayVN(x.ngay) + ')').join(', ') + '</div>' : '') +
     '<div class="dong-don"><span>📄 Biên bản bàn giao ' + esc(b.id) + '</span><span><button type="button" class="nho" data-bg-in="' + esc(b.id) + '">Xem – in</button></span></div>' +
     (b.tep || []).map(t => '<div class="dong-don"><span>📎 Bản scan đã ký: ' + esc(t.ten) + '</span><span><button type="button" class="nho o" data-bg-tep="' + esc(t.id) + '">Tải về</button></span></div>').join('') + '</div>';
   async function inBG(b, nut) {
