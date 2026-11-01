@@ -166,6 +166,19 @@
     const k = window.PTN_KY || {};
     return /HIỆU TRƯỞNG/.test(chuc) && !/PHÓ/.test(chuc) ? k.hieu_truong : /^TRƯỞNG KHOA/.test(chuc) ? k.truong_khoa : /^NGƯỜI LẬP/.test(chuc) ? k.nguoi_lap || k.nguoi : '';
   }
+  // chia ô ký theo độ rộng cột (không theo số cột) để các ô ký rộng gần bằng nhau – cột STT hẹp không làm lệch chữ ký
+  function chiaKy(w, k) {
+    const n = w.length; if (k < 2 || k >= n) return undefined;
+    const tong = w.reduce((a, b) => a + b, 0), cong = [0]; w.forEach(x => cong.push(cong[cong.length - 1] + x));
+    const cat = [0];
+    for (let i = 1; i < k; i++) {
+      const dich = tong * i / k; let tot = cat[i - 1] + 1;
+      for (let j = tot; j <= n - (k - i); j++) if (Math.abs(cong[j] - dich) < Math.abs(cong[tot] - dich)) tot = j;
+      cat.push(tot);
+    }
+    cat.push(n);
+    return cat.slice(1).map((c, i) => c - cat[i]);
+  }
   function chuKy(n, ds, cach, chia) { // chia: số cột của từng ô ký (mặc định chia đều)
     ds = ds.map(x => x[2] === undefined ? [x[0], x[1], tenKy(x[0]) || ''] : x);
     const k = ds.length, rong = chia || ds.map((_, i) => Math.floor(n * (i + 1) / k) - Math.floor(n * i / k));
@@ -190,7 +203,7 @@
     });
     if (o.tong) hang.push({ cao: 18, o: o.tong.map((v, j) => ({ v, b: 1, vien: 1, co: 10.5, can: typeof v === 'number' ? 'r' : 'l' })) });
     (o.ghiChu ? [].concat(o.ghiChu) : []).forEach(g => hang.push({ cao: 30, o: [{ v: g, cs: n, i: 1, co: 10, doc: 't' }] }));
-    if (o.ky) { hang.push({ cao: 10, o: [{ v: '', cs: n }] }); chuKy(n, o.ky).forEach(h => hang.push(h)); }
+    if (o.ky) { hang.push({ cao: 10, o: [{ v: '', cs: n }] }); chuKy(n, o.ky, undefined, chiaKy(o.cot.map(c => +c.rong || 10), o.ky.length)).forEach(h => hang.push(h)); }
     return { ten: o.ten || o.tieuDe.slice(0, 31), huong: o.huong || 'doc', cot: o.cot.map(c => c.rong), lapLai: [dauBang, dauBang], hang, le: o.le };
   }
   // Biểu mẫu chuẩn từ một bảng dữ liệu (đầu trang Trường – Khoa | Quốc hiệu, tiêu đề, bảng kẻ ô, ngày lập, chữ ký) – dùng cho mọi nút tải dữ liệu.
