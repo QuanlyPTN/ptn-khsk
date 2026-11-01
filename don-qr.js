@@ -147,6 +147,34 @@
   const khoi = (d, bb) => { const k = (bb ? BB8 : MAU[d.qr])(d), c = chan([R((CHAN[d.qr] || 'Mẫu ' + d.qr) + (bb ? ' – Biên bản bàn giao' : ''), { b: 1, i: 1 })], [R('Mã đơn: ', { i: 1 }), R(d.id || '……………', { b: 1 })]);
     return k.trang ? k.trang.map(t => t.concat([c])) : [k.concat([c])]; };
   const taiLieu = (d, qr, bb) => bb ? { ten: 'Biên bản bàn giao dụng cụ · ' + d.id, tep: 'BBBG_' + d.id, trang: khoi(d, 1), qr } : { ten: d.qr + ' · ' + TEN[d.qr] + ' · ' + d.id, tep: d.qr + '_' + d.id, trang: khoi(d), qr };
+  // ---- Biên bản bàn giao thiết bị cho phòng (PTN → giảng viên quản lý phòng) – theo mẫu "BBBG Thiet bi.docx" ----
+  // bb: biên bản (bgtb_ct / Đơn của tôi): ngay, phong, ten_phong, ben_giao, ben_nhan, chuc_vu_nhan, dong [{ten, model, dvt, sl, tinh_trang, ghi_chu, tb_ct}], gv_xn
+  const DV_BG = 'Khoa Khoa học Sức khỏe';
+  const LUU_Y_BG = ['Bên nhận có trách nhiệm kiểm tra tình trạng thiết bị ngay khi nhận bàn giao; nếu phát hiện hư hỏng, thiếu phụ kiện phải báo ngay cho Phòng thí nghiệm để xác nhận trước khi ký biên bản.',
+    'Trong quá trình sử dụng, nếu thiết bị xảy ra sự cố, hư hỏng. Bên nhận báo ngay cho Phòng thí nghiệm theo Biểu mẫu báo hỏng thiết bị.',
+    'Thiết bị được bàn giao về phòng để phục vụ các lớp học thực hành và đồ án. Giảng viên quản lý phòng chịu trách nhiệm giám sát quá trình sử dụng và bảo quản thiết bị; hướng dẫn sinh viên sử dụng đúng quy trình vận hành.',
+    'Khi thay đổi giảng viên quản lý phòng hoặc điều chuyển thiết bị, các bên phải lập biên bản bàn giao lại, ghi nhận tình trạng thiết bị và phụ kiện tại thời điểm bàn giao.',
+    'Biên bản được lập thành 02 bản, Bên giao và Bên nhận mỗi bên giữ 01 bản.'];
+  function khoiBanGiaoTB(bb) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(bb.ngay || ''), ngayChu = m ? 'ngày ' + m[3] + ' tháng ' + m[2] + ' năm ' + m[1] : 'ngày ….. tháng ….. năm 20…..';
+    const maTS = (d) => (d.tb_ct || []).map(t => t.ma_ts).filter(Boolean);
+    const dong = (bb.dong || []).map((d, i) => { const ts = maTS(d); return [i + 1, d.ten + (ts.length === 1 && (d.tb_ct || []).length === 1 ? ' (' + ts[0] + ')' : ''), d.model || '', d.dvt || '', soVN(d.sl),
+      d.tinh_trang || '', [d.ghi_chu, ts.length > 1 ? 'Mã TS: ' + ts.join(', ') : ''].filter(Boolean).join('; ')]; });
+    const xn = bb.gv_xn ? [P([R('Xác nhận điện tử của bên nhận: ', { b: 1 }), R(bb.gv_xn.ket_qua + ' – ' + ngay(bb.gv_xn.tg) + ' ' + gio(bb.gv_xn.tg) + (bb.gv_xn.ghi_chu ? ' (' + bb.gv_xn.ghi_chu + ')' : ''))], { al: 'both' })] : [];
+    return [{ hd: 1 }, P(R('TP. Hồ Chí Minh, ' + ngayChu, { i: 1 }), { al: 'right' }), TRONG, P(R('BIÊN BẢN BÀN GIAO THIẾT BỊ', { b: 1, sz: 28 }), { al: 'center' }),
+      P(R('(Phòng thí nghiệm bàn giao thiết bị cho Giảng viên sử dụng)', { i: 1 }), { al: 'center' }), TRONG,
+      P('Hôm nay, ' + ngayChu + ', tại Phòng thí nghiệm ' + DV_BG + ' – Trường Đại học Công nghiệp Thành phố Hồ Chí Minh, chúng tôi gồm:', { al: 'both' }),
+      P(R('I. BÊN GIAO (Phòng thí nghiệm)', { b: 1 })), P(['Họ và tên: ', GT(bb.ben_giao, 22), '   Chức vụ/Vai trò: ', R('Quản lý PTN', { b: 1 })]),
+      P(R('II. BÊN NHẬN (Giảng viên)', { b: 1 })), P(['Họ và tên: ', GT(bb.ben_nhan, 22), '   Chức vụ: ', R(bb.chuc_vu_nhan || 'Giảng viên', { b: 1 })]),
+      P(['Phòng sử dụng: ', GT(bb.phong + (bb.ten_phong ? ' – ' + bb.ten_phong : ''), 30)]),
+      P(R('III. DANH MỤC THIẾT BỊ BÀN GIAO', { b: 1 })),
+      bang([560, 2700, 1200, 700, 600, 2111, 1200], ['STT', 'Tên thiết bị', 'Model', 'ĐVT', 'SL', 'Tình trạng thiết bị lúc bàn giao', 'Ghi chú'], dong),
+      P(R('IV. LƯU Ý', { b: 1 }))].concat(LUU_Y_BG.map(t => P('-  ' + t, { al: 'both' })), xn,
+      [TRONG, ky([['BÊN NHẬN', bb.ben_nhan], ['BÊN GIAO', bb.ben_giao], ['BAN LÃNH ĐẠO KHOA', (window.PTN_KY || {}).truong_khoa || '']], 4),
+        chan([R('Biên bản bàn giao thiết bị', { b: 1, i: 1 })], [R('Mã: ', { i: 1 }), R(bb.id || '……………', { b: 1 })])]);
+  }
+  const tlBanGiaoTB = (bb, qr) => ({ ten: 'Biên bản bàn giao thiết bị · ' + bb.id, tep: 'BBBG_thiet_bi_' + bb.id, trang: [khoiBanGiaoTB(bb)], qr });
   window.PTN_DON_QR = { coMau, coBienBan, TEN, khoi, them, html: (d, qr, bb) => D.htmlTL(taiLieu(d, qr, bb)), docx: (d, qr, bb) => D.docxTL(taiLieu(d, qr, bb)),
-    xemTruoc: (d, qr, bb) => D.xemTruocTL(taiLieu(d, qr, bb)), taiWord: (d, qr, bb) => D.taiWordTL(taiLieu(d, qr, bb)) };
+    xemTruoc: (d, qr, bb) => D.xemTruocTL(taiLieu(d, qr, bb)), taiWord: (d, qr, bb) => D.taiWordTL(taiLieu(d, qr, bb)),
+    banGiaoTB: { html: (bb, qr) => D.htmlTL(tlBanGiaoTB(bb, qr)), xemTruoc: (bb, qr) => D.xemTruocTL(tlBanGiaoTB(bb, qr)), taiWord: (bb, qr) => D.taiWordTL(tlBanGiaoTB(bb, qr)) } };
 })();

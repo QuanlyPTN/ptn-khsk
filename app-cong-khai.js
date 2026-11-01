@@ -721,6 +721,20 @@
     } catch (e) { toast(e.message, true); }
     nut.disabled = false; nut.textContent = cu;
   }
+  // thẻ biên bản bàn giao thiết bị (Đơn của tôi của giảng viên nhận)
+  const theBG = (b) => '<div class="card"><div class="dong-don"><span><span class="q">BG</span> <b>' + esc(b.id) + '</b></span><span class="tag ' + (b.trang_thai === 'Đã thay thế' ? 't-gray' : 't-info') + '">' + esc(b.trang_thai) + '</span></div>' +
+    '<div>Biên bản bàn giao thiết bị – phòng <b>' + esc(b.phong) + '</b> ' + esc(b.ten_phong || '') + '</div><div class="note">Ngày ' + ngayVN(b.ngay) + ' · bên giao ' + esc(b.ben_giao) + ' · ' + b.so_tb + ' thiết bị</div>' +
+    '<div style="margin:6px 0">' + b.dong.map((d, i) => '<div class="note">' + (i + 1) + '. <b>' + esc(d.ten) + '</b>' + (d.model ? ' – ' + esc(d.model) : '') + ' · SL ' + esc(d.sl) + ' · ' + esc(d.tinh_trang) +
+      ((d.tb_ct || []).some(t => t.ma_ts) ? ' · ' + d.tb_ct.map(t => t.ma_ts).filter(Boolean).map(esc).join(', ') : '') + '</div>').join('') + '</div>' +
+    (b.gv_xn ? '<div class="note">Bạn đã xác nhận: <b>' + esc(b.gv_xn.ket_qua) + '</b> – ' + ngayVN(b.gv_xn.tg) + (b.gv_xn.ghi_chu ? ' (' + esc(b.gv_xn.ghi_chu) + ')' : '') + '</div>' : '') +
+    '<div class="dong-don"><span>📄 Biên bản (in, ký 02 bản)</span><span><button type="button" class="nho" data-bg-in="' + esc(b.id) + '">Xem – in</button></span></div>' +
+    (b.trang_thai !== 'Đã thay thế' ? '<div class="dong-don"><span>' + (b.gv_xn ? 'Cập nhật xác nhận' : 'Kiểm tra thiết bị rồi xác nhận') + '</span><span><button type="button" class="nho" data-bg-xn="' + esc(b.id) + '|du">✓ Đã nhận đủ</button><button type="button" class="nho o" data-bg-xn="' + esc(b.id) + '|thieu">Báo thiếu / hỏng</button></span></div>' : '') + '</div>';
+  async function inBG(b, nut) {
+    if (!b) return;
+    if (!window.PTN_KY) { try { await danhMuc(true); } catch (e) { /* in không có tên người ký */ } }
+    let qr = ''; try { await napQR(); const q = window.qrcode(0, 'M'); q.addData(new URL('quan-ly/#/ban-giao-tb/' + b.id, location.href.split('#')[0]).href); q.make(); qr = q.createDataURL(4, 1); } catch (e) { /* in không có mã QR */ }
+    window.PTN_DON_QR.banGiaoTB.xemTruoc(b, qr);
+  }
   function ganKhoiDon(hs, root) {
     (root || document).querySelectorAll('[data-hs="' + hs.id + '"]').forEach(b => {
       b.onclick = async () => {
@@ -765,22 +779,33 @@
     Object.keys(QR_TEN).forEach(q => { nhom[q] = { ten: q, don: q === 'QR7' ? [] : dsQR.filter(d => d.qr === q), hs: q === 'QR7' ? r.ho_so : [] }; });
     if (dsGV.length) nhom.GV = { ten: 'Phiếu GV', don: dsGV, hs: [] };
     nhom.tat = { ten: 'Tất cả', don: r.don, hs: r.ho_so };
-    Object.keys(nhom).forEach(k => { const g = nhom[k]; g.n = g.don.length + g.hs.length; g.mo = g.don.filter(moD).length + g.hs.filter(moH).length; g.qh = g.don.some(d => d.qua_han && moD(d)) || g.hs.some(quaH); });
+    // biên bản bàn giao thiết bị cho phòng (giảng viên nhận): chờ xác nhận = chưa bấm "Đã nhận đủ" / báo thiếu
+    const dsBG = r.ban_giao_tb || [], moBG = (b) => !b.gv_xn && b.trang_thai !== 'Đã thay thế';
+    nhom.can.bg = dsBG.filter(moBG); if (dsBG.length) nhom.BG = { ten: 'Bàn giao TB', don: [], hs: [], bg: dsBG }; nhom.tat.bg = dsBG;
+    Object.keys(nhom).forEach(k => { const g = nhom[k], bg = g.bg || []; g.n = g.don.length + g.hs.length + bg.length; g.mo = g.don.filter(moD).length + g.hs.filter(moH).length + bg.filter(moBG).length; g.qh = g.don.some(d => d.qua_han && moD(d)) || g.hs.some(quaH); });
     const chon = nhom[S.nhomDon] && nhom[S.nhomDon].n ? S.nhomDon : nhom.can.n ? 'can' : 'tat';
     // nhắc việc ở đầu trang
     const viec = [];
     const dangQR5 = r.don.filter(d => d.qr === 'QR5' && d.trang_thai === 'Đang dùng'); if (dangQR5.length) viec.push('⏱ ' + dangQR5.length + ' lượt QR5 đang dùng – bấm <b>Kết thúc sử dụng</b> khi xong');
     const daDong = r.ho_so.filter(x => x.trang_thai === 'Đã đóng' && ((x.xu_ly || []).filter(y => y.hd === 'Đóng hồ sơ').pop() || {}).tg >= ngayTruoc(30)); if (daDong.length) viec.push('✅ Hồ sơ ' + daDong.map(x => esc(x.id)).join(', ') + ' đã đóng: in <b>Giấy xác nhận hoàn thành</b> (tab QR7) → GV quản lý phòng ký → nộp kèm báo cáo');
+    const choBG = (r.ban_giao_tb || []).filter(b => !b.gv_xn && b.trang_thai !== 'Đã thay thế'); if (choBG.length) viec.push('📦 Biên bản bàn giao thiết bị ' + choBG.map(b => esc(b.id)).join(', ') + ' chờ bạn kiểm tra – bấm <b>Đã nhận đủ</b> hoặc <b>Báo thiếu / hỏng</b> (tab Bàn giao TB)');
     const choNop = r.ho_so.filter(x => x.trang_thai === 'Chờ nộp bản ký'); if (choNop.length) viec.push('📄 Hồ sơ ' + choNop.map(x => esc(x.id)).join(', ') + ' chưa nộp bản ký: in đơn → GVHD ký → nộp PTN');
     const choDuyet = r.don.filter(d => d.trang_thai === 'Chờ duyệt').length; if (choDuyet) viec.push('⏳ ' + choDuyet + ' đơn đang chờ PTN duyệt');
     h += (viec.length ? '<div class="pre" style="background:#FFF8E1;border-color:#F2D58A">' + viec.map(v => '<div>' + v + '</div>').join('') + '</div>' : '') +
       '<div class="nhom-don">' + Object.keys(nhom).filter(k => nhom[k].n || k === 'can').map(k => { const g = nhom[k];
         return '<button type="button" class="chip' + (k === chon ? ' on' : '') + (g.qh ? ' qh' : g.mo && k !== 'can' && k !== 'tat' ? ' mo' : '') + '" data-nhom="' + k + '">' + esc(g.ten) + ' <span>' + (k === 'can' ? g.mo : g.n) + '</span></button>'; }).join('') + '</div>';
     const g = nhom[chon];
-    h += !g.n ? '<div class="card note">' + (chon === 'can' ? '✓ Không có đơn nào cần xử lý.' : 'Chưa có đơn nào.') + '</div>' : g.hs.map(theHS).join('') + g.don.map(the).join('');
+    h += !g.n ? '<div class="card note">' + (chon === 'can' ? '✓ Không có đơn nào cần xử lý.' : 'Chưa có đơn nào.') + '</div>' : g.hs.map(theHS).join('') + (g.bg || []).map(theBG).join('') + g.don.map(the).join('');
     M(h);
     document.querySelectorAll('[data-nhom]').forEach(b => { b.onclick = () => { S.nhomDon = b.dataset.nhom; trangDonCuaToi(); }; });
     g.hs.forEach(x => ganKhoiDon(x));
+    document.querySelectorAll('[data-bg-in]').forEach(b => { b.onclick = () => inBG(r.ban_giao_tb.find(x => x.id === b.dataset.bgIn), b); });
+    document.querySelectorAll('[data-bg-xn]').forEach(b => { b.onclick = async () => {
+      const [id, kq] = b.dataset.bgXn.split('|'); let gc = '';
+      if (kq === 'thieu') { gc = prompt('Ghi rõ thiết bị thiếu / hỏng (tên, số lượng, tình trạng):'); if (gc === null) return; }
+      else if (!confirm('Xác nhận đã kiểm tra và nhận đủ thiết bị theo biên bản ' + id + '?')) return;
+      try { await api('ck_bgtb_xn', { khoa: may().khoa, id, ket_qua: kq, ghi_chu: gc }); toast('Đã gửi xác nhận cho PTN'); trangDonCuaToi(); } catch (e) { toast(e.message, true); }
+    }; });
     document.querySelectorAll('[data-xn]').forEach(b => { b.onclick = () => inGiayXN(r.ho_so.find(x => x.id === b.dataset.xn), b); });
     document.querySelectorAll('[data-mc]').forEach(i => { i.onchange = async () => { const f = i.files[0]; if (!f) return; try { await guiMinhChung(i.dataset.mc, f); toast('Đã tải minh chứng'); trangDonCuaToi(); } catch (e) { toast(e.message, true); } }; });
     document.querySelectorAll('[data-kt]').forEach(b => { b.onclick = () => hopKetThuc(b.dataset.kt); });

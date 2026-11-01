@@ -250,7 +250,7 @@
     return q[muc] || '';
   }
   function coQuyen(muc, md) { const v = quyen(muc); return md === 'xu_ly' ? v === 'xu_ly' : !!v; }
-  const MUC_TRANG = { 'ts-tong-quan': 'tai-san', 'lich-phong-th': 'phong' }; // trang con → mục phân quyền
+  const MUC_TRANG = { 'ts-tong-quan': 'tai-san', 'lich-phong-th': 'phong', 'ban-giao-tb': 'tai-san' }; // trang con → mục phân quyền
   function khung() {
     document.body.classList.add('in');
     const n = S.toi.nguoi;
@@ -426,7 +426,7 @@
       st(t.kiem_dinh.qua_han, 'Kiểm định quá hạn', t.kiem_dinh.qua_han ? 'bad' : 'ok', '#/kiem-dinh') +
       st(t.kiem_dinh.trong_30, 'Kiểm định trong 30 ngày', t.kiem_dinh.trong_30 ? 'warn' : '', '#/kiem-dinh') +
       st(t.bao_duong.qua_han + t.bao_duong.trong_30, 'Bảo dưỡng quá hạn / 30 ngày', (t.bao_duong.qua_han + t.bao_duong.trong_30) ? 'warn' : '', '#/kiem-dinh?bd=1') +
-      st(t.thieu_ma_ts, 'Thiết bị chưa có mã tài sản', t.thieu_ma_ts ? 'warn' : 'ok', '#/tai-san?thieu=1') + '</div>';
+      st(t.thieu_ma_ts, 'Thiết bị chưa có mã tài sản', t.thieu_ma_ts ? 'warn' : 'ok', '#/tai-san?thieu=1') + st(t.chua_ban_giao || 0, 'Thiết bị chưa có biên bản bàn giao cho phòng', t.chua_ban_giao ? 'warn' : 'ok', '#/ban-giao-tb') + '</div>';
     if (t.qua_han_tra.length || t.tu_qua_han.length) {
       h += '<div class="card"><h2>Cần xử lý</h2>';
       t.qua_han_tra.forEach(x => { h += '<div>⚠ <a href="#/tai-san/' + esc(x.id) + '">' + esc(x.ten) + '</a> – ' + esc(x.nguoi_muon) + ' quá hạn trả ' + hanTag(x.han_tra) + '</div>'; });
@@ -1008,6 +1008,7 @@
       '<div class="locker ' + (t.trang_thai === 'Đang dùng' ? 'dung' : t.trang_thai === 'Hỏng' ? 'hong' : '') + (t.trang_thai === 'Đang dùng' && t.han && t.han < hn ? ' qh' : '') + '" data-so="' + esc(t.so) + '" title="' + esc(t.trang_thai + (t.nguoi ? ' – ' + t.nguoi : '') + (t.han ? ' – hạn ' + ngayVN(t.han) : '')) + '">' +
       '<b>' + esc(t.so) + '</b><small>' + esc(t.trang_thai === 'Đang dùng' ? t.nguoi : t.trang_thai) + '</small></div>').join('') + '</div>' +
       '<div class="legend"><span><i></i>Trống</span><span><i style="background:var(--info-bg)"></i>Đang dùng</span><span><i style="background:var(--bad-bg)"></i>Hỏng</span><span><i style="outline:2px solid var(--warn)"></i>Quá hạn trả</span><span>Bấm vào tủ để giao / trả / báo hỏng</span></div></div>';
+    if ((r.ban_giao_tb || []).length) h += '<div class="card"><h2>Biên bản bàn giao thiết bị (' + r.ban_giao_tb.length + ')</h2>' + r.ban_giao_tb.map(b => '<div><a href="#/ban-giao-tb/' + esc(b.id) + '"><b>' + esc(b.id) + '</b></a> · ' + ngayVN(b.ngay) + ' · ' + esc(b.ben_nhan) + ' · ' + b.so_tb + ' thiết bị · ' + esc(b.trang_thai) + (b.gv_xn ? ' · GV: ' + esc(b.gv_xn.ket_qua) : '') + '</div>').join('') + '</div>';
     h += '<div class="card"><h2>Thiết bị trong phòng (' + r.thiet_bi.filter(x => x.tinh_trang !== 'Đã thanh lý').length + ')</h2>' + bangTB(r.thiet_bi.filter(x => x.tinh_trang !== 'Đã thanh lý'), true) + '</div>';
     h += '<div id="lich-phong"></div>';
     nd.innerHTML = h;
@@ -1055,7 +1056,7 @@
 
   async function manTaiSan() {
     const q = new URLSearchParams((location.hash.split('?')[1]) || '');
-    const nd = trang('Tài sản Khoa', '<button class="btn o sm" id="b-xuat">Xem trước – in / Excel</button><button class="btn o sm" id="b-nhap">Nhập từ Excel</button><button class="btn sm" id="b-them">+ Thêm thiết bị</button>');
+    const nd = trang('Tài sản Khoa', '<a class="btn o sm" href="#/ban-giao-tb">📋 Bàn giao thiết bị</a><button class="btn o sm" id="b-xuat">Xem trước – in / Excel</button><button class="btn o sm" id="b-nhap">Nhập từ Excel</button><button class="btn sm" id="b-them">+ Thêm thiết bị</button>');
     const ds = await api('tb_ds'); S.cache.tb = ds;
     const ttMacDinh = q.get('tt') || '';
     nd.innerHTML = '<div class="tools"><input type="search" id="q" placeholder="Tìm tên, mã tài sản, hãng, model, serial…">' +
