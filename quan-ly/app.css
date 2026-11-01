@@ -255,6 +255,22 @@ td.nhom-dong { background: #F7F8FB; font-weight: 600; color: var(--ink); font-si
 .dot-dt:last-child { border-bottom: 0; }
 .vi-tri .cho { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--gray-bg); margin: 1px 0; white-space: nowrap; }
 .vi-tri .cho.lanh { background: #E3F0FD; color: #0D4A9A; }
+.vi-tri .cho.sai { background: var(--bad-bg); color: var(--bad); }
+/* Sơ đồ kệ kho: mỗi kệ một thẻ, tầng cao ở trên (như kệ thật), mỗi lô một nhãn màu */
+.ke-luoi { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.ke-the { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; box-shadow: var(--sh-1); display: flex; flex-direction: column; gap: 6px; }
+.ke-the.co-cb { border-color: #E7B4B0; }
+.ke-the.lanh { background: #F3F8FE; border-color: #B9D5F5; } .ke-the.lanh .ke-tang .tg { border-bottom-color: #9CC3EE; }
+.ke-dau { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 16px; }
+.ke-tang .tg { display: flex; gap: 8px; border-bottom: 3px solid #C9B48A; padding: 6px 0 4px; min-height: 36px; }
+.ke-tang .so { flex: none; width: 26px; font-weight: 700; color: var(--muted); font-size: 12px; padding-top: 3px; }
+.ke-tang .tg > div, .ds-hc { display: flex; flex-wrap: wrap; gap: 4px; align-items: flex-start; }
+a.hc { display: inline-block; font-size: 12.5px; line-height: 1.35; padding: 2px 8px; border-radius: 6px; background: var(--gray-bg); color: var(--ink); text-decoration: none; border: 1px solid transparent; }
+a.hc span { color: var(--muted); }
+a.hc.sap { background: var(--warn-bg); } a.hc.het { background: var(--bad-bg); color: var(--bad); } a.hc.sai { border-color: var(--bad); } a.hc .ks { color: #7A1FA2; }
+a.hc.mo { opacity: .2; }
+.ke-chan { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: auto; padding-top: 4px; }
+tr.nb td { background: #FFF4C2; }
 .scan-tb { margin: 10px 0; padding: 10px 14px; border-radius: 10px; background: var(--info-bg); font-size: 13.5px; border: 1px solid #CFDDF4; }
 #xem-in { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; background: #E7EAF1; }
 #xem-in .xem-in-thanh { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px 20px; background: var(--card); border-bottom: 1px solid var(--line); box-shadow: var(--sh-1); }

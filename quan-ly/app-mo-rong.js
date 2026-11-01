@@ -441,22 +441,31 @@
     kho = kho === 'DL' ? 'DL' : 'HC'; const K = KHO[kho];
     if (p[1] === 'lo' && p[2]) return manLo(decodeURIComponent(p[2]));
     if (p[1] === 'so-ks' && kho === 'HC') return manSoKS();
-    const nd = trang(K.ten, (kho === 'HC' ? '<a class="btn o sm" href="#/kho/so-ks">Sổ hóa chất kiểm soát</a>' : '') + '<button class="btn o sm" id="b-xuat-x">Xem trước – in / Excel</button><button class="btn o sm" id="b-xuat">Xuất / hủy</button><button class="btn o sm" id="b-nhap">+ Nhập tay</button><button class="btn sm" id="b-file">⇪ Tải file lên</button>');
-    const ds = await api('kho_ds', { kho }); S.cache.kho = ds;
+    if (p[1] === 'so-do') return manSoDoKho(kho);
+    if (p[1] === 'ke' && p[2]) return manKeKho(kho, decodeURIComponent(p[2]));
+    const nd = trang(K.ten, '<a class="btn o sm" href="#/' + K.duong + '/so-do">▦ Sơ đồ kệ</a>' + (kho === 'HC' ? '<a class="btn o sm" href="#/kho/so-ks">Sổ hóa chất kiểm soát</a>' : '') + '<button class="btn o sm" id="b-xuat-x">Xem trước – in / Excel</button><button class="btn o sm" id="b-xuat">Xuất / hủy</button><button class="btn o sm" id="b-nhap">+ Nhập tay</button><button class="btn sm" id="b-file">⇪ Tải file lên</button>');
+    const [ds, kk] = await Promise.all([api('kho_ds', { kho }), api('kho_ke_ds', { kho })]); S.cache.kho = ds; const hc = kho === 'HC';
     nd.innerHTML = '<div class="tools"><input type="search" id="q" placeholder="Tìm tên, ' + (kho === 'DL' ? 'tên khoa học' : 'mã VT') + ', số lô…"><select id="f-cb"><option value="">Tất cả (' + ds.length + ')</option><option value="cb">Hết / sắp hết (' + ds.filter(g => g.canh_bao.length).length + ')</option>' +
       (kho === 'HC' ? '<option value="ks">Kiểm soát đặc biệt</option>' : '') + '</select><select id="f-ke"><option value="">Mọi vị trí</option><option value="tu-mat">Trong tủ mát</option>' +
-      [...new Set([].concat(...ds.map(g => g.lo.map(x => x.ke))).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi', { numeric: true })).map(k => '<option value="ke:' + esc(k) + '">Kệ ' + esc(k) + '</option>').join('') + '</select></div><div id="kq"></div>' +
+      [...new Set([].concat(...ds.map(g => g.lo.map(x => x.ke))).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi', { numeric: true })).map(k => '<option value="ke:' + esc(k) + '">' + esc(tenKe(k)) + '</option>').join('') + '</select></div><div id="kq"></div>' +
       '<p class="note">Tồn = nhập − xuất. Bấm số ở cột "Tối thiểu" để đặt mức cảnh báo sắp hết. ' + (kho === 'HC' ? 'Cấp phát theo biên bản hóa chất tự trừ kho (lô hạn dùng gần nhất trước); giảm số hoặc hoàn trả trên biên bản thì kho được cộng lại.' : 'Dược liệu có trong biên bản thực hành (cùng tên, ĐVT) cũng tự trừ khi cấp phát.') + '</p>';
     const ve = () => {
       const q = boDau($('q').value), f = $('f-cb').value, ke = $('f-ke').value;
-      const coCho = (x) => !ke || (ke === 'tu-mat' ? !!x.tu_mat : 'ke:' + x.ke === ke);
+      const coCho = (x) => !ke || (ke === 'tu-mat' ? !!x.tu_mat || /^TM/.test(x.ke || '') : 'ke:' + x.ke === ke);
       const l = ds.filter(g => (!q || boDau([g.ten, g.ma_vt, g.ten_kh, g.lo.map(x => x.so_lo + ' ' + x.cho).join(' ')].join(' ')).indexOf(q) >= 0) && (!f || (f === 'cb' ? g.canh_bao.length : g.kiem_soat)) && (!ke || g.lo.some(coCho)));
-      $('kq').innerHTML = !l.length ? '<div class="card empty">Kho chưa có ' + K.vat + '. Bấm "+ Nhập kho".</div>' : '<div class="tbl-wrap"><table><thead><tr>' + (kho === 'HC' ? '<th>Mã VT</th>' : '') + '<th>Tên ' + K.vat + '</th><th>ĐVT</th><th class="num">Tồn</th><th class="num">Tối thiểu</th><th>Lô (số lô · hạn dùng · tồn)</th><th>Vị trí</th><th>Cảnh báo</th></tr></thead><tbody>' +
-        l.map(g => '<tr>' + (kho === 'HC' ? '<td class="mono">' + esc(g.ma_vt || '—') + '</td>' : '') + '<td><b>' + esc(g.ten) + '</b>' + (g.ten_kh ? ' <i class="note">' + esc(g.ten_kh) + '</i>' : '') + (g.kiem_soat ? ' <span class="tag t-bad">kiểm soát</span>' : '') + '</td><td>' + esc(g.dvt) + '</td><td class="num"><b>' + (fmt(g.ton) || 0) + '</b></td>' +
+      $('kq').innerHTML = !l.length ? '<div class="card empty">Kho chưa có ' + K.vat + '. Bấm "+ Nhập kho".</div>' : '<div class="tbl-wrap"><table><thead><tr>' + (kho === 'HC' ? '<th>Mã VT</th>' : '') + '<th>Tên ' + K.vat + '</th>' + (hc ? '<th>Nhóm</th>' : '') + '<th>ĐVT</th><th class="num">Tồn</th><th class="num">Tối thiểu</th><th>Lô (số lô · hạn dùng · tồn)</th><th>Vị trí</th><th>Cảnh báo</th></tr></thead><tbody>' +
+        l.map(g => '<tr>' + (kho === 'HC' ? '<td class="mono">' + esc(g.ma_vt || '—') + '</td>' : '') + '<td><b>' + esc(g.ten) + '</b>' + (g.ten_kh ? ' <i class="note">' + esc(g.ten_kh) + '</i>' : '') + (g.kiem_soat ? ' <span class="tag t-bad">kiểm soát</span>' : '') + '</td>' + (hc ? '<td><a href="#" data-nnh="' + esc(g.khoa) + '" title="Đặt nhóm nguy hiểm">' + esc(kk.nhom[g.nhom_nh] || 'đặt') + '</a></td>' : '') + '<td>' + esc(g.dvt) + '</td><td class="num"><b>' + (fmt(g.ton) || 0) + '</b></td>' +
           '<td class="num"><a href="#" data-ttt="' + esc(g.khoa) + '" title="Đặt mức tồn tối thiểu">' + (fmt(g.ton_toi_thieu) || 'đặt') + '</a></td><td>' +
           g.lo.map(x => '<a href="#/' + K.duong + '/lo/' + esc(x.id) + '">' + esc(x.so_lo || x.id) + '</a> · ' + (x.han_dung ? ngayVN(x.han_dung) : '—') + ' · ' + fmt(x.ton)).join('<br>') + '</td><td class="vi-tri">' +
-          g.lo.map(x => x.cho ? '<span class="cho' + (x.tu_mat ? ' lanh' : '') + '">' + (x.tu_mat ? '❄ ' : '') + esc(x.cho) + '</span>' : '<span class="note">—</span>').join('<br>') + '</td><td>' + g.canh_bao.map(c => '<span class="tag ' + (c === 'Hết hàng' ? 't-bad' : 't-warn') + '">' + esc(c) + '</span>').join(' ') + '</td></tr>').join('') + '</tbody></table></div>';
+          g.lo.map(x => x.cho ? '<span class="cho' + (x.tu_mat ? ' lanh' : '') + (x.xep_sai.length ? ' sai' : '') + '"' + (x.xep_sai.length ? ' title="' + esc(x.xep_sai.join('\n')) + '"' : '') + '>' + (x.xep_sai.length ? '⚠ ' : x.tu_mat ? '❄ ' : '') + esc(x.cho) + '</span>' : '<span class="note">—</span>').join('<br>') + '</td><td>' +
+          g.canh_bao.map(c => '<span class="tag ' + (c === 'Sắp hết' ? 't-warn' : 't-bad') + '"' + (c === 'Xếp sai nhóm' ? ' title="' + esc([].concat(...g.lo.map(x => x.xep_sai)).join('\n')) + '"' : '') + '>' + esc(c) + '</span>').join(' ') + '</td></tr>').join('') + '</tbody></table></div>';
       $('kq').querySelectorAll('[data-ttt]').forEach(a => { a.onclick = async (e) => { e.preventDefault(); const g = ds.find(x => x.khoa === a.dataset.ttt), v = prompt('Tồn tối thiểu của "' + g.ten + '" (' + g.dvt + '):', g.ton_toi_thieu || ''); if (v === null) return; await chay(null, () => api('kho_ttt', { khoa: g.khoa, gia_tri: v })); toast('Đã đặt mức tối thiểu'); dieuHuong(); }; });
+      $('kq').querySelectorAll('[data-nnh]').forEach(a => { a.onclick = (e) => { e.preventDefault(); const g = ds.find(x => x.khoa === a.dataset.nnh);
+        moHop('<h2>Nhóm nguy hiểm – ' + esc(g.ten) + '</h2><form id="f"><div class="form-grid">' + o('nhom', 'Nhóm', { select: [['', '— Chưa phân nhóm —']].concat(Object.keys(kk.nhom).map(n => [n, kk.nhom[n]])), v: g.nhom_nh, full: 1 }) +
+          '</div><p class="note">Dùng để cảnh báo khi xếp hóa chất kỵ nhau cùng kệ (axit – bazơ, chất oxy hóa – chất dễ cháy, chất phản ứng với nước – axit / bazơ, chất độc – axit) hoặc để trên kệ dành cho nhóm khác.</p><div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>');
+        $('f').onsubmit = async (ev) => { ev.preventDefault(); const v = giaTri(ev.target); const r = await chay(ev.submitter, () => api('kho_nnh', { kho, khoa: g.khoa, nhom: v.nhom })); dongHop(); toast('Đã lưu nhóm');
+          const cb = [].concat(...Object.values(r.canh_bao)); if (cb.length) baoXep(cb); dieuHuong(); };
+      }; });
       Q.ganDieuHuong([].concat(...l.map(g => g.lo.map(x => '#/' + K.duong + '/lo/' + x.id))), 'lô');
     };
     $('q').oninput = ve; $('f-cb').onchange = ve; $('f-ke').onchange = ve; ve();
@@ -471,14 +480,15 @@
     };
   }
   async function hopNhapKho(kho) {
-    const dl = kho === 'DL';
+    const dl = kho === 'DL', kk = await api('kho_ke_ds', { kho });
     moHop('<h2>Nhập ' + KHO[kho].ten.toLowerCase() + ' (một lô)</h2><form id="f"><div class="form-grid">' + (dl ? '' : o('tim', 'Tìm trong danh mục vật tư (mã VT hoặc tên)', { full: 1, ph: 'Gõ ít nhất 2 ký tự…' }) + '<div id="goi-y" class="full"></div>' + o('ma_vt', 'Mã VT')) +
       o('ten', dl ? 'Tên dược liệu' : 'Tên – quy cách', { req: 1 }) + (dl ? o('ten_kh', 'Tên khoa học') + o('bo_phan', 'Bộ phận dùng', { ph: 'Lá, rễ, thân, hoa…' }) + o('xuat_xu', 'Xuất xứ – nguồn gốc') : o('nsx', 'NSX')) +
       o('dvt', 'ĐVT', { req: 1, ph: dl ? 'kg, g' : '' }) + o('so_lo', 'Số lô') + o('han_dung', 'Hạn dùng', { type: 'date' }) +
       o('sl', 'Số lượng nhập', { type: 'number', req: 1, extra: ' step="any" min="0"' }) + o('ngay_nhap', 'Ngày nhập', { type: 'date', v: homNay() }) + o('nguon', 'Nguồn / chứng từ', { ph: 'Phiếu xuất kho P.KHĐT số …', full: 1 }) +
-      o('ke', 'Kệ số') + o('tang', 'Tầng') + o('tu_mat', 'Tủ mát', { ph: 'Để trống nếu không; ghi "Có" hoặc số tủ' }) + o('vi_tri', 'Vị trí khác') + o('ghi_chu', 'Ghi chú', { full: 1 }) + '</div><label class="f"><span>' + (dl ? 'Phiếu kiểm nghiệm / chứng từ' : 'COA / phiếu kiểm nghiệm') + ' (không bắt buộc)</span><input type="file" name="tep"></label>' +
+      oKeTang(kk.ke) + o('tu_mat', 'Tủ mát', { ph: 'Để trống nếu không; ghi "Có" hoặc số tủ' }) + o('vi_tri', 'Vị trí khác') + (dl ? '' : oNhomNH(kk.nhom)) + o('ghi_chu', 'Ghi chú', { full: 1 }) + '</div><label class="f"><span>' + (dl ? 'Phiếu kiểm nghiệm / chứng từ' : 'COA / phiếu kiểm nghiệm') + ' (không bắt buộc)</span><input type="file" name="tep"></label>' +
       '<div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Nhập kho</button></div></form>');
     const f = $('f'), tim = f.querySelector('[name=tim]');
+    ganKeTang(f, kk.ke);
     if (tim) tim.oninput = async () => {
       const q = tim.value.trim(); if (q.length < 2) { $('goi-y').innerHTML = ''; return; }
       const l = await api('vt_goi_y', { q }); if (tim.value.trim() !== q) return;
@@ -486,10 +496,10 @@
       $('goi-y').querySelectorAll('[data-ma]').forEach(el => { el.onclick = () => { const v = l.find(x => x.ma_vt === el.dataset.ma); ['ma_vt', 'ten', 'nsx', 'dvt'].forEach(k => { f.querySelector('[name=' + k + ']').value = v[k] || ''; }); $('goi-y').innerHTML = ''; tim.value = ''; }; });
     };
     f.onsubmit = async (e) => {
-      e.preventDefault(); const v = giaTri(f), file = f.querySelector('[name=tep]').files[0]; delete v.tep; delete v.tim; v.kho = kho;
+      e.preventDefault(); const v = giaTri(f), file = f.querySelector('[name=tep]').files[0]; delete v.tep; delete v.tim; v.kho = kho; if (!v.nhom_nh) delete v.nhom_nh;
       const r = await chay(e.submitter, () => api('kho_nhap', { lo: v }));
       if (file) await guiTep(r.id, file, 'Chứng từ lô ' + (v.so_lo || r.id));
-      dongHop(); toast('Đã nhập lô ' + r.id); dieuHuong();
+      dongHop(); toast('Đã nhập lô ' + r.id); baoXep(r.canh_bao_xep); dieuHuong();
     };
   }
   // Nhập kho từ file Excel: tự nhận cột theo tiêu đề, cho chọn lại, xem trước, báo dòng lỗi
@@ -575,12 +585,12 @@
     };
   }
   async function manLo(id) {
-    const r = await api('kho_lo', { id }), l = r.lo, K = KHO[l.kho];
+    const r = await api('kho_lo', { id }), l = r.lo, K = KHO[l.kho], kk = await api('kho_ke_ds', { kho: l.kho });
     const nd = trang('Lô ' + esc(id), '', '<a href="#/' + K.duong + '">' + K.ten + '</a> ›');
     $('main').querySelector('h1').innerHTML = esc(l.ten) + ' <span class="tag t-info">tồn ' + fmt(r.ton) + ' ' + esc(l.dvt) + '</span>';
-    nd.innerHTML = '<div class="btns" style="margin-bottom:12px"><button class="btn sm" id="b-x">Xuất từ lô</button><button class="btn o sm" id="b-kk">Kiểm kê (điều chỉnh tồn)</button><button class="btn o sm" id="b-sua">Sửa lô</button>' +
+    nd.innerHTML = '<div class="btns" style="margin-bottom:12px"><button class="btn sm" id="b-x">Xuất từ lô</button><button class="btn o sm" id="b-kk">Kiểm kê (điều chỉnh tồn)</button><button class="btn o sm" id="b-chuyen">Chuyển kệ</button><button class="btn o sm" id="b-sua">Sửa lô</button>' +
       '<label class="btn o sm">Đính kèm chứng từ<input type="file" id="tep-lo" hidden></label><button class="btn o sm" id="b-tem">In tem</button>' +
-      (r.gd.every(g => g.loai === 'nhap') ? '<button class="btn red sm" id="b-xoa-lo" title="Chỉ xóa được khi lô chưa xuất / chưa điều chỉnh">Xóa lô (nhập nhầm)</button>' : '') + '</div>' +
+      (r.gd.every(g => g.loai === 'nhap' || g.loai === 'chuyen') ? '<button class="btn red sm" id="b-xoa-lo" title="Chỉ xóa được khi lô chưa xuất / chưa điều chỉnh">Xóa lô (nhập nhầm)</button>' : '') + '</div>' +
       '<div class="grid g2"><div class="card"><dl class="kv">' + [['Mã lô', l.id], ['Kho', K.ten], ['Mã VT', l.ma_vt], ['Tên khoa học', l.ten_kh], ['Bộ phận dùng', l.bo_phan], ['Xuất xứ', l.xuat_xu], ['NSX', l.nsx], ['Số lô', l.so_lo], ['Hạn dùng', ngayVN(l.han_dung)],
         ['Ngày nhập', ngayVN(l.ngay_nhap)], ['SL nhập', fmt(l.sl_nhap) + ' ' + l.dvt], ['Nguồn', l.nguon], ['Kệ số', l.ke], ['Tầng', l.tang], ['Tủ mát', l.tu_mat], ['Vị trí khác', l.vi_tri], ['Ghi chú', l.ghi_chu]]
         .filter(x => x[1]).map(x => '<dt>' + x[0] + '</dt><dd>' + esc(x[1]) + '</dd>').join('') + '</dl></div>' +
@@ -590,6 +600,7 @@
     nd.querySelectorAll('[data-tai]').forEach(b => { b.onclick = (e) => chay(e.target, () => taiVe(b.dataset.tai)); });
     $('b-x').onclick = () => hopXuatKho(r);
     $('b-tem').onclick = () => Q.inTem([l], 'lo');
+    $('b-chuyen').onclick = () => hopChuyenKe(l.kho, l);
     if ($('b-xoa-lo')) $('b-xoa-lo').onclick = async (e) => {
       if (!confirm('Xóa lô ' + l.id + ' – ' + l.ten + ' (' + fmt(l.sl_nhap) + ' ' + l.dvt + ')? Lô chưa xuất nên xóa hẳn khỏi kho.\n(Thu hồi lại được ở Hệ thống › Lịch sử tải file.)')) return;
       await chay(e.target, () => api('kho_xoa_lo', { id: l.id })); toast('Đã xóa lô ' + l.id); location.hash = '#/' + K.duong;
@@ -601,11 +612,12 @@
       $('f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target); const k = await chay(e.submitter, () => api('kho_xuat', { gd: { loai: 'dieu_chinh', lo: l.id, ton_thuc: v.ton_thuc, ngay: v.ngay, ly_do: v.ly_do } })); dongHop(); toast('Chênh lệch ' + (fmt(k.lech) || 0)); dieuHuong(); };
     };
     $('b-sua').onclick = () => {
-      moHop('<h2>Sửa lô</h2><form id="f"><div class="form-grid">' + o('so_lo', 'Số lô', { v: l.so_lo }) + o('han_dung', 'Hạn dùng', { type: 'date', v: l.han_dung }) + o('ke', 'Kệ số', { v: l.ke }) + o('tang', 'Tầng', { v: l.tang }) +
+      moHop('<h2>Sửa lô</h2><form id="f"><div class="form-grid">' + o('so_lo', 'Số lô', { v: l.so_lo }) + o('han_dung', 'Hạn dùng', { type: 'date', v: l.han_dung }) + oKeTang(kk.ke, l) +
         o('tu_mat', 'Tủ mát', { v: l.tu_mat, ph: 'Có / số tủ' }) + o('vi_tri', 'Vị trí khác', { v: l.vi_tri }) + o('nguon', 'Nguồn', { v: l.nguon }) +
         (l.kho === 'DL' ? o('ten_kh', 'Tên khoa học', { v: l.ten_kh }) + o('bo_phan', 'Bộ phận dùng', { v: l.bo_phan }) + o('xuat_xu', 'Xuất xứ', { v: l.xuat_xu }) : '') + o('ghi_chu', 'Ghi chú', { v: l.ghi_chu, full: 1 }) +
         '</div><div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>');
-      $('f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target); v.id = l.id; await chay(e.submitter, () => api('kho_sua_lo', { lo: v })); dongHop(); toast('Đã lưu'); dieuHuong(); };
+      ganKeTang($('f'), kk.ke, l);
+      $('f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target); v.id = l.id; const k = await chay(e.submitter, () => api('kho_sua_lo', { lo: v })); dongHop(); toast('Đã lưu'); baoXep(k.canh_bao_xep); dieuHuong(); };
     };
   }
   async function manSoKS() {
@@ -623,6 +635,143 @@
         { ten: 'CHỨNG TỪ / BIÊN BẢN', rong: 36 }, { ten: 'NGƯỜI NHẬN', rong: 18 }, { ten: 'NGƯỜI GHI', rong: 16 }],
       dong: [].concat(...r.so.map(s => [{ nhom: s.ten + ' (mã VT ' + s.ma_vt + ', ĐVT ' + s.dvt + ')' }].concat(s.dong.map(d => [ngayVN(d.ngay), d.loai, d.so_lo, d.nhap === '' ? '' : d.nhap, d.xuat === '' ? '' : d.xuat, { v: d.ton, b: 1 }, d.chung_tu, d.nguoi_nhan, d.nguoi])))),
       ky: [['NGƯỜI LẬP SỔ', '(Ký, ghi rõ họ tên)'], ['TRƯỞNG KHOA', '(Ký, ghi rõ họ tên)']] })] });
+  }
+
+  // ---------------- Kho theo kệ – tầng: sơ đồ kệ, khai báo kệ, kiểm kê theo kệ, nhãn QR kệ ----------------
+  // mã kệ bắt đầu bằng TM = tủ mát
+  const tenKe = (ma) => /^TM/.test(ma || '') ? 'Tủ mát' + (String(ma).slice(2) ? ' ' + String(ma).slice(2) : '') : 'Kệ ' + ma;
+  // ô chọn Kệ → Tầng (số tầng theo kệ đã khai báo); lô ghi kệ chưa khai báo vẫn giữ giá trị cũ
+  function oKeTang(ke, v) {
+    v = v || {};
+    const la = v.ke && !ke.some(k => k.ma === v.ke) ? [[v.ke, tenKe(v.ke) + ' (chưa khai báo)']] : [];
+    return o('ke', 'Kệ / tủ mát', { select: [['', '— Không để trên kệ —']].concat(ke.map(k => [k.ma, tenKe(k.ma) + (k.ten_nhom ? ' – ' + k.ten_nhom : '')]), la), v: v.ke || '' }) + o('tang', 'Tầng', { select: [['', '—']] });
+  }
+  function ganKeTang(f, ke, v) {
+    const sk = f.querySelector('[name=ke]'), sTang = f.querySelector('[name=tang]');
+    const ve = (giu) => {
+      const k = ke.find(x => x.ma === sk.value), n = k ? +k.so_tang : 0, cu = String(giu != null ? giu : sTang.value);
+      sTang.innerHTML = '<option value="">—</option>' + Array.from({ length: n }, (_, i) => '<option' + (String(i + 1) === cu ? ' selected' : '') + '>' + (i + 1) + '</option>').join('') +
+        (cu && !(+cu >= 1 && +cu <= n && String(+cu) === cu) ? '<option selected>' + esc(cu) + '</option>' : '');
+    };
+    sk.onchange = () => ve(); ve((v || {}).tang || '');
+  }
+  const baoXep = (cb) => { if (cb && cb.length) alert('⚠ Lưu ý xếp hóa chất:\n• ' + cb.join('\n• ') + '\n\nLô vẫn được ghi – kiểm tra lại vị trí trên kệ.'); };
+  const oNhomNH = (nhom, v) => o('nhom_nh', 'Nhóm nguy hiểm (để cảnh báo xếp kệ)', { select: [['', '— Giữ nguyên / chưa phân nhóm —']].concat(Object.keys(nhom).map(k => [k, nhom[k]])), v: v || '' });
+  const tatCaLo = (k) => [].concat(...Object.keys(k.tang).map(t => k.tang[t]), k.khac);
+  function chipLo(K, nhom, l) {
+    const tt = [l.ten, 'Lô ' + (l.so_lo || l.id), l.han_dung ? 'HSD ' + ngayVN(l.han_dung) + (l.het_han ? ' (đã hết hạn)' : l.sap_het_han ? ' (sắp hết hạn)' : '') : '', 'Tồn ' + fmt(l.ton) + ' ' + l.dvt, l.nhom ? 'Nhóm: ' + nhom[l.nhom] : '', l.kiem_soat ? 'Kiểm soát đặc biệt' : ''].concat(l.xep_sai).filter(Boolean);
+    return '<a class="hc' + (l.het_han ? ' het' : l.sap_het_han ? ' sap' : '') + (l.xep_sai.length ? ' sai' : '') + '" href="#/' + K.duong + '/lo/' + esc(l.id) + '" title="' + esc(tt.join('\n')) + '" data-tim="' + esc(boDau(l.ten + ' ' + (l.ma_vt || '') + ' ' + (l.so_lo || ''))) + '">' +
+      (l.xep_sai.length ? '⚠ ' : '') + (l.kiem_soat ? '<b class="ks">KS</b> ' : '') + esc(l.ten) + ' <span>' + fmt(l.ton) + ' ' + esc(l.dvt) + '</span></a>';
+  }
+  async function manSoDoKho(kho) {
+    const K = KHO[kho], xl = coQuyen(K.duong, 'xu_ly');
+    const nd = trang('Sơ đồ kệ – ' + K.ten, '<button class="btn o sm" id="b-kk-ls">Lịch sử kiểm kê</button><button class="btn o sm" id="b-nhan">In nhãn QR kệ</button>' + (xl ? '<button class="btn sm" id="b-khai">⚙ Khai báo kệ</button>' : ''), '<a href="#/' + K.duong + '">' + K.ten + '</a> ›');
+    const r = await api('kho_so_do', { kho }), tren = [].concat(...r.ke.map(tatCaLo)), moi = tren.concat(r.chua_xep, r.ke_la);
+    const theKe = (k) => '<div class="ke-the' + (k.canh_bao.length ? ' co-cb' : '') + (k.tu_mat ? ' lanh' : '') + '"><div class="ke-dau"><a href="#/' + K.duong + '/ke/' + encodeURIComponent(k.ma) + '"><b>' + (k.tu_mat ? '❄ ' : '') + esc(tenKe(k.ma)) + '</b></a>' +
+      (k.ten_nhom ? '<span class="tag t-info">' + esc(k.ten_nhom) + '</span>' : '') + '<span class="note">' + k.so_tang + ' tầng · ' + k.so_lo + ' lô</span></div>' + (k.ghi_chu ? '<div class="note">' + esc(k.ghi_chu) + '</div>' : '') +
+      k.canh_bao.map(c => '<div class="err">⚠ ' + esc(c) + '</div>').join('') +
+      '<div class="ke-tang">' + Object.keys(k.tang).sort((a, b) => b - a).map(t => '<div class="tg"><span class="so">T' + t + '</span><div>' + (k.tang[t].map(l => chipLo(K, r.nhom, l)).join('') || '<span class="note">trống</span>') + '</div></div>').join('') +
+      (k.khac.length ? '<div class="tg"><span class="so" title="Chưa ghi tầng / tầng không có trên kệ">?</span><div>' + k.khac.map(l => chipLo(K, r.nhom, l)).join('') + '</div></div>' : '') + '</div>' +
+      '<div class="ke-chan"><span class="note">' + (k.kiem_ke ? 'Kiểm kê ' + ngayVN(k.kiem_ke.ngay) + ' · ' + (+k.kiem_ke.so_lech ? k.kiem_ke.so_lech + ' lô lệch' : 'khớp') : 'Chưa kiểm kê') + '</span>' +
+      (xl && k.so_lo ? '<button class="btn o sm" data-kk="' + esc(k.ma) + '">Kiểm kê</button>' : '') + '</div></div>';
+    nd.innerHTML = '<div class="grid g4" style="margin-bottom:12px">' + st(r.ke.length, 'Kệ đã khai báo') + st(tren.length, 'Lô trên kệ') + st(r.chua_xep.length + r.ke_la.length, 'Lô chưa xếp đúng kệ', r.chua_xep.length + r.ke_la.length ? 'warn' : 'ok') +
+      st(moi.filter(l => l.xep_sai.length).length + ' / ' + moi.filter(l => l.het_han).length, 'Xếp sai nhóm / hết hạn', moi.some(l => l.xep_sai.length || l.het_han) ? 'bad' : 'ok') + '</div>' +
+      '<div class="tools"><input type="search" id="q" placeholder="Tìm hóa chất trên sơ đồ (tên, mã VT, số lô)…"><span class="note">Màu: <a class="hc sap">sắp hết hạn (≤ ' + r.sap_het_han + ' ngày)</a> <a class="hc het">hết hạn</a> <a class="hc sai">⚠ xếp sai nhóm</a> <a class="hc"><b class="ks">KS</b> kiểm soát đặc biệt</a></span></div>' +
+      (r.ke.length ? '<div class="ke-luoi">' + r.ke.map(theKe).join('') + '</div>' : '<div class="card empty">Chưa khai báo kệ. Bấm "⚙ Khai báo kệ".</div>') +
+      (r.chua_xep.length ? '<div class="card" style="margin-top:14px"><h2>Lô chưa xếp kệ (' + r.chua_xep.length + ')</h2><div class="ds-hc">' + r.chua_xep.map(l => chipLo(K, r.nhom, l)).join('') + '</div><p class="note">Bấm vào lô → "Chuyển kệ" để ghi vị trí.</p></div>' : '') +
+      (r.ke_la.length ? '<div class="card"><h2>Lô ghi kệ chưa khai báo (' + r.ke_la.length + ')</h2><div class="ds-hc">' + r.ke_la.map(l => '<span class="note">' + esc(tenKe(l.ke)) + ':</span> ' + chipLo(K, r.nhom, l)).join(' ') + '</div><p class="note">Khai báo thêm kệ này hoặc chuyển lô sang kệ đã có.</p></div>' : '');
+    $('q').oninput = () => { const q = boDau($('q').value.trim()); nd.querySelectorAll('a.hc[data-tim]').forEach(a => a.classList.toggle('mo', !!q && a.dataset.tim.indexOf(q) < 0)); };
+    nd.querySelectorAll('[data-kk]').forEach(b => { b.onclick = () => hopKiemKe(kho, r.ke.find(k => k.ma === b.dataset.kk)); });
+    if ($('b-khai')) $('b-khai').onclick = () => hopKhaiKe(kho, r.ke, r.nhom);
+    $('b-nhan').onclick = () => hopNhanKe(kho, r.ke);
+    $('b-kk-ls').onclick = () => hopLichSuKK(kho);
+  }
+  // một kệ (mã QR dán trên kệ mở trang này; ?t= tầng được tô sáng)
+  async function manKeKho(kho, ma) {
+    const K = KHO[kho], xl = coQuyen(K.duong, 'xu_ly'), t = new URLSearchParams(location.hash.split('?')[1] || '').get('t') || '';
+    const nd = trang(esc(tenKe(ma)) + (t ? ' – Tầng ' + esc(t) : ''), '', '<a href="#/' + K.duong + '">' + K.ten + '</a> › <a href="#/' + K.duong + '/so-do">Sơ đồ kệ</a> ›');
+    const r = await api('kho_so_do', { kho }), k = r.ke.find(x => x.ma === ma);
+    if (!k) { nd.innerHTML = '<div class="card empty">Không có kệ ' + esc(ma) + ' trong ' + esc(K.ten) + '.</div>'; return; }
+    const ds = tatCaLo(k).sort((a, b) => (b.tang || '').localeCompare(a.tang || '', 'vi', { numeric: true }) || a.ten.localeCompare(b.ten, 'vi'));
+    nd.innerHTML = '<div class="btns" style="margin-bottom:10px">' + (xl && ds.length ? '<button class="btn sm" id="b-kk">Kiểm kê</button>' : '') + '<button class="btn o sm" id="b-phieu">In phiếu kiểm kê</button><button class="btn o sm" id="b-nhan">In nhãn QR kệ này</button></div>' +
+      '<div class="card"><p>' + (k.ten_nhom ? 'Dành cho: <span class="tag t-info">' + esc(k.ten_nhom) + '</span> · ' : '') + k.so_tang + ' tầng · ' + ds.length + ' lô' + (k.ghi_chu ? ' · ' + esc(k.ghi_chu) : '') + '</p>' + k.canh_bao.map(c => '<div class="err">⚠ ' + esc(c) + '</div>').join('') +
+      (ds.length ? '<div class="tbl-wrap"><table><thead><tr><th>Tầng</th><th>Tên</th><th>Số lô</th><th>Hạn dùng</th><th class="num">Tồn</th><th>Cảnh báo</th>' + (xl ? '<th></th>' : '') + '</tr></thead><tbody>' +
+        ds.map(l => '<tr' + (t && l.tang === t ? ' class="nb"' : '') + '><td><b>' + esc(l.tang || '?') + '</b></td><td><a href="#/' + K.duong + '/lo/' + esc(l.id) + '">' + esc(l.ten) + '</a>' + (l.kiem_soat ? ' <span class="tag t-bad">kiểm soát</span>' : '') + (l.nhom ? ' <span class="note">' + esc(r.nhom[l.nhom]) + '</span>' : '') + '</td><td>' + esc(l.so_lo || l.id) + '</td>' +
+          '<td>' + (l.han_dung ? ngayVN(l.han_dung) : '—') + (l.het_han ? ' <span class="tag t-bad">hết hạn</span>' : l.sap_het_han ? ' <span class="tag t-warn">sắp hết hạn</span>' : '') + '</td><td class="num">' + fmt(l.ton) + ' ' + esc(l.dvt) + '</td><td>' + l.xep_sai.map(c => '<div class="err">⚠ ' + esc(c) + '</div>').join('') + '</td>' +
+          (xl ? '<td><button class="btn o sm" data-chuyen="' + esc(l.id) + '">Chuyển</button></td>' : '') + '</tr>').join('') + '</tbody></table></div>' : '<div class="note">Kệ trống.</div>') + '</div>';
+    const nb = nd.querySelector('tr.nb'); if (nb) nb.scrollIntoView({ block: 'center' });
+    if ($('b-kk')) $('b-kk').onclick = () => hopKiemKe(kho, k);
+    $('b-phieu').onclick = () => inPhieuKiemKe(kho, k);
+    $('b-nhan').onclick = () => hopNhanKe(kho, [k]);
+    nd.querySelectorAll('[data-chuyen]').forEach(b => { b.onclick = () => { const l = ds.find(x => x.id === b.dataset.chuyen); hopChuyenKe(kho, Object.assign({}, l, { ke: k.ma })); }; });
+  }
+  async function hopChuyenKe(kho, l) {
+    const kk = await api('kho_ke_ds', { kho });
+    moHop('<h2>Chuyển vị trí – ' + esc(l.ten) + '</h2><form id="f"><p class="note">Lô ' + esc(l.so_lo || l.id) + ' · hiện ở ' + esc(l.ke ? tenKe(l.ke) + (l.tang ? ' · Tầng ' + l.tang : '') : 'chưa xếp kệ') + '. Lần chuyển được ghi vào lịch sử lô.</p><div class="form-grid">' + oKeTang(kk.ke, l) +
+      '</div><div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Chuyển</button></div></form>');
+    ganKeTang($('f'), kk.ke, l);
+    $('f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target); const r = await chay(e.submitter, () => api('kho_sua_lo', { lo: { id: l.id, ke: v.ke, tang: v.tang } })); dongHop(); toast('Đã chuyển'); baoXep(r.canh_bao_xep); dieuHuong(); };
+  }
+  function hopKiemKe(kho, k) {
+    const ds = tatCaLo(k);
+    moHop('<h2>Kiểm kê ' + esc(tenKe(k.ma).toLowerCase()) + '</h2><form id="f"><p class="note">Đếm thực tế từng lô và ghi vào cột "Thực tế". Lô để trống = chưa đếm (không ghi). Lô lệch được điều chỉnh tồn, ghi vào lịch sử lô và lịch sử kiểm kê.</p>' +
+      '<div class="tbl-wrap" style="max-height:52vh"><table><thead><tr><th>Tầng</th><th>Tên</th><th>Số lô</th><th>Hạn dùng</th><th class="num">Tồn sổ</th><th style="width:120px">Thực tế</th></tr></thead><tbody>' +
+      ds.map(l => '<tr><td>' + esc(l.tang || '?') + '</td><td>' + esc(l.ten) + '</td><td>' + esc(l.so_lo || l.id) + '</td><td>' + (l.han_dung ? ngayVN(l.han_dung) : '—') + '</td><td class="num">' + fmt(l.ton) + ' ' + esc(l.dvt) + '</td>' +
+        '<td><input type="number" step="any" min="0" data-lo="' + esc(l.id) + '" data-ton="' + esc(l.ton) + '" style="width:100%"></td></tr>').join('') + '</tbody></table></div>' +
+      '<div class="form-grid">' + o('ngay', 'Ngày kiểm kê', { type: 'date', v: homNay() }) + o('ghi_chu', 'Ghi chú', { ph: 'VD: kiểm kê định kỳ tháng 11' }) + '</div>' +
+      '<div class="modal-foot"><button type="button" class="btn o" id="b-khop">Điền "khớp sổ" cho lô chưa nhập</button><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Ghi kiểm kê</button></div></form>');
+    const o2 = () => [...$('f').querySelectorAll('[data-lo]')];
+    $('b-khop').onclick = () => o2().forEach(i => { if (i.value === '') i.value = i.dataset.ton; });
+    $('f').onsubmit = async (e) => {
+      e.preventDefault(); const v = giaTri(e.target), dsx = o2().map(i => ({ lo: i.dataset.lo, ton_thuc: i.value }));
+      const r = await chay(e.submitter, () => api('kho_kiem_ke', { kho, ke: k.ma, ngay: v.ngay, ghi_chu: v.ghi_chu, ds: dsx }));
+      dongHop(); toast('Đã kiểm kê ' + r.so_lo + ' lô' + (+r.so_lech ? ' · ' + r.so_lech + ' lô lệch đã điều chỉnh tồn' : ' · khớp sổ sách')); dieuHuong();
+    };
+  }
+  function inPhieuKiemKe(kho, k) {
+    const ds = tatCaLo(k);
+    window.PTN_IN.xemTruoc({ ten: 'Phieu kiem ke ' + k.ma + ' ' + homNay(), trang: [window.PTN_IN.bang({ ten: 'Kiem ke', tieuDe: 'PHIẾU KIỂM KÊ ' + tenKe(k.ma).toUpperCase() + ' – ' + KHO[kho].ten.toUpperCase(),
+      phuDe: 'Ngày kiểm kê: ……/……/20……' + (k.ten_nhom ? ' · Kệ dành cho: ' + k.ten_nhom : ''),
+      cot: [{ ten: 'STT', rong: 5, can: 'c' }, { ten: 'TẦNG', rong: 6, can: 'c' }, { ten: 'TÊN – QUY CÁCH', rong: 30 }, { ten: 'SỐ LÔ', rong: 11 }, { ten: 'HẠN DÙNG', rong: 11, can: 'c' }, { ten: 'ĐVT', rong: 7, can: 'c' },
+        { ten: 'TỒN SỔ', rong: 9 }, { ten: 'THỰC TẾ', rong: 9 }, { ten: 'CHÊNH LỆCH', rong: 8 }, { ten: 'GHI CHÚ', rong: 8 }],
+      dong: ds.map((l, i) => Object.assign([i + 1, l.tang || '', l.ten, l.so_lo || '', ngayVN(l.han_dung || ''), l.dvt, l.ton, '', '', ''], { cao: 22 })),
+      ky: [['NGƯỜI KIỂM KÊ', '(Ký, ghi rõ họ tên)'], ['NGƯỜI CHỨNG KIẾN', '(Ký, ghi rõ họ tên)']] })] });
+  }
+  function hopKhaiKe(kho, ke, nhom) {
+    const hc = kho === 'HC';
+    const dong = (k) => '<tr data-id="' + esc(k.id || '') + '"><td><input data-k="ma" value="' + esc(k.ma || '') + '" style="width:80px"></td><td><input type="number" min="1" max="20" data-k="so_tang" value="' + esc(k.so_tang || 5) + '" style="width:80px"></td>' +
+      (hc ? '<td><select data-k="nhom"><option value="">Dùng chung</option>' + Object.keys(nhom).map(n => '<option value="' + n + '"' + (n === k.nhom ? ' selected' : '') + '>' + esc(nhom[n]) + '</option>').join('') + '</select></td>' : '') +
+      '<td><input data-k="ghi_chu" value="' + esc(k.ghi_chu || '') + '" placeholder="Vị trí, loại kệ…"></td><td><button type="button" class="btn red sm" data-xoa title="Xóa kệ">✕</button></td></tr>';
+    moHop('<h2>Khai báo kệ – ' + esc(KHO[kho].ten) + '</h2><p class="note">Mỗi kệ: mã (1, 2, A…; mã bắt đầu bằng TM là tủ mát, VD: TM, TM2), số tầng' + (hc ? ', nhóm hóa chất dành cho (để cảnh báo khi xếp sai nhóm)' : '') + '. Đổi mã kệ thì các lô trên kệ đổi theo. Không xóa được kệ còn hóa chất.</p>' +
+      '<div class="tbl-wrap"><table><thead><tr><th>Mã kệ</th><th>Số tầng</th>' + (hc ? '<th>Nhóm dành cho</th>' : '') + '<th>Ghi chú</th><th></th></tr></thead><tbody id="ds-ke">' + ke.map(dong).join('') + '</tbody></table></div>' +
+      '<button type="button" class="btn o sm" id="b-them-ke" style="margin-top:8px">+ Thêm kệ</button><div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn" id="b-luu-ke">Lưu</button></div>');
+    const gan = () => $('ds-ke').querySelectorAll('[data-xoa]').forEach(b => { b.onclick = () => b.closest('tr').remove(); });
+    $('b-them-ke').onclick = () => { const so = [...$('ds-ke').querySelectorAll('[data-k=ma]')].map(i => +i.value).filter(n => n > 0); $('ds-ke').insertAdjacentHTML('beforeend', dong({ ma: String((so.length ? Math.max(...so) : 0) + 1), so_tang: 5 })); gan(); };
+    gan();
+    $('b-luu-ke').onclick = async (e) => {
+      const ds = [...$('ds-ke').children].map(tr => { const x = { id: tr.dataset.id }; tr.querySelectorAll('[data-k]').forEach(i => { x[i.dataset.k] = i.value; }); return x; });
+      await chay(e.target, () => api('kho_ke_luu', { kho, ds })); dongHop(); toast('Đã lưu ' + ds.length + ' kệ'); dieuHuong();
+    };
+  }
+  function hopNhanKe(kho, ke) {
+    moHop('<h2>In nhãn QR kệ</h2><p class="note">Dán nhãn lên kệ / từng tầng. Cán bộ quét bằng điện thoại (đã đăng nhập trang quản lý) để mở danh sách hóa chất trên kệ, tầng đó. Tem khổ 63,5 × 38,1 mm (21 tem / tờ A4).</p>' +
+      '<label class="check"><input type="radio" name="kieu" value="tang" checked> Mỗi tầng một nhãn</label><label class="check"><input type="radio" name="kieu" value="ke"> Mỗi kệ một nhãn</label>' +
+      '<div class="card" style="max-height:40vh;overflow:auto">' + ke.map(k => '<label class="check"><input type="checkbox" value="' + esc(k.ma) + '" checked> ' + esc(tenKe(k.ma)) + ' (' + k.so_tang + ' tầng)' + (k.ten_nhom ? ' – ' + esc(k.ten_nhom) : '') + '</label>').join('') + '</div>' +
+      '<div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn" id="b-in-nhan">In nhãn</button></div>');
+    $('b-in-nhan').onclick = () => {
+      const chon = [...document.querySelectorAll('#modal-body input[type=checkbox]:checked')].map(i => ke.find(k => k.ma === i.value)), tung = document.querySelector('#modal-body input[name=kieu]:checked').value === 'tang';
+      if (!chon.length) return toast('Chọn ít nhất một kệ', true);
+      const ds = [].concat(...chon.map(k => tung ? Array.from({ length: +k.so_tang }, (_, i) => ({ k, tang: String(+k.so_tang - i) })) : [{ k, tang: '' }]))
+        .map(x => ({ duong: KHO[kho].duong, ten_kho: KHO[kho].ten, ma: x.k.ma, tang: x.tang, ten_nhom: x.k.ten_nhom }));
+      dongHop(); Q.inTem(ds, 'ke');
+    };
+  }
+  async function hopLichSuKK(kho) {
+    const ds = await api('kho_kk_ds', { kho });
+    moHop('<h2>Lịch sử kiểm kê – ' + esc(KHO[kho].ten) + '</h2>' + (ds.length ? '<div class="tbl-wrap" style="max-height:60vh"><table><thead><tr><th>Ngày</th><th>Kệ</th><th>Người kiểm kê</th><th class="num">Số lô</th><th class="num">Lô lệch</th><th>Chi tiết lệch</th></tr></thead><tbody>' +
+      ds.map(x => '<tr><td>' + ngayVN(x.ngay) + '</td><td>' + esc(tenKe(x.ke)) + '</td><td>' + esc(x.nguoi) + '</td><td class="num">' + esc(x.so_lo) + '</td><td class="num">' + (+x.so_lech ? '<b style="color:var(--bad)">' + esc(x.so_lech) + '</b>' : '0') + '</td><td>' +
+        x.chi_tiet.filter(c => c.lech).map(c => esc(c.ten) + ' (lô ' + esc(c.so_lo || c.lo) + '): ' + fmt(c.ton_so) + ' → ' + fmt(c.ton_thuc) + ' ' + esc(c.dvt)).join('<br>') + (x.ghi_chu ? '<div class="note">' + esc(x.ghi_chu) + '</div>' : '') + '</td></tr>').join('') + '</tbody></table></div>'
+      : '<p class="note">Chưa có lần kiểm kê nào.</p>') + '<div class="modal-foot"><button class="btn" data-dong>Đóng</button></div>');
   }
 
   // ---------------- Báo cáo – thống kê ----------------
@@ -788,10 +937,10 @@
   Q.inTem = async (ds, kieu) => {
     const tem = [];
     for (const x of ds) {
-      const duong = kieu === 'tb' ? 'tai-san/' + x.id : kieu === 'lo' ? 'kho/lo/' + x.id : kieu === 'hs' ? 'de-tai/' + x.id : 'phong/' + x.ma;
+      const duong = kieu === 'tb' ? 'tai-san/' + x.id : kieu === 'lo' ? 'kho/lo/' + x.id : kieu === 'hs' ? 'de-tai/' + x.id : kieu === 'ke' ? x.duong + '/ke/' + encodeURIComponent(x.ma) + (x.tang ? '?t=' + x.tang : '') : 'phong/' + x.ma;
       const dong = kieu === 'tb' ? [x.ten, x.ma_ts ? 'Mã TS: ' + x.ma_ts : 'ID: ' + x.id, x.phong ? 'Phòng ' + x.phong : '']
         : kieu === 'lo' ? [x.ten, 'Lô ' + (x.so_lo || x.id) + (x.ma_vt ? ' · MVT ' + x.ma_vt : ''), x.han_dung ? 'HSD: ' + ngayVN(x.han_dung) : '', x.vi_tri ? 'Vị trí: ' + x.vi_tri : '']
-        : kieu === 'hs' ? [x.id, x.ten, 'GVHD: ' + x.gvhd] : ['Phòng ' + x.ma, x.ten];
+        : kieu === 'hs' ? [x.id, x.ten, 'GVHD: ' + x.gvhd] : kieu === 'ke' ? [tenKe(x.ma).toUpperCase() + (x.tang ? ' – TẦNG ' + x.tang : ''), x.ten_kho, x.ten_nhom ? 'Dành cho: ' + x.ten_nhom : '', 'Quét xem hóa chất trên ' + (x.tang ? 'tầng' : 'kệ')] : ['Phòng ' + x.ma, x.ten];
       tem.push('<div class="tem"><div class="q">' + await svgQR(lienKet(duong), 2) + '</div><div class="t"><small>PTN KHOA KHSK – IUH</small>' + dong.filter(Boolean).map((d, i) => i === 0 ? '<b>' + esc(d) + '</b>' : '<div>' + esc(d) + '</div>').join('') + '</div></div>');
     }
     xem('<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><title>Tem nhan</title><style>@page{size:A4;margin:12mm 7mm}body{margin:0;font:10px/1.25 Arial,sans-serif}.luoi{display:grid;grid-template-columns:repeat(3,63.5mm);grid-auto-rows:38.1mm;column-gap:2.5mm}' +
