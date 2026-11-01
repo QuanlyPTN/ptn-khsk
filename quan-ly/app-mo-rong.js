@@ -40,6 +40,7 @@
     h.qua_han.forEach(d => canh.push('⚠ <b>' + d.qr + '</b> <a href="#/don/' + d.qr + '/' + esc(d.id) + '">' + esc(d.id) + '</a> – ' + esc(d.ho_ten) + ' quá hạn ' + esc(ngayVN(d.den_ngay)) + ' – ' + esc(tomTat(d)).slice(0, 120)));
     h.hs_qua_han.forEach(x2 => canh.push('⚠ Hồ sơ <a href="#/de-tai/' + esc(x2.id) + '">' + esc(x2.id) + '</a> quá hạn ' + ngayVN(x2.den_ngay) + ' – ' + esc(x2.ten)));
     t.qua_han_tra.forEach(x2 => canh.push('⚠ <a href="#/tai-san/' + esc(x2.id) + '">' + esc(x2.ten) + '</a> – ' + esc(x2.nguoi_muon) + ' quá hạn trả ' + hanTag(x2.han_tra)));
+    (t.tu_chua_thu || []).forEach(x2 => canh.push('⚠ Tủ <a href="#/bien-ban/' + esc(x2.bb) + '">' + esc(x2.phong) + ' – ' + esc(x2.so) + '</a> giao kèm biên bản ' + esc(x2.bb) + ' đã xong – chưa thu tủ'));
     t.tu_qua_han.forEach(x2 => canh.push('⚠ Tủ <a href="#/phong/' + esc(x2.phong) + '">' + esc(x2.phong) + ' – ' + esc(x2.so) + '</a> – ' + esc(x2.nguoi) + ' quá hạn ' + hanTag(x2.han)));
     if (t.kiem_dinh.qua_han) canh.push('⚠ <a href="#/kiem-dinh">' + t.kiem_dinh.qua_han + ' thiết bị quá hạn kiểm định</a>');
     if (t.kiem_dinh.trong_30) canh.push('• <a href="#/kiem-dinh">' + t.kiem_dinh.trong_30 + ' thiết bị kiểm định trong 30 ngày</a>');
@@ -1327,7 +1328,7 @@
           '<th class="num">' + (kltn ? 'SV' : 'SV / ca') + '</th><th class="num">Dòng</th><th>Theo dõi</th><th>Trạng thái</th><th>Bản ký</th></tr></thead><tbody>' +
           l.map(b => '<tr class="click" data-id="' + esc(b.id) + '"><td><input type="checkbox" data-chon="' + esc(b.id) + '"></td><td class="mono" style="white-space:nowrap">' + esc(b.id) + '</td><td><b>' + esc(b.ten_mon) + '</b></td><td>' + esc(b.lop) + '</td><td title="' + esc(b.gv) + '">' + gvNgan(b.gv) + '</td><td>' + esc(b.phong) + '</td>' +
             '<td style="white-space:nowrap">' + esc((b.thoi_gian || '').split(' → ').map(ngayVN).join(' → ')) + '</td><td class="num">' + esc(b.si_so) + (kltn ? '' : ' / ' + esc(b.so_nhom)) + '</td><td class="num">' + b.so_dong + '</td><td>' +
-            [b.bo_sung ? '<span class="tag t-info">+' + b.bo_sung + ' bổ sung</span>' : '', b.no ? '<span class="tag t-bad">' + b.no + ' dòng nợ</span>' : '', b.canh_bao ? '<span class="tag t-warn">⚠ ' + b.canh_bao + '</span>' : ''].join(' ') +
+            [b.bo_sung ? '<span class="tag t-info">+' + b.bo_sung + ' bổ sung</span>' : '', b.no ? '<span class="tag t-bad">' + b.no + ' dòng nợ</span>' : '', b.canh_bao ? '<span class="tag t-warn">⚠ ' + b.canh_bao + '</span>' : '', b.tu ? '<span class="tag t-gray" title="' + esc(b.tu_giao) + '">🗄 ' + b.tu + ' tủ</span>' : ''].join(' ') +
             '</td><td><span class="tag ' + (MAU_BB[b.trang_thai] || 't-gray') + '">' + esc(b.trang_thai) + '</span></td><td>' + (b.ban_ky ? '📎 ' + b.ban_ky : '') + '</td></tr>').join('') + '</tbody></table></div><p class="note">' + l.length + ' / ' + ds.length + ' biên bản · bấm một dòng để mở và nhập trực tiếp số bàn giao, bổ sung, trả, ghi chú.</p>';
       Q.ganDieuHuong(l.map(b => '#/bien-ban/' + encodeURIComponent(b.id)), 'biên bản');
       $('kq').querySelectorAll('tr[data-id]').forEach(tr => { tr.onclick = (e) => { if (e.target.closest('input')) return; location.hash = '#/bien-ban/' + encodeURIComponent(tr.dataset.id); }; });
@@ -1364,6 +1365,14 @@
       '<div class="card"><h2>Bản ký & tệp (' + r.tep.length + ')</h2>' + (r.tep.length ? '<ul class="files">' + r.tep.map(f => '<li><span>📄 ' + esc(f.ten) + '<br><span class="note">' + esc(ngayVN(f.tao) + ' · ' + f.nguoi) + '</span></span><span class="btns">' + (/^image\/|pdf/.test(f.mime) ? '<button class="btn o sm" data-doc="' + esc(f.id) + '">Cập nhật số từ tệp này</button>' : '') + '<button class="btn o sm" data-tai="' + esc(f.id) + '">Tải về</button></span></li>').join('') + '</ul>' : '<div class="note">Chưa có. Sau khi ký, chụp/scan biên bản và bấm "Đính kèm bản ký".</div>') +
       '<h2 style="margin-top:14px">Lịch sử cấp phát – chỉnh sửa (' + r.cap_phat.length + ')</h2>' + (r.cap_phat.length ? '<div style="max-height:240px;overflow:auto">' + r.cap_phat.map(c => { const d = r.dong.find(x => x.id === c.dong) || {};
         return '<div class="note" style="padding:2px 0"><b>' + esc(TEN_CP[c.loai] || c.loai) + '</b> · ' + esc(d.ten || '') + (c.sl !== '' && !/^sua_/.test(c.loai) ? ' · ' + fmt(c.sl) : '') + (c.ghi_chu ? ' · ' + esc(c.ghi_chu) : '') + (c.nguoi_nhan ? ' · ' + esc(c.nguoi_nhan) : '') + '<br>' + esc(ngayVN(c.tao) + ' · ' + c.nguoi + ' · ' + c.nguon) + '</div>'; }).join('') + '</div>' : '<div class="note">Chưa có.</div>') + '</div></div>';
+    // tủ giao kèm biên bản (cất hóa chất / dụng cụ) – xong biên bản thì nhắc thu
+    const xlBB = coQuyen('bien-ban', 'xu_ly'), hanTu = (b.thoi_gian || '').split(' → ').pop();
+    h += '<div class="card" id="the-tu"' + (r.xong && r.tu.length ? ' style="border-color:#E8C77A;background:#FFFBEF"' : '') + '><div class="btns" style="justify-content:space-between"><h2 style="margin:0">Tủ giao kèm (' + r.tu.length + ')</h2>' +
+      (xlBB ? '<span class="btns">' + (r.tu.length ? '<button class="btn o sm" id="b-thu-tu">Thu tủ</button>' : '') + '<button class="btn sm" id="b-giao-tu">+ Giao tủ</button></span>' : '') + '</div>' +
+      (r.xong && r.tu.length ? '<p>⚠ Biên bản đã xong (' + esc(b.trang_thai === 'Đã quyết toán' ? 'đã quyết toán' : 'hồ sơ đề tài đã đóng') + ') – còn <b>' + r.tu.length + '</b> tủ chưa thu. Kiểm tra tủ rồi bấm <b>Thu tủ</b>.</p>' : '') +
+      (r.tu.length ? '<div class="tbl-wrap"><table><thead><tr><th>Phòng</th><th>Tủ</th><th>Công dụng</th><th>Người sử dụng</th><th>Từ ngày</th><th>Hạn trả</th></tr></thead><tbody>' +
+        r.tu.map(t => '<tr><td><a href="#/phong/' + esc(t.phong) + '">' + esc(t.phong) + '</a></td><td><b>' + esc(t.so) + '</b></td><td>' + esc(t.cong_dung) + '</td><td>' + esc(t.nguoi) + '</td><td>' + ngayVN(t.tu_ngay) + '</td><td>' + (t.han ? hanTag(t.han) : '') + '</td></tr>').join('') + '</tbody></table></div>'
+        : '<p class="note">Chưa giao tủ. Bấm "+ Giao tủ" để giao tủ trống trong phòng cho lớp / nhóm cất hóa chất, dụng cụ; tủ được in vào biên bản và hiện ở Đơn của tôi của GV, SV.</p>') + '</div>';
     h += '<div class="card"><div class="btns" style="justify-content:space-between"><h2 style="margin:0">Danh mục ' + (dc ? 'dụng cụ' : 'vật tư – hóa chất') + ' (' + r.dong.length + ')</h2><span class="note">Nhập trực tiếp vào ô trắng rồi bấm "Lưu thay đổi". Mọi thay đổi được lưu vết.</span></div>' +
       '<div class="tbl-wrap"><table class="bb-sua"><thead><tr><th>STT</th><th>' + (dc ? 'Tên dụng cụ' : 'Tên nguyên liệu – quy cách') + '</th><th>' + (dc ? 'NSX' : 'Mã VT') + '</th><th>ĐVT</th>' + (kltn ? '' : '<th class="num">' + (dc ? 'ĐM/1 bộ' : 'ĐM 1SV') + '</th>') +
       '<th class="num">' + (kltn ? 'SL đăng ký' : 'Dự trù') + '</th><th>' + (dc ? 'Mượn (bàn giao)' : 'Bàn giao (thực nhận)') + '</th><th>' + (dc ? 'Mượn thêm' : 'Bổ sung') + '</th><th>' + (dc ? 'Trả' : 'Hoàn trả') + '</th>' + (dc ? '<th class="num">Còn nợ</th>' : '') + '<th>Ghi chú</th></tr></thead><tbody>';
@@ -1398,6 +1407,35 @@
         await chay(e.submitter, async () => { const kq = await bbTheoMau({ ids: [id] }, { mau: f.querySelector('[name=bo1]').checked, bo }, 'BBBG ' + id + ' bo ' + (f.querySelector('[name=bo1]').checked ? 1 : 2) + '-' + den); dongHop(); window.PTN_IN.xemTruoc(kq); }); };
     };
     $('b-giay').onclick = () => Q.capNhatTuGiay(r);
+    if ($('b-giao-tu')) $('b-giao-tu').onclick = () => {
+      const phong = [...new Set(r.tu_trong.map(t => t.phong))].sort(), dau = (b.phong || '').split(',').map(x => x.trim()).find(p => phong.indexOf(p) >= 0) || phong[0];
+      if (!phong.length) return toast('Không còn tủ trống ở phòng nào', true);
+      moHop('<h2>Giao tủ kèm biên bản ' + esc(b.id) + '</h2><p class="note">Chọn tủ trống để ' + (kltn ? 'nhóm đề tài' : 'lớp') + ' cất hóa chất, dụng cụ. Tủ chuyển "Đang dùng" tới hạn trả; biên bản đã quyết toán (hoặc hồ sơ đóng) thì web nhắc thu tủ.</p>' +
+        '<form id="f"><div class="form-grid"><label class="f"><span>Phòng</span><select id="tu-phong">' + phong.map(p => '<option' + (p === dau ? ' selected' : '') + '>' + esc(p) + '</option>').join('') + '</select></label>' +
+        '<label class="f"><span>Công dụng</span><select name="cong_dung">' + r.cong_dung_tu.map(c => '<option' + (c === (dc ? 'Cất dụng cụ' : 'Cất hóa chất') ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '</select></label>' +
+        '<label class="f"><span>Hạn trả tủ</span><input type="date" name="han" value="' + (/^\d{4}-\d{2}-\d{2}$/.test(hanTu) ? hanTu : '') + '"></label></div>' +
+        '<div class="f"><span>Tủ trống</span><div id="tu-ds" class="btns" style="flex-wrap:wrap"></div></div>' +
+        '<div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Giao tủ</button></div></form>');
+      const ve = () => { const p = $('tu-phong').value; $('tu-ds').innerHTML = r.tu_trong.filter(t => t.phong === p).map(t => '<label class="check" style="min-width:76px"><input type="checkbox" data-tu="' + esc(t.so) + '"> Tủ ' + esc(t.so) + '</label>').join(''); };
+      $('tu-phong').onchange = ve; ve();
+      $('f').onsubmit = async (e) => {
+        e.preventDefault(); const p = $('tu-phong').value, tu = [...document.querySelectorAll('[data-tu]:checked')].map(x => ({ phong: p, so: x.dataset.tu }));
+        if (!tu.length) return toast('Chọn tủ giao kèm', true);
+        await chay(e.submitter, () => api('bb_giao_tu', { id, tu, cong_dung: $('f').cong_dung.value, han: $('f').han.value })); dongHop(); toast('Đã giao ' + tu.length + ' tủ'); dieuHuong();
+      };
+    };
+    if ($('b-thu-tu')) $('b-thu-tu').onclick = () => {
+      moHop('<h2>Thu tủ – ' + esc(b.id) + '</h2><p class="note">Kiểm tra tủ đã dọn sạch, không còn hóa chất, dụng cụ rồi đánh dấu tủ thu về.</p><form id="f">' +
+        r.tu.map(t => '<label class="check"><input type="checkbox" data-thu="' + esc(t.phong + '|' + t.so) + '" checked> ' + esc(t.phong) + ' – tủ <b>' + esc(t.so) + '</b> <span class="note">' + esc(t.cong_dung) + '</span></label>').join('') +
+        '<div class="form-grid"><label class="f"><span>Tình trạng tủ khi thu</span><select name="trang_thai"><option value="Trống">Bình thường – về Trống</option><option value="Hỏng">Hỏng</option></select></label>' +
+        '<label class="f"><span>Ghi chú</span><input type="text" name="ghi_chu" placeholder="Hư khóa, gãy bản lề…"></label></div>' +
+        '<div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Thu tủ</button></div></form>');
+      $('f').onsubmit = async (e) => {
+        e.preventDefault(); const tu = [...document.querySelectorAll('[data-thu]:checked')].map(x => { const [phong, so] = x.dataset.thu.split('|'); return { phong, so }; });
+        if (!tu.length) return toast('Chọn tủ cần thu', true);
+        await chay(e.submitter, () => api('bb_thu_tu', { id, tu, trang_thai: $('f').trang_thai.value, ghi_chu: $('f').ghi_chu.value })); dongHop(); toast('Đã thu ' + tu.length + ' tủ'); dieuHuong();
+      };
+    };
     $('b-ky').onclick = () => {
       moHop('<h2>Đính kèm bản ký – ' + esc(b.id) + '</h2><form id="f"><label class="f"><span>Ảnh chụp / file scan biên bản đã ký (PDF, ảnh – tối đa 15 MB) <em>*</em></span><input type="file" name="tep" accept=".pdf,image/*" required></label>' +
         o('mo_ta', 'Mô tả', { v: 'Bản ký – ' + b.ten_mon }) + '<p class="note">Bản ký lưu làm chứng từ trong Drive của Khoa. Số liệu chính thức là số đã ghi trên web.</p><div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Tải lên</button></div></form>');

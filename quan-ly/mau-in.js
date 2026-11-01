@@ -93,6 +93,7 @@
       ttin('Tên môn thực hành:', b.ten_mon, 'Thời gian:', tg(b.thoi_gian)),
       ttin('GV hướng dẫn:', b.gv, 'Phòng thực hành:', b.phong),
       ttin('Tổng sinh viên TH:', (+b.si_so || '') + (b.so_nhom ? ' SV / ' + b.so_nhom + ' ca' : ''), 'Lớp:', b.lop),
+      ...(b.tu_giao ? [{ cao: caoChu(b.tu_giao, 70, 11, 19.5), o: [nhan('Tủ giao kèm:'), { v: b.tu_giao, cs: 8, vien: 'b' }] }] : []),
       { cao: 16, o: [{ v: 'II. DANH MỤC VẬT TƯ - HÓA CHẤT BÀN GIAO', cs: n, b: 1, co: 12 }] },
       { cao: 46, o: ['STT', 'TÊN NGUYÊN LIỆU', 'CÔNG THỨC', 'MÃ\nVT', 'ĐVT', 'ĐM 1SV', 'SL\nDỰ TRÙ', 'THỰC\nNHẬN', 'SL\nHOÀN TRẢ', 'GHI CHÚ'].map((v, j) => ({ v, rs: 2, b: 1, can: 'c', vien: 1, co: j < 6 ? 12 : 11 })) },
       { cao: 18, o: [] }];
@@ -127,7 +128,7 @@
     const trai = (v, k) => ({ cao: Math.max(15, caoChu(v, 63.8, 12, 15), caoChu(k, 33.7, 12, 15)), o: [{ v, cs: 5, b: 1, co: 12 }, { v: k, cs: 3, b: 1, co: 12, vien: 'tb' }] });
     // khung Người soạn / Tủ soạn (E–H) – mã QR nằm trong khung, ô H1:H3
     const hang = [{ cao: 18, o: [{ v: 'ĐẠI HỌC CÔNG NGHIỆP TP. HỒ CHÍ MINH', cs: 4, co: 11 }, { v: 'Người soạn:', cs: 3, co: 12, gach: 1, vien: 'tl' }, { v: '', rs: 3, vien: 'trb' }] },
-      { cao: 18, o: [{ v: 'KHOA KHOA HỌC SỨC KHỎE', cs: 4, b: 1, co: 11 }, { v: 'Tủ soạn:', co: 12, gach: 1, vien: 'l' }, { v: 'Tủ bàn giao:', cs: 2, co: 12, gach: 1 }] },
+      { cao: b.tu_giao ? Math.max(18, caoChu('Tủ bàn giao: ' + b.tu_giao, 21, 10, 18)) : 18, o: [{ v: 'KHOA KHOA HỌC SỨC KHỎE', cs: 4, b: 1, co: 11 }, { v: 'Tủ soạn:', co: 12, gach: 1, vien: 'l' }, { v: 'Tủ bàn giao:' + (b.tu_giao ? ' ' + b.tu_giao : ''), cs: 2, co: b.tu_giao ? 10 : 12, gach: 1 }] },
       { cao: 18, o: [{ v: 'Số: ' + b.id + (boThem ? '/B' + bo : ''), cs: 4, i: 1, co: 10 }, { v: 'Thời gian trả:', co: 12, gach: 1, vien: 'lb' }, { v: 'Còn nợ: ' + (r.dong.some(d => +d.tra) ? tongNo : ''), cs: 2, co: 12, gach: 1, vien: 'b' }] },
       { cao: 22, o: [{ v: kltn ? 'BIÊN BẢN BÀN GIAO DỤNG CỤ ĐỒ ÁN – KLTN – NCKH' : 'BIÊN BẢN BÀN GIAO DỤNG CỤ HỆ ĐẠI HỌC' + (boThem ? ' – BỘ ' + bo : ''), cs: n, can: 'c', b: 1, co: 16 }] },
       { cao: 20, o: [{ v: 'HỌC KỲ ' + (h.ky || '......').toUpperCase() + ' NĂM HỌC ' + (h.nam || '......'), cs: n, can: 'c', b: 1, co: 14 }] }];

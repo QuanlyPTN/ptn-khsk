@@ -427,9 +427,10 @@
       st(t.kiem_dinh.trong_30, 'Kiểm định trong 30 ngày', t.kiem_dinh.trong_30 ? 'warn' : '', '#/kiem-dinh') +
       st(t.bao_duong.qua_han + t.bao_duong.trong_30, 'Bảo dưỡng quá hạn / 30 ngày', (t.bao_duong.qua_han + t.bao_duong.trong_30) ? 'warn' : '', '#/kiem-dinh?bd=1') +
       st(t.thieu_ma_ts, 'Thiết bị chưa có mã tài sản', t.thieu_ma_ts ? 'warn' : 'ok', '#/tai-san?thieu=1') + st(t.chua_ban_giao || 0, 'Thiết bị chưa có biên bản bàn giao cho phòng', t.chua_ban_giao ? 'warn' : 'ok', '#/ban-giao-tb') + '</div>';
-    if (t.qua_han_tra.length || t.tu_qua_han.length) {
+    if (t.qua_han_tra.length || t.tu_qua_han.length || (t.tu_chua_thu || []).length) {
       h += '<div class="card"><h2>Cần xử lý</h2>';
       t.qua_han_tra.forEach(x => { h += '<div>⚠ <a href="#/tai-san/' + esc(x.id) + '">' + esc(x.ten) + '</a> – ' + esc(x.nguoi_muon) + ' quá hạn trả ' + hanTag(x.han_tra) + '</div>'; });
+      (t.tu_chua_thu || []).forEach(x => { h += '<div>⚠ Tủ <a href="#/bien-ban/' + esc(x.bb) + '">' + esc(x.phong) + ' – ' + esc(x.so) + '</a> giao kèm biên bản ' + esc(x.bb) + ' đã xong – chưa thu tủ</div>'; });
       t.tu_qua_han.forEach(x => { h += '<div>⚠ Tủ <a href="#/phong/' + esc(x.phong) + '">' + esc(x.phong) + ' – ' + esc(x.so) + '</a> – ' + esc(x.nguoi) + ' quá hạn ' + hanTag(x.han) + '</div>'; });
       h += '</div>';
     }

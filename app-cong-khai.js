@@ -767,6 +767,11 @@
     const chiTiet = (d) => /^GV-/.test(d.qr) ? GV().tomTat(d) : [d.phong && 'Phòng ' + d.phong, d.tu && 'Tủ ' + d.tu, d.ten_tb.length && d.ten_tb.join(', '), d.lop_hp && 'LHP ' + d.lop_hp, d.hs && 'Đề tài ' + d.hs,
       (d.nd.dong || []).length && d.nd.dong.map(x => x.ten + ' ' + x.sl + (x.dvt ? ' ' + x.dvt : '')).join('; '), d.tu_ngay && 'Từ ' + ngayVN(d.tu_ngay), d.den_ngay && (d.qr === 'QR5' ? 'đến ' : 'hạn ') + ngayVN(d.den_ngay)].filter(Boolean).join(' · ');
     let h = '<h2>Đơn của tôi</h2><p class="note">Các đơn gửi từ điện thoại này (mã máy ' + esc(may().ma) + ').</p>' + canhBaoHan(r);
+    // tủ PTN giao kèm biên bản bàn giao (lớp thực hành / đề tài) – cất hóa chất, dụng cụ; trả tủ khi xong
+    const tuG = r.tu_giao || [];
+    if (tuG.length) h += '<div class="card"><h3 style="margin:0 0 6px">🗄 Tủ PTN giao cho bạn</h3>' + tuG.map(t => '<div class="dong-don"><span><b>' + esc(t.phong) + ' – tủ ' + esc(t.so) + '</b> · ' + esc(t.cong_dung || '') +
+      '<br><span class="note">Biên bản ' + esc(t.bb) + (t.ten ? ' – ' + esc(t.ten) : '') + (t.han ? ' · hạn trả ' + ngayVN(t.han) : '') + '</span></span></div>').join('') +
+      '<div class="note">Dọn sạch tủ, trả chìa khóa cho PTN khi hết hạn hoặc kết thúc đợt thực hành / đề tài.</div></div>';
     const theHS = (x) => '<div class="card"><div class="dong-don"><b>' + esc(x.id) + '</b>' + tagTT(x.trang_thai) + '</div><div>' + esc(x.ten) + '</div><div class="note">' +
       esc(x.ten_loai + ' · GVHD ' + x.gvhd + ' · ' + x.nhom.length + ' thành viên' + (x.phong ? ' · ' + x.phong : '') + (x.den_ngay ? ' · đến ' + ngayVN(x.den_ngay) : '')) + '</div>' +
       (x.le_phi ? '<div class="note">Lệ phí: ' + esc(x.le_phi) + (x.thu_phi ? ' – <b>đã thu ' + Number(x.thu_phi.so_tien).toLocaleString('vi-VN') + ' đ</b>' : ' – chưa thu') + '</div>' : '') +
