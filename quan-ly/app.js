@@ -1087,9 +1087,9 @@
     ['ngay_nhan', 'Ngày nhận / đưa vào sử dụng', { type: 'date' }], ['nguyen_gia', 'Nguyên giá (VNĐ)', { ph: 'Chỉ nhập số' }],
     ['kd_gan', 'Kiểm định gần nhất', { type: 'date' }], ['kd_chu_ky', 'Chu kỳ kiểm định (tháng)', { type: 'number' }], ['kd_ke', 'Kiểm định kế tiếp', { type: 'date', help: 'Để trống: tự tính từ ngày gần nhất + chu kỳ' }],
     ['bd_gan', 'Bảo dưỡng gần nhất', { type: 'date' }], ['bd_chu_ky', 'Chu kỳ bảo dưỡng (tháng)', { type: 'number' }], ['bd_ke', 'Bảo dưỡng kế tiếp', { type: 'date' }],
-    ['khung_gio', 'Mượn theo khung giờ (QR1)', { full: 1, select: [['', 'Không – mượn tự do (thiết bị đủ điều phối)'], ['30', '30 phút / khung'], ['45', '45 phút / khung'], ['60', '1 giờ / khung'],
+    ['khung_gio', 'Mượn theo khung giờ (QR1)', { full: 1, select: [['', 'Không – mượn tự do (thiết bị đủ điều phối)'], ['khong', '⛔ Không giải quyết cho mượn (ẩn khỏi trang dùng chung)'], ['30', '30 phút / khung'], ['45', '45 phút / khung'], ['60', '1 giờ / khung'],
       ['90', '1 giờ 30 phút / khung'], ['120', '2 giờ / khung'], ['150', '2 giờ 30 phút / khung'], ['180', '3 giờ / khung']],
-      help: 'Thiết bị ít, nhiều nhóm cần: người mượn chọn khung trống (sáng 7h–11h30, chiều 13h–16h30, thứ 2 – thứ 7), tối đa 2 khung liền nhau; quá 10 phút từ giờ bắt đầu khung chưa nhận thì đơn tự đóng' }],
+      help: 'Thiết bị ít, nhiều nhóm cần: người mượn chọn khung trống (sáng 7h–11h30, chiều 13h–16h30, thứ 2 – thứ 7), tối đa 2 khung liền nhau; quá 10 phút từ giờ bắt đầu khung chưa nhận thì đơn tự đóng. "Không giải quyết cho mượn": người quét mã không thấy thiết bị này ở mọi biểu mẫu (QR1 – QR8, phiếu giảng viên)' }],
     ['thong_so', 'Thông số kỹ thuật', { area: 1, full: 1 }], ['ghi_chu', 'Ghi chú', { full: 1 }]
   ];
   function hopThietBi(tb, phongMacDinh) {
@@ -1122,7 +1122,7 @@
     const ttin = [['ID', x.id], ['Mã tài sản', x.ma_ts || '— chưa có —'], ['Phòng', x.phong ? x.phong + ' – ' + phongTen(x.phong) : '— chưa xếp phòng —'], ['Loại', x.loai],
       ['Hãng / model', [x.hang, x.model].filter(Boolean).join(' · ')], ['Số serial', x.serial], ['Xuất xứ', x.xuat_xu], ['Nguồn vốn', x.nguon_von], ['Năm SX', x.nam_sx],
       ['Ngày nhận', ngayVN(x.ngay_nhan)], ['Nguyên giá', tien(x.nguyen_gia)], ['Người đang mượn', x.nguoi_muon ? x.nguoi_muon + (x.han_tra ? ' – hạn ' + ngayVN(x.han_tra) : '') : ''],
-      ['Mượn theo khung giờ', +x.khung_gio > 0 ? x.khung_gio + ' phút / khung' : ''], ['Thông số', x.thong_so], ['Ghi chú', x.ghi_chu], ['Cập nhật', x.cap_nhat ? ngayVN(x.cap_nhat) + ' – ' + x.nguoi_cap_nhat : '']].filter(k => k[1]);
+      ['Mượn theo khung giờ', +x.khung_gio > 0 ? x.khung_gio + ' phút / khung' : x.khung_gio === 'khong' ? '⛔ Không giải quyết cho mượn (ẩn khỏi trang dùng chung)' : ''], ['Thông số', x.thong_so], ['Ghi chú', x.ghi_chu], ['Cập nhật', x.cap_nhat ? ngayVN(x.cap_nhat) + ' – ' + x.nguoi_cap_nhat : '']].filter(k => k[1]);
     h += '<div class="grid g2"><div><div class="card"><h2>Thông tin</h2><dl class="kv">' + ttin.map(k => '<dt>' + k[0] + '</dt><dd>' + esc(k[1]) + '</dd>').join('') + '</dl></div>' +
       '<div class="card"><h2>Kiểm định – bảo dưỡng</h2><dl class="kv"><dt>Kiểm định gần nhất</dt><dd>' + (ngayVN(x.kd_gan) || '—') + (x.kd_chu_ky ? ' · chu kỳ ' + esc(x.kd_chu_ky) + ' tháng' : '') + '</dd><dt>Kiểm định kế tiếp</dt><dd>' + hanTag(x.kd_ke) + '</dd>' +
       '<dt>Bảo dưỡng gần nhất</dt><dd>' + (ngayVN(x.bd_gan) || '—') + (x.bd_chu_ky ? ' · chu kỳ ' + esc(x.bd_chu_ky) + ' tháng' : '') + '</dd><dt>Bảo dưỡng kế tiếp</dt><dd>' + hanTag(x.bd_ke) + '</dd></dl></div>' +
