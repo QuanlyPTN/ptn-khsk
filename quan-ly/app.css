@@ -271,6 +271,9 @@ a.hc { display: inline-block; font-size: 12.5px; line-height: 1.35; padding: 2px
 a.hc span { color: var(--muted); }
 a.hc.sap { background: var(--warn-bg); } a.hc.het { background: var(--bad-bg); color: var(--bad); } a.hc.sai { border-color: var(--bad); } a.hc .ks { color: #7A1FA2; }
 a.hc.mo { opacity: .2; }
+.ke-tang .tg > div { flex: 1; min-width: 0; }
+.ke-tang .them-o { flex: none; align-self: center; width: 28px; height: 26px; border: 1px dashed #B9C2D6; border-radius: 6px; background: transparent; color: var(--muted); font-size: 16px; line-height: 1; cursor: pointer; }
+.ke-tang .them-o:hover { border-style: solid; border-color: var(--brand); color: var(--brand); background: #EEF3FF; }
 a.hc i.vt { font-style: normal; font-weight: 700; font-size: 11px; display: inline-block; min-width: 16px; text-align: center; margin-right: 4px; padding: 0 3px; border-radius: 4px; background: #fff; color: var(--muted); border: 1px solid var(--line); }
 .ke-chan { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: auto; padding-top: 4px; }
 tr.nb td { background: #FFF4C2; }

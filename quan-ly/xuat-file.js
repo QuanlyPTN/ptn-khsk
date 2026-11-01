@@ -76,6 +76,8 @@
           else if (typeof o.v === 'number' || o.f) x.numFmt = Number.isInteger(o.v) ? '#,##0' : '#,##0.###'; // số nguyên không hiện dấu thập phân thừa ("12.")
         }
       });
+      // ô chọn (danh sách thả xuống): t.chon = [{cot, tu, den, ds}] – giá trị ngoài danh sách chỉ cảnh báo
+      (t.chon || []).forEach(c => { for (let r = c.tu; r <= c.den; r++) ws.getCell(r, c.cot + 1).dataValidation = { type: 'list', allowBlank: true, showErrorMessage: true, errorStyle: 'warning', error: 'Giá trị ngoài danh sách – kiểm tra lại', formulae: ['"' + c.ds.join(',') + '"'] }; });
       if (t.loc && t.hang.length > 1) ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: t.hang.length, column: t.cot.length } };
       (t.anh || []).forEach(a => {
         const id = wb.addImage({ base64: a.dataUrl, extension: (/^data:image\/(\w+)/.exec(a.dataUrl) || [0, 'png'])[1] });
