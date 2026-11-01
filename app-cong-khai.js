@@ -263,12 +263,16 @@
     o.innerHTML = n ? '<a class="warn" href="#/thong-bao" style="display:block;background:#EEF3FE;border-color:#CFDCF8;color:#1C3A8A;text-decoration:none">🔔 Bạn có <b>' + n + '</b> thông báo mới từ PTN – bấm để xem</a>' : '';
   }
   // lấy thông báo mới khi trang đang mở: mở lại ứng dụng từ nền và mỗi 60 giây (chỉ đọc, không ghi dữ liệu)
-  async function lamMoiTB() {
-    if (!S.nd || document.hidden) return;
-    S.ndXong = false;
+  async function lamMoiTB(tuNen) {
+    if (!S.nd || document.hidden || (tuNen && Date.now() - (S.nenLuc || 0) < 3000)) return; // mở lại từ nền bắn nhiều sự kiện cùng lúc → gọi một lần
+    if (tuNen) S.nenLuc = Date.now();
+    S.ndXong = false; const cu = (S.tb || []).map(t => t.id).join();
     try { await dongBoNguoi(); noiQuanTrong(); } catch (e) { /* mất mạng: thử lại lần sau */ }
+    // Đơn của tôi đang mở: nạp lại danh sách đơn khi mở lại từ nền hoặc có thông báo mới (PTN vừa duyệt / nhận bản ký…)
+    if (/^#\/don-cua-toi/.test(location.hash) && (tuNen || (S.tb || []).map(t => t.id).join() !== cu)) trangDonCuaToi(true).catch(() => null);
   }
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) lamMoiTB(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) lamMoiTB(true); });
+  ['focus', 'pageshow', 'online'].forEach(ev => window.addEventListener(ev, () => lamMoiTB(true))); // quay lại tab, Safari / iPhone khôi phục trang từ nền, có mạng lại
   setInterval(lamMoiTB, 60000);
   // tin quan trọng chưa đọc: hiện khung nổi ngay khi mở trang, bấm "Đã đọc" mới tắt
   function noiQuanTrong() {
@@ -750,11 +754,15 @@
   }
 
   // ---------------- Đơn của tôi ----------------
-  async function trangDonCuaToi() {
+  // im: nạp lại ngầm (mở lại ứng dụng từ nền, mỗi 60 giây) – chỉ vẽ lại khi dữ liệu đổi, giữ vị trí cuộn, không vẽ khi đang xem in / gõ
+  async function trangDonCuaToi(im) {
     $('hb').classList.remove('hide'); nutLui(true);
-    M('<h2>Đơn của tôi</h2><div class="spin"></div>');
+    if (!im) M('<h2>Đơn của tôi</h2><div class="spin"></div>');
     let r;
-    try { r = await api('ck_cua_toi', { khoa: may().khoa }); } catch (e) { M('<h2>Đơn của tôi</h2><div class="warn">' + esc(e.message) + '</div>'); return; }
+    try { r = await api('ck_cua_toi', { khoa: may().khoa }); } catch (e) { if (!im) M('<h2>Đơn của tôi</h2><div class="warn">' + esc(e.message) + '</div>'); return; }
+    const dl = JSON.stringify(r);
+    if (im && (dl === S.donDL || !/^#\/don-cua-toi/.test(location.hash) || document.querySelector('#xem-don') || /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName))) return;
+    S.donDL = dl; const cuon = window.scrollY;
     const chiTiet = (d) => /^GV-/.test(d.qr) ? GV().tomTat(d) : [d.phong && 'Phòng ' + d.phong, d.tu && 'Tủ ' + d.tu, d.ten_tb.length && d.ten_tb.join(', '), d.lop_hp && 'LHP ' + d.lop_hp, d.hs && 'Đề tài ' + d.hs,
       (d.nd.dong || []).length && d.nd.dong.map(x => x.ten + ' ' + x.sl + (x.dvt ? ' ' + x.dvt : '')).join('; '), d.tu_ngay && 'Từ ' + ngayVN(d.tu_ngay), d.den_ngay && (d.qr === 'QR5' ? 'đến ' : 'hạn ') + ngayVN(d.den_ngay)].filter(Boolean).join(' · ');
     let h = '<h2>Đơn của tôi</h2><p class="note">Các đơn gửi từ điện thoại này (mã máy ' + esc(may().ma) + ').</p>' + canhBaoHan(r);
@@ -795,7 +803,7 @@
         return '<button type="button" class="chip' + (k === chon ? ' on' : '') + (g.qh ? ' qh' : g.mo && k !== 'can' && k !== 'tat' ? ' mo' : '') + '" data-nhom="' + k + '">' + esc(g.ten) + ' <span>' + (k === 'can' ? g.mo : g.n) + '</span></button>'; }).join('') + '</div>';
     const g = nhom[chon];
     h += !g.n ? '<div class="card note">' + (chon === 'can' ? '✓ Không có đơn nào cần xử lý.' : 'Chưa có đơn nào.') + '</div>' : g.hs.map(theHS).join('') + (g.bg || []).map(theBG).join('') + g.don.map(the).join('');
-    M(h);
+    M(h); if (im) window.scrollTo(0, cuon);
     document.querySelectorAll('[data-nhom]').forEach(b => { b.onclick = () => { S.nhomDon = b.dataset.nhom; trangDonCuaToi(); }; });
     g.hs.forEach(x => ganKhoiDon(x));
     document.querySelectorAll('[data-bg-in]').forEach(b => { b.onclick = () => inBG(r.ban_giao_tb.find(x => x.id === b.dataset.bgIn), b); });
@@ -927,6 +935,8 @@
     } catch (e) { M('<div class="warn">' + esc(e.message) + '</div><a class="btn o" href="#/">Về trang chủ</a>'); }
   }
   window.addEventListener('hashchange', dieuHuong);
+  // đang ở Đơn của tôi mà bấm liên kết tới chính nó (VD "Xem chi tiết ›" của thông báo): hashchange không chạy → tự nạp lại danh sách đơn
+  document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('a[href="#/don-cua-toi"]'); if (a && location.hash === '#/don-cua-toi') { e.preventDefault(); trangDonCuaToi(); } });
   $('hl').onclick = () => { if (history.length > 1) history.back(); else location.hash = '#/'; };
   $('hn').onclick = () => history.forward();
   if (DEMO) document.body.insertAdjacentHTML('afterbegin', '<div class="demo-bar">' + (window.PTN_DEMO_LIEN_THONG ? 'CHẠY THỬ – dữ liệu lưu trong trình duyệt, <b>dùng chung với trang quản lý</b>. ' +
