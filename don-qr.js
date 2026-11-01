@@ -148,7 +148,7 @@
     return k.trang ? k.trang.map(t => t.concat([c])) : [k.concat([c])]; };
   const taiLieu = (d, qr, bb) => bb ? { ten: 'Biên bản bàn giao dụng cụ · ' + d.id, tep: 'BBBG_' + d.id, trang: khoi(d, 1), qr } : { ten: d.qr + ' · ' + TEN[d.qr] + ' · ' + d.id, tep: d.qr + '_' + d.id, trang: khoi(d), qr };
   // ---- Biên bản bàn giao thiết bị cho phòng (PTN → giảng viên quản lý phòng) – theo mẫu "BBBG Thiet bi.docx" ----
-  // bb: biên bản (bgtb_ct / Đơn của tôi): ngay, phong, ten_phong, ben_giao, ben_nhan, chuc_vu_nhan, dong [{ten, model, dvt, sl, tinh_trang, ghi_chu, tb_ct}], gv_xn
+  // bb: biên bản (bgtb_ct / Đơn của tôi): ngay, phong, ten_phong, ben_giao, ben_nhan, chuc_vu_nhan, dong [{ten, model, dvt, sl, tinh_trang, ghi_chu, tb_ct}]
   const DV_BG = 'Khoa Khoa học Sức khỏe';
   const LUU_Y_BG = ['Bên nhận có trách nhiệm kiểm tra tình trạng thiết bị ngay khi nhận bàn giao; nếu phát hiện hư hỏng, thiếu phụ kiện phải báo ngay cho Phòng thí nghiệm để xác nhận trước khi ký biên bản.',
     'Trong quá trình sử dụng, nếu thiết bị xảy ra sự cố, hư hỏng. Bên nhận báo ngay cho Phòng thí nghiệm theo Biểu mẫu báo hỏng thiết bị.',
@@ -160,7 +160,6 @@
     const maTS = (d) => (d.tb_ct || []).map(t => t.ma_ts).filter(Boolean);
     const dong = (bb.dong || []).map((d, i) => { const ts = maTS(d); return [i + 1, d.ten + (ts.length === 1 && (d.tb_ct || []).length === 1 ? ' (' + ts[0] + ')' : ''), d.model || '', d.dvt || '', soVN(d.sl),
       d.tinh_trang || '', [d.ghi_chu, ts.length > 1 ? 'Mã TS: ' + ts.join(', ') : ''].filter(Boolean).join('; ')]; });
-    const xn = bb.gv_xn ? [P([R('Xác nhận điện tử của bên nhận: ', { b: 1 }), R(bb.gv_xn.ket_qua + ' – ' + ngay(bb.gv_xn.tg) + ' ' + gio(bb.gv_xn.tg) + (bb.gv_xn.ghi_chu ? ' (' + bb.gv_xn.ghi_chu + ')' : ''))], { al: 'both' })] : [];
     return [{ hd: 1 }, P(R('TP. Hồ Chí Minh, ' + ngayChu, { i: 1 }), { al: 'right' }), TRONG, P(R('BIÊN BẢN BÀN GIAO THIẾT BỊ', { b: 1, sz: 28 }), { al: 'center' }),
       P(R('(Phòng thí nghiệm bàn giao thiết bị cho Giảng viên sử dụng)', { i: 1 }), { al: 'center' }), TRONG,
       P('Hôm nay, ' + ngayChu + ', tại Phòng thí nghiệm ' + DV_BG + ' – Trường Đại học Công nghiệp Thành phố Hồ Chí Minh, chúng tôi gồm:', { al: 'both' }),
@@ -169,7 +168,7 @@
       P(['Phòng sử dụng: ', GT(bb.phong + (bb.ten_phong ? ' – ' + bb.ten_phong : ''), 30)]),
       P(R('III. DANH MỤC THIẾT BỊ BÀN GIAO', { b: 1 })),
       bang([560, 2700, 1200, 700, 600, 2111, 1200], ['STT', 'Tên thiết bị', 'Model', 'ĐVT', 'SL', 'Tình trạng thiết bị lúc bàn giao', 'Ghi chú'], dong),
-      P(R('IV. LƯU Ý', { b: 1 }))].concat(LUU_Y_BG.map(t => P('-  ' + t, { al: 'both' })), xn,
+      P(R('IV. LƯU Ý', { b: 1 }))].concat(LUU_Y_BG.map(t => P('-  ' + t, { al: 'both' })),
       [TRONG, ky([['BÊN NHẬN', bb.ben_nhan], ['BÊN GIAO', bb.ben_giao], ['BAN LÃNH ĐẠO KHOA', (window.PTN_KY || {}).truong_khoa || '']], 4),
         chan([R('Biên bản bàn giao thiết bị', { b: 1, i: 1 })], [R('Mã: ', { i: 1 }), R(bb.id || '……………', { b: 1 })])]);
   }

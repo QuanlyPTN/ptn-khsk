@@ -6,7 +6,6 @@
   const { S, $, api, chay, trang, moHop, dongHop, o, giaTri, esc, toast, ngayVN, homNay, boDau, coQuyen, dieuHuong, napQR, napXlsx, guiTep, taiVe, lienKet } = Q;
   const MAU = { 'Nháp': 't-gray', 'Đã bàn giao': 't-info', 'Đã nhận bản ký': 't-ok', 'Đã thay thế': 't-gray' };
   const tagTT = (t) => '<span class="tag ' + (MAU[t] || 't-gray') + '">' + esc(t) + '</span>';
-  const tagXN = (x) => !x ? '<span class="note">Chưa xác nhận</span>' : '<span class="tag ' + (/đủ/.test(x.ket_qua) ? 't-ok' : 't-bad') + '" title="' + esc(x.ghi_chu || '') + '">' + esc(x.ket_qua) + '</span>';
   const xl = () => coQuyen('tai-san', 'xu_ly');
   async function anhQR(id) { try { const QR = await napQR(), q = QR(0, 'M'); q.addData(lienKet('ban-giao-tb/' + id)); q.make(); return q.createDataURL(4, 1); } catch (e) { return ''; } }
   const inBB = async (bb, word) => { const qr = await anhQR(bb.id); return word ? window.PTN_DON_QR.banGiaoTB.taiWord(bb, qr) : window.PTN_DON_QR.banGiaoTB.xemTruoc(bb, qr); };
@@ -18,7 +17,7 @@
     const nd = trang('Bàn giao thiết bị cho phòng', (xl() ? '<a class="btn sm" href="#/ban-giao-tb/moi">+ Lập biên bản</a>' : ''), '<a href="#/tai-san">Tài sản</a> ›');
     const ds = await api('bgtb_ds');
     const phong = [...new Set(ds.map(b => b.phong))].sort();
-    nd.innerHTML = '<p class="note">Biên bản bàn giao thiết bị từ Phòng thí nghiệm cho giảng viên quản lý phòng. Xác nhận bàn giao thì thiết bị tự chuyển về phòng nhận (thiết bị mới được tạo trong Tài sản), giảng viên nhận được báo ở trang dùng chung để xác nhận.</p>' +
+    nd.innerHTML = '<p class="note">Biên bản bàn giao thiết bị từ Phòng thí nghiệm cho giảng viên quản lý phòng. Xác nhận bàn giao thì thiết bị tự chuyển về phòng nhận (thiết bị mới được tạo trong Tài sản), in ký giấy, đính kèm bản scan rồi bấm "Đã nhận bản ký" – giảng viên nhận được thông báo kèm biên bản và bản scan ở Đơn của tôi.</p>' +
       '<div class="tools"><input type="search" id="q" placeholder="Tìm mã biên bản, bên nhận, thiết bị…"><select id="f-ph"><option value="">Mọi phòng</option>' + phong.map(x => '<option>' + esc(x) + '</option>').join('') + '</select>' +
       '<select id="f-tt"><option value="">Trừ biên bản đã thay thế</option><option value="*">Tất cả</option>' + Object.keys(MAU).map(t => '<option>' + t + '</option>').join('') + '</select></div><div id="kq"></div>';
     const ve = () => {
@@ -26,9 +25,9 @@
       const l = ds.filter(b => (!q || boDau([b.id, b.ben_nhan, b.phong, b.ten_phong, b.dong.map(d => d.ten).join(' ')].join(' ')).indexOf(q) >= 0) && (!ph || b.phong === ph) &&
         (tt === '*' || (tt ? b.trang_thai === tt : b.trang_thai !== 'Đã thay thế')));
       $('kq').innerHTML = !l.length ? '<div class="card empty">Chưa có biên bản bàn giao thiết bị.' + (xl() ? ' Bấm "+ Lập biên bản".' : '') + '</div>' :
-        '<div class="tbl-wrap"><table><thead><tr><th>Mã</th><th>Ngày</th><th>Phòng</th><th>Bên nhận</th><th class="num">Số thiết bị</th><th>Trạng thái</th><th>GV xác nhận</th></tr></thead><tbody>' +
+        '<div class="tbl-wrap"><table><thead><tr><th>Mã</th><th>Ngày</th><th>Phòng</th><th>Bên nhận</th><th class="num">Số thiết bị</th><th>Trạng thái</th></tr></thead><tbody>' +
         l.map(b => '<tr class="click" data-href="#/ban-giao-tb/' + esc(b.id) + '"><td class="mono"><b>' + esc(b.id) + '</b></td><td>' + ngayVN(b.ngay) + '</td><td><b>' + esc(b.phong) + '</b> <span class="note">' + esc(b.ten_phong) + '</span></td>' +
-          '<td>' + esc(b.ben_nhan) + '</td><td class="num">' + b.so_tb + '</td><td>' + tagTT(b.trang_thai) + '</td><td>' + (b.trang_thai === 'Nháp' ? '' : tagXN(b.gv_xn)) + '</td></tr>').join('') + '</tbody></table></div>';
+          '<td>' + esc(b.ben_nhan) + '</td><td class="num">' + b.so_tb + '</td><td>' + tagTT(b.trang_thai) + '</td></tr>').join('') + '</tbody></table></div>';
       $('kq').querySelectorAll('[data-href]').forEach(r => { r.onclick = () => { location.hash = r.dataset.href; }; });
     };
     $('q').oninput = ve; $('f-ph').onchange = ve; $('f-tt').onchange = ve; ve();
@@ -42,11 +41,11 @@
       (xl() && nhap ? '<a class="btn o sm" href="#/ban-giao-tb/' + esc(b.id) + '/sua">✎ Sửa nháp</a><button class="btn sm" id="b-xn">✓ Xác nhận bàn giao</button><button class="btn red sm" id="b-xoa">Xóa nháp</button>' : '') +
       (xl() && daGiao ? '<label class="btn o sm">Đính kèm bản ký<input type="file" id="tep-bb" hidden></label>' + (b.trang_thai === 'Đã bàn giao' ? '<button class="btn sm" id="b-ky">Đã nhận bản ký</button>' : '') +
         (b.thay_bang ? '' : '<button class="btn o sm" id="b-lai" title="Đổi GV quản lý phòng / điều chuyển: lập biên bản mới kế thừa danh mục">Bàn giao lại</button>') : '') + '</div>' +
-      (nhap ? '<div class="card" style="border-color:#E8C77A;background:#FFFBEF">Biên bản <b>nháp</b>: kiểm tra danh mục rồi bấm <b>✓ Xác nhận bàn giao</b> – thiết bị mới được tạo trong Tài sản, thiết bị chuyển về phòng ' + esc(b.phong) + (b.ma_so_nhan ? ', giảng viên nhận được báo ở trang dùng chung' : '') + '.</div>' : '') +
+      (nhap ? '<div class="card" style="border-color:#E8C77A;background:#FFFBEF">Biên bản <b>nháp</b>: kiểm tra danh mục rồi bấm <b>✓ Xác nhận bàn giao</b> – thiết bị mới được tạo trong Tài sản, thiết bị chuyển về phòng ' + esc(b.phong) + '. Sau đó in ký giấy, đính kèm bản scan rồi bấm <b>Đã nhận bản ký</b>' + (b.ma_so_nhan ? ' – giảng viên nhận được thông báo ở Đơn của tôi' : '') + '.</div>' : '') +
       '<div class="grid g2"><div class="card"><dl class="kv">' + [['Ngày bàn giao', ngayVN(b.ngay)], ['Phòng nhận', b.phong + ' – ' + b.ten_phong], ['Bên giao', b.ben_giao + ' (Quản lý PTN)'],
         ['Bên nhận', b.ben_nhan + (b.ma_so_nhan ? ' · ' + b.ma_so_nhan : ' · chưa gắn tài khoản trang dùng chung') + ' – ' + b.chuc_vu_nhan], ['Số thiết bị', b.so_tb], ['Ghi chú', b.ghi_chu],
         ['Thay cho biên bản', b.thay_cho], ['Thay bằng biên bản', b.thay_bang]].filter(x => x[1] !== '' && x[1] != null).map(x => '<dt>' + x[0] + '</dt><dd>' + esc(String(x[1])) + '</dd>').join('') +
-        (b.trang_thai !== 'Nháp' ? '<dt>GV xác nhận</dt><dd>' + tagXN(b.gv_xn) + (b.gv_xn ? ' <span class="note">' + esc(b.gv_xn.ten + ' · ' + ngayVN(b.gv_xn.tg) + ' ' + String(b.gv_xn.tg).slice(11, 16) + (b.gv_xn.ghi_chu ? ' · ' + b.gv_xn.ghi_chu : '')) + '</span>' : '') + '</dd>' : '') + '</dl></div>' +
+        '</dl></div>' +
       '<div class="card"><h2>Bản ký, tệp (' + b.tep.length + ')</h2>' + (b.tep.length ? '<ul class="files">' + b.tep.map(f => '<li><span>📄 ' + esc(f.ten) + '</span><button class="btn o sm" data-tai="' + esc(f.id) + '">Tải về</button></li>').join('') + '</ul>' : '<div class="note">Chưa có.</div>') +
       '<h2 style="margin-top:12px">Lịch sử</h2>' + b.xu_ly.slice().reverse().map(x => '<div class="note">' + ngayVN(x.tg) + ' ' + String(x.tg).slice(11, 16) + ' · <b>' + esc(x.hd) + '</b> · ' + esc(x.nguoi) + (x.nd ? ' – ' + esc(x.nd) : '') + '</div>').join('') + '</div></div>' +
       '<div class="card"><h2>Danh mục thiết bị bàn giao</h2><div class="tbl-wrap"><table><thead><tr><th>STT</th><th>Tên thiết bị</th><th>Model</th><th>ĐVT</th><th class="num">SL</th><th>Tình trạng lúc bàn giao</th><th>Ghi chú</th><th>Thiết bị trong Tài sản</th></tr></thead><tbody>' +
@@ -66,7 +65,7 @@
         '<div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn" id="b-xn-ok">Xác nhận bàn giao</button></div>');
       $('b-xn-ok').onclick = async (e) => { await chay(e.target, () => api('bgtb_xac_nhan', { id: b.id, cap_nhat_gv: $('cap-gv').checked ? 1 : 0 })); dongHop(); toast('Đã bàn giao ' + b.so_tb + ' thiết bị'); dieuHuong(); };
     };
-    if ($('b-ky')) $('b-ky').onclick = async (e) => { if (!b.tep.length && !confirm('Chưa đính kèm bản ký. Vẫn ghi "Đã nhận bản ký"?')) return; await chay(e.target, () => api('bgtb_ban_ky', { id: b.id })); toast('Đã ghi nhận bản ký'); dieuHuong(); };
+    if ($('b-ky')) $('b-ky').onclick = async (e) => { if (!b.tep.length) return toast('Đính kèm bản scan biên bản đã ký trước', true); if (!confirm('Ghi "Đã nhận bản ký"? ' + (b.ma_so_nhan ? 'Giảng viên ' + b.ben_nhan + ' nhận được thông báo kèm biên bản và bản scan.' : '')))  return; await chay(e.target, () => api('bgtb_ban_ky', { id: b.id })); toast('Đã ghi nhận bản ký'); dieuHuong(); };
     if ($('b-lai')) $('b-lai').onclick = async (e) => {
       if (!confirm('Lập biên bản bàn giao lại cho phòng ' + b.phong + '? Biên bản mới kế thừa các thiết bị còn sử dụng (ghi tình trạng hiện tại); sửa bên nhận rồi xác nhận.')) return;
       const m = await chay(e.target, () => api('bgtb_lai', { id: b.id })); location.hash = '#/ban-giao-tb/' + m.id + '/sua';
