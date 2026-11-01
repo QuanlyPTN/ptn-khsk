@@ -40,7 +40,7 @@
     const tbs = [].concat(...b.dong.map(d => d.tb_ct)), conLai = tbs.filter(t => !t.tra && t.ten !== '(đã xóa)');
     nd.innerHTML = '<div class="btns" style="margin-bottom:12px"><button class="btn o sm" id="b-in">🖨 Xem trước – in</button><button class="btn o sm" id="b-word">Tải Word</button>' +
       (xl() && nhap ? '<a class="btn o sm" href="#/ban-giao-tb/' + esc(b.id) + '/sua">✎ Sửa nháp</a><button class="btn sm" id="b-xn">✓ Xác nhận bàn giao</button><button class="btn red sm" id="b-xoa">Xóa nháp</button>' : '') +
-      (xl() && daGiao ? '<label class="btn o sm">Đính kèm bản ký<input type="file" id="tep-bb" hidden></label>' + (b.trang_thai === 'Đã bàn giao' ? '<button class="btn sm" id="b-ky">Đã nhận bản ký</button>' : '') +
+      (xl() && daGiao ? '<label class="btn o sm" title="Bản scan PDF hoặc ảnh chụp (chọn được nhiều ảnh một lần), mỗi tệp ≤ 15 MB">Đính kèm bản ký<input type="file" id="tep-bb" accept=".pdf,application/pdf,image/*" multiple hidden></label>' + (b.trang_thai === 'Đã bàn giao' ? '<button class="btn sm" id="b-ky">Đã nhận bản ký</button>' : '') +
         (conLai.length ? '<button class="btn sm" id="b-tra" title="GV trả thiết bị: máy lấy từ phòng khác về phòng cũ, máy nhập tay về kho PTN">↩ Nhận trả thiết bị</button>' : '') +
         (b.thay_bang ? '' : '<button class="btn o sm" id="b-lai" title="Đổi GV quản lý phòng / điều chuyển: lập biên bản mới kế thừa danh mục">Bàn giao lại</button>') : '') +
       (b.trang_thai === 'Đã trả' && laAdmin() ? '<button class="btn red o sm" id="b-xoa" title="Chỉ admin: xóa biên bản đã trả hết thiết bị và bản scan">🗑 Xóa biên bản</button>' : '') + '</div>' +
@@ -90,7 +90,12 @@
       if (!confirm('Lập biên bản bàn giao lại cho phòng ' + b.phong + '? Biên bản mới kế thừa các thiết bị còn sử dụng (ghi tình trạng hiện tại); sửa bên nhận rồi xác nhận.')) return;
       const m = await chay(e.target, () => api('bgtb_lai', { id: b.id })); location.hash = '#/ban-giao-tb/' + m.id + '/sua';
     };
-    if ($('tep-bb')) $('tep-bb').onchange = async (e) => { const f = e.target.files[0]; if (!f) return; await chay(null, () => guiTep(b.id, f, 'Bản ký biên bản ' + b.id)); toast('Đã tải lên'); dieuHuong(); };
+    if ($('tep-bb')) $('tep-bb').onchange = async (e) => {
+      const ds = [...e.target.files]; if (!ds.length) return;
+      const sai = ds.find(f => !/^image\/|pdf$/.test(f.type) && !/\.(pdf|jpe?g|png|heic|webp)$/i.test(f.name)); if (sai) return toast('Chỉ đính kèm bản scan PDF hoặc ảnh: ' + sai.name, true);
+      await chay(null, async () => { for (const f of ds) await guiTep(b.id, f, 'Bản ký biên bản ' + b.id); });
+      toast('Đã tải lên ' + ds.length + ' tệp'); dieuHuong();
+    };
   }
 
   // ---- lập / sửa nháp ----
