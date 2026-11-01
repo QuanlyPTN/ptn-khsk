@@ -260,15 +260,23 @@
         hang.push({ cao: Math.max(caoChu(d.ten, 29.3, 12, 18), caoChu(d.nsx, 8.7, 11, 18)), o: [c(i + 1), o(d.ten), c(d.nsx || '', { co: 11 }), c(d.dvt || ''), c(muon || ''), c(+d.tra ? r3(d.tra) : ''), c(k > 0 ? k : ''),
           c(muon ? (k > 0 ? 'Còn nợ ' + k : 'Đã trả đủ') : 'Không mượn', { co: 11 })] }); });
     } else hang.push({ cao: 16, o: [o('Không mượn dụng cụ.', { cs: n, i: 1 })] });
-    // 2. Thiết bị
-    const tb = hs.ten_tb || [];
+    // 2. Thiết bị: phòng chứa thiết bị; GV quản lý phòng đó ký xác nhận đã trả (in sẵn họ tên dưới ô ký)
+    const tb = hs.ten_tb || [], gvP = hs.gv_phong || {}, tenGV = (m) => String(gvP[m] || '').replace(/ \/ /g, '\n');
+    const kyGV = (m, cs) => c(tenGV(m), { cs, co: 10, i: 1, doc: 'b' });
     hang.push({ cao: 8, o: [{ v: '', cs: n }] }, { cao: 17, o: [{ v: '2. Thiết bị', cs: n, b: 1, co: 13 }] });
     if (tb.length) {
-      hang.push({ cao: 16, o: [c('STT', { b: 1, co: 11 }), c('TÊN THIẾT BỊ', { cs: 3, b: 1, co: 11 }), c('GHI CHÚ', { cs: 3, b: 1, co: 11 }), c('PTN XÁC NHẬN', { b: 1, co: 11 })] });
-      tb.forEach((t, i) => hang.push({ cao: Math.max(18, caoChu(t, 46.3, 12, 18)), o: [c(i + 1), o(t, { cs: 3 }), o('', { cs: 3 }), c('Đã trả', { co: 11 })] }));
+      hang.push({ cao: 30, o: [c('STT', { b: 1, co: 11 }), c('TÊN THIẾT BỊ', { cs: 2, b: 1, co: 11 }), c('PHÒNG', { b: 1, co: 11 }), c('GHI CHÚ', { cs: 2, b: 1, co: 11 }), c('GV QUẢN LÝ PHÒNG\nKÝ XÁC NHẬN', { cs: 2, b: 1, co: 11 })] });
+      tb.forEach((t, i) => { const p = (hs.phong_tb || [])[i] || '';
+        hang.push({ cao: Math.max(40, caoChu(t, 38, 12, 18), (tenGV(p).split('\n').length + 2) * 14), o: [c(i + 1), o(t, { cs: 2 }), c(p), o('', { cs: 2 }), kyGV(p, 2)] }); });
     } else hang.push({ cao: 16, o: [o('Không đăng ký mượn thiết bị.', { cs: n, i: 1 })] });
-    // 3. Phòng
-    hang.push({ cao: 8, o: [{ v: '', cs: n }] }, { cao: 17, o: [{ v: '3. Phòng thí nghiệm: ' + (hs.phong ? hs.phong + ' – đã bàn giao lại, vệ sinh sạch sẽ.' : 'không đăng ký mượn phòng.'), cs: n, b: 1, co: 13 }] });
+    // 3. Phòng: mỗi phòng một dòng, GV quản lý phòng ký xác nhận đã vệ sinh và nhận lại phòng (không gồm phòng điều phối chung)
+    const PHONG_DIEU_PHOI = ['D11.01'], phong = (hs.phong_ds || String(hs.phong || '').split(/\s*,\s*/).filter(Boolean).map(ma => ({ ma }))).filter(p => PHONG_DIEU_PHOI.indexOf(p.ma) < 0);
+    hang.push({ cao: 8, o: [{ v: '', cs: n }] }, { cao: 17, o: [{ v: '3. Phòng thí nghiệm' + (phong.length ? '' : ': không đăng ký mượn phòng.'), cs: n, b: 1, co: 13 }] });
+    if (phong.length) {
+      hang.push({ cao: 30, o: [c('STT', { b: 1, co: 11 }), c('PHÒNG', { b: 1, co: 11 }), c('GV QUẢN LÝ PHÒNG', { cs: 3, b: 1, co: 11 }), c('NGÀY TRẢ', { b: 1, co: 11 }), c('GV QUẢN LÝ PHÒNG KÝ\n(đã vệ sinh, nhận lại phòng)', { cs: 2, b: 1, co: 11 })] });
+      phong.forEach((p, i) => { const ten = p.ma + (p.ten ? ' – ' + p.ten : ''), gv = tenGV(p.ma) || String(p.phu_trach || '').replace(/ \/ /g, '\n');
+        hang.push({ cao: Math.max(40, caoChu(ten, 29.3, 12, 18), gv.split('\n').length * 16 + 8), o: [c(i + 1), o(ten), o(gv, { cs: 3 }), c('…/…/……', { co: 10 }), c('', { cs: 2 })] }); });
+    }
     hang.push({ cao: 12, o: [{ v: '', cs: n }] }, { cao: 17, o: [{ v: '', cs: 4 }, { v: 'TP. Hồ Chí Minh, ' + ngayChu(ngayDong), cs: 4, can: 'c', i: 1, co: 12 }] },
       { cao: 20, o: [{ v: 'ĐẠI DIỆN NHÓM', cs: 4, can: 'c', b: 1 }, { v: 'PHÒNG THÍ NGHIỆM XÁC NHẬN', cs: 4, can: 'c', b: 1 }] },
       { cao: 16, o: [{ v: '(Trưởng nhóm – ký, ghi rõ họ tên)', cs: 4, can: 'c', i: 1, co: 10 }, { v: '(Cán bộ PTN – ký, ghi rõ họ tên)', cs: 4, can: 'c', i: 1, co: 10 }] });
