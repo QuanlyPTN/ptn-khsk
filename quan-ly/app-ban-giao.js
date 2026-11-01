@@ -43,7 +43,7 @@
       (xl() && daGiao ? '<label class="btn o sm">Đính kèm bản ký<input type="file" id="tep-bb" hidden></label>' + (b.trang_thai === 'Đã bàn giao' ? '<button class="btn sm" id="b-ky">Đã nhận bản ký</button>' : '') +
         (conLai.length ? '<button class="btn sm" id="b-tra" title="GV trả thiết bị: máy lấy từ phòng khác về phòng cũ, máy nhập tay về kho PTN">↩ Nhận trả thiết bị</button>' : '') +
         (b.thay_bang ? '' : '<button class="btn o sm" id="b-lai" title="Đổi GV quản lý phòng / điều chuyển: lập biên bản mới kế thừa danh mục">Bàn giao lại</button>') : '') +
-      (!nhap && laAdmin() ? '<button class="btn red o sm" id="b-xoa" title="Chỉ admin: xóa biên bản và bản scan; thiết bị giữ nguyên trong Tài sản">🗑 Xóa biên bản</button>' : '') + '</div>' +
+      (b.trang_thai === 'Đã trả' && laAdmin() ? '<button class="btn red o sm" id="b-xoa" title="Chỉ admin: xóa biên bản đã trả hết thiết bị và bản scan">🗑 Xóa biên bản</button>' : '') + '</div>' +
       (nhap ? '<div class="card" style="border-color:#E8C77A;background:#FFFBEF">Biên bản <b>nháp</b>: kiểm tra danh mục rồi bấm <b>✓ Xác nhận bàn giao</b> – thiết bị mới được tạo trong Tài sản, thiết bị chuyển về phòng ' + esc(b.phong) + '. Sau đó in ký giấy, đính kèm bản scan rồi bấm <b>Đã nhận bản ký</b>' + (b.ma_so_nhan ? ' – giảng viên nhận được thông báo ở Đơn của tôi' : '') + '.</div>' : '') +
       '<div class="grid g2"><div class="card"><dl class="kv">' + [['Ngày bàn giao', ngayVN(b.ngay)], ['Phòng nhận', b.phong + ' – ' + b.ten_phong], ['Bên giao', b.ben_giao + ' (Quản lý PTN)'],
         ['Bên nhận', b.ben_nhan + (b.ma_so_nhan ? ' · ' + b.ma_so_nhan : ' · chưa gắn tài khoản trang dùng chung') + ' – ' + b.chuc_vu_nhan], ['Số thiết bị', b.so_tb + (b.tra.length ? ' (GV đã trả ' + b.tra.length + ')' : '')], ['Ghi chú', b.ghi_chu],
@@ -60,8 +60,7 @@
     nd.querySelectorAll('[data-tai]').forEach(x => { x.onclick = (e) => chay(e.target, () => taiVe(x.dataset.tai)); });
     $('b-in').onclick = (e) => chay(e.target, () => inBB(b));
     $('b-word').onclick = (e) => chay(e.target, () => inBB(b, 1));
-    if ($('b-xoa')) $('b-xoa').onclick = async (e) => { if (!confirm(nhap ? 'Xóa biên bản nháp ' + b.id + '?' : 'Xóa biên bản ' + b.id + ' (' + b.trang_thai + ')?\n\n• Thiết bị giữ nguyên trong Tài sản, phòng không đổi – chuyển về "chưa bàn giao"' +
-      (b.thay_cho ? ' (hoặc về lại biên bản cũ ' + b.thay_cho + ')' : '') + '.\n• Bản scan đính kèm bị xóa, thông báo đã gửi GV được gỡ.\n• Không khôi phục được.')) return; await chay(e.target, () => api('bgtb_xoa', { id: b.id })); toast('Đã xóa'); location.hash = '#/ban-giao-tb'; };
+    if ($('b-xoa')) $('b-xoa').onclick = async (e) => { if (!confirm(nhap ? 'Xóa biên bản nháp ' + b.id + '?' : 'Xóa biên bản ' + b.id + ' (GV đã trả hết thiết bị)?\n\n• Thiết bị không thay đổi.\n• Bản scan đính kèm bị xóa, thông báo đã gửi GV được gỡ.\n• Không khôi phục được.')) return; await chay(e.target, () => api('bgtb_xoa', { id: b.id })); toast('Đã xóa'); location.hash = '#/ban-giao-tb'; };
     if ($('b-xn')) $('b-xn').onclick = async () => {
       const dm = await api('bgtb_dm'), ph = dm.phong.find(x => x.ma === b.phong) || {}, can = !ph.phu_trach || b.thay_cho || ph.phu_trach.indexOf(b.ben_nhan) < 0;
       moHop('<h2>Xác nhận bàn giao ' + esc(b.id) + '</h2><p>Bàn giao <b>' + b.so_tb + '</b> thiết bị cho phòng <b>' + esc(b.phong) + '</b> – ' + esc(b.ben_nhan) + '. Sau khi xác nhận:</p><ul class="note">' +
