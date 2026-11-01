@@ -693,6 +693,34 @@
   async function anhQRHoSo(hs) {
     try { await napQR(); const q = window.qrcode(0, 'M'); q.addData(new URL('quan-ly/#/de-tai/' + hs.id, location.href.split('#')[0]).href); q.make(); return q.createDataURL(4, 1); } catch (e) { return ''; } // in không có mã QR
   }
+  const ngayTruoc = (n) => new Date(Date.now() + 7 * 3600e3 - n * 864e5).toISOString().slice(0, 10);
+  // giấy xác nhận hoàn thành (hồ sơ đã đóng): dùng chung khuôn in với trang quản lý (quan-ly/xuat-file.js + mau-in.js, tải khi cần)
+  const napJS = (src) => new Promise((ok, loi) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => loi(new Error('Không tải được ' + src)); document.head.appendChild(s); });
+  async function inGiayXN(hs, nut) {
+    if (!hs) return;
+    const cu = nut.textContent; nut.disabled = true; nut.textContent = 'Đang tạo…';
+    try {
+      if (!window.PTN_IN) await napJS('quan-ly/xuat-file.js');
+      if (!window.PTN_MAU) await napJS('quan-ly/mau-in.js');
+      const tl = { ten: 'Giay xac nhan hoan thanh ' + hs.id, trang: [window.PTN_MAU.giayXacNhan(hs, await anhQRHoSo(hs))] };
+      const d = document.createElement('div'); d.id = 'xem-don';
+      d.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#E9ECF2;display:flex;flex-direction:column;font-family:"Times New Roman",Times,serif';
+      const kieu = 'padding:8px 14px;border-radius:8px;border:1px solid #1E4FC2;font:inherit;font-size:15px;cursor:pointer;';
+      d.innerHTML = '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12)"><b style="font-size:16px">Giấy xác nhận hoàn thành – ' + esc(hs.id) + '</b><span style="flex:1"></span>' +
+        '<button data-x="in" style="' + kieu + 'background:#1E4FC2;color:#fff">🖨 In</button><button data-x="excel" style="' + kieu + 'background:#fff;color:#1E4FC2">Tải Excel</button><button data-x="dong" style="' + kieu + 'background:#fff;color:#333;border-color:#bbb">Đóng</button></div>' +
+        '<iframe title="Giấy xác nhận" style="flex:1;border:0;width:100%"></iframe>';
+      document.body.appendChild(d);
+      const f = d.querySelector('iframe'); f.srcdoc = window.PTN_IN.html(tl);
+      f.onload = () => { // điện thoại: thu nhỏ trang A4 cho vừa màn hình (chỉ khi xem, in vẫn đúng khổ)
+        const doc = f.contentDocument, w = doc.documentElement.scrollWidth, v = f.clientWidth;
+        if (w > v + 4) { const st = doc.createElement('style'); st.textContent = '@media screen{html{zoom:' + (v / w).toFixed(3) + '}}'; doc.head.appendChild(st); }
+      };
+      d.querySelector('[data-x=in]').onclick = () => f.contentWindow.print();
+      d.querySelector('[data-x=excel]').onclick = async (e) => { const b = e.target, t = b.textContent; b.disabled = true; b.textContent = 'Đang tạo…'; try { await window.PTN_IN.taiExcel(tl); } catch (err) { toast(err.message, true); } b.disabled = false; b.textContent = t; };
+      d.querySelector('[data-x=dong]').onclick = () => d.remove();
+    } catch (e) { toast(e.message, true); }
+    nut.disabled = false; nut.textContent = cu;
+  }
   function ganKhoiDon(hs, root) {
     (root || document).querySelectorAll('[data-hs="' + hs.id + '"]').forEach(b => {
       b.onclick = async () => {
@@ -721,6 +749,7 @@
       esc(x.ten_loai + ' · GVHD ' + x.gvhd + ' · ' + x.nhom.length + ' thành viên' + (x.phong ? ' · ' + x.phong : '') + (x.den_ngay ? ' · đến ' + ngayVN(x.den_ngay) : '')) + '</div>' +
       (x.le_phi ? '<div class="note">Lệ phí: ' + esc(x.le_phi) + (x.thu_phi ? ' – <b>đã thu ' + Number(x.thu_phi.so_tien).toLocaleString('vi-VN') + ' đ</b>' : ' – chưa thu') + '</div>' : '') +
       (x.tep.length ? '<div class="note">Minh chứng: ' + x.tep.map(t => esc(t.ten)).join(', ') + '</div>' : '') + khoiDon(x).replace('<div class="card">', '<div>') +
+      (x.trang_thai === 'Đã đóng' ? '<div class="dong-don"><span>📄 <b>Giấy xác nhận hoàn thành nghĩa vụ trả phòng, thiết bị và dụng cụ</b><br><span class="note">In, nộp GV quản lý phòng ký xác nhận rồi nộp kèm báo cáo</span></span><span><button type="button" class="nho" data-xn="' + esc(x.id) + '">Xem – in</button></span></div>' : '') +
       (['Đã đóng', 'Từ chối'].indexOf(x.trang_thai) < 0 ? '<div class="dong-don">' + (HS_SUA.indexOf(x.trang_thai) >= 0 ? '<a class="lnk" href="#/QR7/' + esc(x.id) + '">Sửa hồ sơ / thêm thành viên</a>' : '<span class="note">🔒 PTN đã duyệt – không sửa được; cần đổi phòng, thiết bị, thành viên hoặc gia hạn: liên hệ PTN</span>') + (x.pl === 2 ? '<label class="lnk">+ Minh chứng<input type="file" data-mc="' + esc(x.id) + '" accept=".pdf,image/*" hidden></label>' : '') + '</div>' : '') + '</div>';
     const dsQR = r.don.filter(d => !/^GV-/.test(d.qr)), dsGV = r.don.filter(d => /^GV-/.test(d.qr));
     const the = (d) => '<div class="card"><div class="dong-don"><span><span class="q">' + d.qr + '</span> <b>' + esc(d.id) + '</b></span>' + tagTT(d.trang_thai, d.qua_han) + '</div>' +
@@ -741,6 +770,7 @@
     // nhắc việc ở đầu trang
     const viec = [];
     const dangQR5 = r.don.filter(d => d.qr === 'QR5' && d.trang_thai === 'Đang dùng'); if (dangQR5.length) viec.push('⏱ ' + dangQR5.length + ' lượt QR5 đang dùng – bấm <b>Kết thúc sử dụng</b> khi xong');
+    const daDong = r.ho_so.filter(x => x.trang_thai === 'Đã đóng' && ((x.xu_ly || []).filter(y => y.hd === 'Đóng hồ sơ').pop() || {}).tg >= ngayTruoc(30)); if (daDong.length) viec.push('✅ Hồ sơ ' + daDong.map(x => esc(x.id)).join(', ') + ' đã đóng: in <b>Giấy xác nhận hoàn thành</b> (tab QR7) → GV quản lý phòng ký → nộp kèm báo cáo');
     const choNop = r.ho_so.filter(x => x.trang_thai === 'Chờ nộp bản ký'); if (choNop.length) viec.push('📄 Hồ sơ ' + choNop.map(x => esc(x.id)).join(', ') + ' chưa nộp bản ký: in đơn → GVHD ký → nộp PTN');
     const choDuyet = r.don.filter(d => d.trang_thai === 'Chờ duyệt').length; if (choDuyet) viec.push('⏳ ' + choDuyet + ' đơn đang chờ PTN duyệt');
     h += (viec.length ? '<div class="pre" style="background:#FFF8E1;border-color:#F2D58A">' + viec.map(v => '<div>' + v + '</div>').join('') + '</div>' : '') +
@@ -751,6 +781,7 @@
     M(h);
     document.querySelectorAll('[data-nhom]').forEach(b => { b.onclick = () => { S.nhomDon = b.dataset.nhom; trangDonCuaToi(); }; });
     g.hs.forEach(x => ganKhoiDon(x));
+    document.querySelectorAll('[data-xn]').forEach(b => { b.onclick = () => inGiayXN(r.ho_so.find(x => x.id === b.dataset.xn), b); });
     document.querySelectorAll('[data-mc]').forEach(i => { i.onchange = async () => { const f = i.files[0]; if (!f) return; try { await guiMinhChung(i.dataset.mc, f); toast('Đã tải minh chứng'); trangDonCuaToi(); } catch (e) { toast(e.message, true); } }; });
     document.querySelectorAll('[data-kt]').forEach(b => { b.onclick = () => hopKetThuc(b.dataset.kt); });
     document.querySelectorAll('[data-in-don],[data-word-don]').forEach(b => { b.onclick = () => inDon(r.don.find(x => x.id === (b.dataset.inDon || b.dataset.wordDon)), !!b.dataset.wordDon); });
