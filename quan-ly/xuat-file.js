@@ -164,7 +164,7 @@
   // họ tên in dưới chữ ký: lấy theo chức danh khi chưa ghi sẵn (PTN_KY do trang quản lý / công khai nạp từ Cài đặt)
   function tenKy(chuc) {
     const k = window.PTN_KY || {};
-    return /HIỆU TRƯỞNG/.test(chuc) && !/PHÓ/.test(chuc) ? k.hieu_truong : /^TRƯỞNG KHOA/.test(chuc) ? k.truong_khoa : /^NGƯỜI LẬP/.test(chuc) ? k.nguoi : '';
+    return /HIỆU TRƯỞNG/.test(chuc) && !/PHÓ/.test(chuc) ? k.hieu_truong : /^TRƯỞNG KHOA/.test(chuc) ? k.truong_khoa : /^NGƯỜI LẬP/.test(chuc) ? k.nguoi_lap || k.nguoi : '';
   }
   function chuKy(n, ds, cach, chia) { // chia: số cột của từng ô ký (mặc định chia đều)
     ds = ds.map(x => x[2] === undefined ? [x[0], x[1], tenKy(x[0]) || ''] : x);
@@ -204,7 +204,7 @@
     return bang({ ten: o.ten, tieuDe: o.tieuDe, phuDe: o.phuDe, ngay: nd, huong: ngang ? 'ngang' : 'doc', ghiChu: o.ghiChu, tong: o.tong,
       cot: (stt ? [] : [{ ten: 'STT', can: 'c' }]).concat(cot.map((c, j) => ({ ten: c.ten.toUpperCase(), can: stt && j === 0 ? 'c' : c.so ? 'r' : undefined, dd: c.dd }))).map((c, j) => Object.assign(c, { rong: Math.round(rong[j] * k * 10) / 10 })),
       dong: (() => { let n = 0; return o.dong.map(r => r && r.nhom !== undefined ? r : (stt ? [] : [++n]).concat(cot.map((c, j) => { const v = r[j]; return c.so && v !== '' && v != null && isFinite(+v) ? +v : (v == null ? '' : v); }))); })(),
-      ky: o.ky || [['NGƯỜI LẬP BIỂU', '(Ký, ghi rõ họ tên)', o.nguoiLap || ''], ['TRƯỞNG KHOA', '(Ký, ghi rõ họ tên)']] });
+      ky: o.ky || [['NGƯỜI LẬP BIỂU', '(Ký, ghi rõ họ tên)', o.nguoiLap || tenKy('NGƯỜI LẬP')], ['TRƯỞNG KHOA', '(Ký, ghi rõ họ tên)']] });
   }
   // Trang tính dữ liệu thô (để lọc, tính toán): hàng 1 tiêu đề cột, bộ lọc, cố định hàng tiêu đề; cot = [{ten, so}] hoặc ['tên'], dong = [[...]]
   function duLieu(ten, cot, dong) {

@@ -380,7 +380,7 @@
       dung[k.toLowerCase()] = 1;
       const so = b.cot.map((_, j) => b.dong.some(r => typeof r[j] === 'number') && b.dong.every(r => r.length < 2 || typeof r[j] === 'number' || r[j] === ''));
       return window.PTN_IN.bieuMau({ ten: k, tieuDe: (con && con !== tieuDe ? tieuDe + ' – ' + con : tieuDe).toUpperCase(), phuDe: 'Khoa Khoa học Sức khỏe – ' + b.dong.length + ' dòng, lập ngày ' + ngayVN(homNay()),
-        cot: b.cot.map((c, j) => ({ ten: c || ' ', so: so[j] })), dong: b.dong.map(r => r.length === 1 && b.cot.length > 1 ? { nhom: r[0] } : r), nguoiLap: S.toi.nguoi.ten });
+        cot: b.cot.map((c, j) => ({ ten: c || ' ', so: so[j] })), dong: b.dong.map(r => r.length === 1 && b.cot.length > 1 ? { nhom: r[0] } : r), nguoiLap: (window.PTN_KY || {}).nguoi_lap || S.toi.nguoi.ten });
     });
     if (!trangTinh.length) return toast('Trang này không có bảng dữ liệu', true);
     window.PTN_IN.xemTruoc({ ten: boDau(tieuDe).replace(/[^a-z0-9]+/gi, ' ').trim() + ' ' + homNay(), trang: trangTinh });

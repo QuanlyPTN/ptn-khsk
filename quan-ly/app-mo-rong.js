@@ -9,6 +9,8 @@
     'Chờ nộp bản ký': 't-info', 'Đã nhận đơn ký': 't-info', 'Đã duyệt – đang thực hiện': 't-warn', 'Gia hạn': 't-warn', 'Chờ trả đồ': 't-warn', 'Đã đóng': 't-ok' };
   const tagTT = (t, qh) => '<span class="tag ' + (qh ? 't-bad' : MAU[t] || 't-gray') + '">' + esc(qh ? t + ' · quá hạn' : t) + '</span>';
   const ganLink = (root) => root.querySelectorAll('[data-href]').forEach(el => { el.onclick = () => { location.hash = el.dataset.href; }; });
+  // khối ký báo cáo xuất từ trang quản lý: họ tên tự điền theo Cài đặt (người lập biểu = quản lý PTN)
+  const KY_BC = [['NGƯỜI LẬP BIỂU', '(Ký, ghi rõ họ tên)'], ['TRƯỞNG KHOA', '(Ký, ghi rõ họ tên)']];
   const st = (n, l, cls, href) => '<div class="stat ' + (cls || '') + (href ? ' link" data-href="' + href : '') + '"><div class="n">' + n + '</div><div class="l">' + l + '</div></div>';
   const xem = (html) => { const w = window.open('', '_blank'); if (!w) { toast('Trình duyệt chặn cửa sổ in – cho phép cửa sổ bật lên', true); return; } w.document.write(html); w.document.close(); setTimeout(() => w.print(), 500); };
   const CSS_IN = '@page{size:A4;margin:14mm}body{font:12.5px/1.4 "Times New Roman",serif;color:#000;margin:0}h1{text-align:center;font-size:16px;margin:10px 0 4px}.c{text-align:center}.r{text-align:right}' +
@@ -135,7 +137,7 @@
       const r = await chay(e.target, () => api('don_xoa', { ids })); toast('Đã xóa ' + r.so_don + ' đơn'); dieuHuong(); };
     // xuất Excel / in: theo tháng đang chọn (hoặc tất cả)
     $('b-xuat').onclick = () => { const th = $('f-th').value, dsX = ds.filter(d => !th || String(d.tg).slice(0, 7) === th), nhanTh = th ? 'tháng ' + th.slice(5) + '/' + th.slice(0, 4) : 'tất cả các tháng';
-      window.PTN_IN.xemTruoc({ ten: 'Don ' + qr + ' ' + (th || homNay()), trang: [window.PTN_IN.bang({ ten: 'Don ' + qr, huong: 'ngang', tieuDe: 'DANH SÁCH ĐƠN ' + qr + ' – ' + QR_TEN[qr].toUpperCase() + (th ? ' – THÁNG ' + th.slice(5) + '/' + th.slice(0, 4) : ''),
+      window.PTN_IN.xemTruoc({ ten: 'Don ' + qr + ' ' + (th || homNay()), trang: [window.PTN_IN.bang({ ten: 'Don ' + qr, huong: 'ngang', ky: KY_BC, tieuDe: 'DANH SÁCH ĐƠN ' + qr + ' – ' + QR_TEN[qr].toUpperCase() + (th ? ' – THÁNG ' + th.slice(5) + '/' + th.slice(0, 4) : ''),
       phuDe: 'Xuất ngày ' + ngayVN(homNay()) + ' · ' + nhanTh + ' · ' + dsX.length + ' đơn', cot: [{ ten: 'STT', rong: 5, can: 'c' }, { ten: 'MÃ ĐƠN', rong: 10 }, { ten: 'GỬI LÚC', rong: 15 }, { ten: 'HỌ TÊN', rong: 20 }, { ten: 'MSSV / MÃ VC', rong: 12 }, { ten: 'ĐIỆN THOẠI', rong: 12 },
         ...(qr === 'QR1' ? [{ ten: 'PHÒNG', rong: 14 }, { ten: 'THIẾT BỊ – DỤNG CỤ MƯỢN THÊM', rong: 30 }, { ten: 'NỘI DUNG – MỤC ĐÍCH', rong: 20 }] : [{ ten: 'NỘI DUNG', rong: 42 }]),
         { ten: 'THỜI GIAN', rong: 22 }, { ten: 'TRẠNG THÁI', rong: 15 }, { ten: 'NGƯỜI XỬ LÝ', rong: 15 }],
@@ -264,7 +266,7 @@
       // in / xuất Excel: đúng đối tượng đang chọn (Giảng viên → bảng chỉ có giảng viên…)
       $('b-in-nd').onclick = () => { const dt = $('f-dt').value, l = loc(), gv = dt === 'Giảng viên';
         window.PTN_IN.xemTruoc({ ten: 'Nguoi dung ' + (dt || 'tat ca') + ' ' + homNay(), trang: [window.PTN_IN.bang({ ten: (dt || 'Tất cả').slice(0, 31), huong: 'ngang',
-          tieuDe: 'DANH SÁCH ' + (dt ? dt.toUpperCase() : 'NGƯỜI DÙNG') + ' ĐĂNG KÝ TRANG DÙNG CHUNG PTN', phuDe: 'Xuất ngày ' + ngayVN(homNay()) + ' · ' + (dt || 'tất cả đối tượng') + ' · ' + l.length + ' người',
+          ky: KY_BC, tieuDe: 'DANH SÁCH ' + (dt ? dt.toUpperCase() : 'NGƯỜI DÙNG') + ' ĐĂNG KÝ TRANG DÙNG CHUNG PTN', phuDe: 'Xuất ngày ' + ngayVN(homNay()) + ' · ' + (dt || 'tất cả đối tượng') + ' · ' + l.length + ' người',
           cot: [{ ten: 'STT', rong: 5, can: 'c' }, { ten: 'HỌ TÊN', rong: 24 }, { ten: gv ? 'MÃ VIÊN CHỨC' : 'MSSV / MÃ', rong: 13 }].concat(dt ? [] : [{ ten: 'ĐỐI TƯỢNG', rong: 14 }], gv ? [] : [{ ten: 'LỚP', rong: 12 }],
             [{ ten: 'BỘ MÔN / NGÀNH', rong: 18 }, { ten: 'ĐIỆN THOẠI', rong: 12 }, { ten: 'EMAIL', rong: 24 }, { ten: 'NGÀY ĐĂNG KÝ', rong: 12 }, { ten: 'SỐ ĐƠN', rong: 8, can: 'c' }]),
           dong: l.map((n, i) => [i + 1, n.ho_ten, n.ma_so].concat(dt ? [] : [n.doi_tuong], gv ? [] : [n.lop], [n.bo_mon, n.sdt, n.email, ngayVN(n.tg), n.so_don])) })] }); };
@@ -300,7 +302,7 @@
     };
     $('q').oninput = ve; $('f-tt').onchange = ve; $('f-th').onchange = ve; ve();
     $('b-xuat-hs').onclick = () => { const th = $('f-th').value, l = loc();
-      window.PTN_IN.xemTruoc({ ten: 'Ho so de tai ' + (th || homNay()), trang: [window.PTN_IN.bang({ ten: 'Ho so de tai', huong: 'ngang', tieuDe: 'DANH SÁCH HỒ SƠ ĐỀ TÀI KLTN – NCKH (QR7)' + (th ? ' – THÁNG ' + th.slice(5) + '/' + th.slice(0, 4) : ''),
+      window.PTN_IN.xemTruoc({ ten: 'Ho so de tai ' + (th || homNay()), trang: [window.PTN_IN.bang({ ten: 'Ho so de tai', huong: 'ngang', ky: KY_BC, tieuDe: 'DANH SÁCH HỒ SƠ ĐỀ TÀI KLTN – NCKH (QR7)' + (th ? ' – THÁNG ' + th.slice(5) + '/' + th.slice(0, 4) : ''),
         phuDe: 'Xuất ngày ' + ngayVN(homNay()) + ' · ' + (th ? 'tháng ' + th.slice(5) + '/' + th.slice(0, 4) : 'tất cả các tháng') + ' · ' + $('f-tt').selectedOptions[0].textContent.toLowerCase() + ' · ' + l.length + ' hồ sơ',
         cot: [{ ten: 'STT', rong: 5, can: 'c' }, { ten: 'MÃ HỒ SƠ', rong: 12 }, { ten: 'NGÀY TẠO', rong: 11 }, { ten: 'ĐỀ TÀI', rong: 34 }, { ten: 'LOẠI', rong: 14 }, { ten: 'NHÓM (HỌ TÊN – MSSV)', rong: 30 }, { ten: 'GVHD', rong: 18 }, { ten: 'PHÒNG – THỜI GIAN', rong: 22 }, { ten: 'TRẠNG THÁI', rong: 16 }],
         dong: l.map((x, i) => [i + 1, x.id, ngayVN(x.tg), x.ten, x.ten_loai, x.nhom.map(m => m.ho_ten + ' – ' + m.ma_so).join('\n'), x.gvhd, [x.phong, x.den_ngay ? ngayVN(x.tu_ngay) + ' → ' + ngayVN(x.den_ngay) : ''].filter(Boolean).join('\n'), x.trang_thai]) })] }); };
@@ -1085,7 +1087,7 @@
         '<p>Kính gửi: Phòng Kế hoạch – Đầu tư; Ban Giám hiệu Trường Đại học Công nghiệp TP. Hồ Chí Minh.</p><p>Khoa Khoa học Sức khỏe đề nghị thanh lý các tài sản sau:</p>' +
         '<table class="ds"><tr><th>STT</th><th>Tên tài sản</th><th>Mã tài sản</th><th>Hãng – model</th><th>Năm đưa vào SD</th><th>Nguyên giá (đ)</th><th>Tình trạng</th><th>Lý do</th></tr>' +
         chon.map((x, i) => '<tr><td class="c">' + (i + 1) + '</td><td>' + esc(x.ten) + '</td><td>' + esc(x.ma_ts) + '</td><td>' + esc([x.hang, x.model].filter(Boolean).join(' – ')) + '</td><td class="c">' + esc((x.ngay_nhan || '').slice(0, 4)) + '</td><td class="r">' + (x.nguyen_gia ? Number(x.nguyen_gia).toLocaleString('vi-VN') : '') + '</td><td>' + esc(x.tinh_trang) + '</td><td>' + esc(x.ly) + '</td></tr>').join('') + '</table>' +
-        oKy([['NGƯỜI LẬP', Q.S.toi.nguoi.ten], ['TRƯỞNG KHOA', window.PTN_KY.truong_khoa]]) + '</body></html>');
+        oKy([['NGƯỜI LẬP', window.PTN_KY.nguoi_lap || Q.S.toi.nguoi.ten], ['TRƯỞNG KHOA', window.PTN_KY.truong_khoa]]) + '</body></html>');
     };
   }
   async function inBaoDuongHe(nd) {
@@ -1099,7 +1101,7 @@
       xem('<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><title>Bao duong he</title><style>' + CSS_IN + '</style></head><body>' + dauTrang + '<h1>DANH SÁCH THIẾT BỊ BẢO DƯỠNG HÈ ' + nam + '</h1>' +
         '<table class="ds"><tr><th>STT</th><th>Thiết bị</th><th>Mã TS</th><th>Phòng</th><th>BD gần nhất</th><th>Vật tư bảo dưỡng</th><th>Người thực hiện</th><th>Kết quả</th></tr>' +
         c.map((x, i) => '<tr><td class="c">' + (i + 1) + '</td><td>' + esc(x.ten) + '</td><td>' + esc(x.ma_ts) + '</td><td>' + esc(x.phong) + '</td><td>' + ngayVN(x.bd_gan) + '</td><td>' + esc(x.vt) + '</td><td></td><td></td></tr>').join('') + '</table>' +
-        oKy([['NGƯỜI LẬP', Q.S.toi.nguoi.ten], ['TRƯỞNG KHOA', window.PTN_KY.truong_khoa]]) + '</body></html>'); };
+        oKy([['NGƯỜI LẬP', window.PTN_KY.nguoi_lap || Q.S.toi.nguoi.ten], ['TRƯỞNG KHOA', window.PTN_KY.truong_khoa]]) + '</body></html>'); };
     $('b-so').onclick = async (e) => { const c = chon(); if (!c.length) return toast('Chọn thiết bị', true);
       await chay(e.target, () => api('so_luu', { so: { loai: 'bao_duong_he', tieu_de: 'Bảo dưỡng hè ' + nam + ' (' + c.length + ' máy)', han: nam + '-08-31', du_lieu: { thiet_bi: c.map(x => x.ten + ' (' + x.id + ')').join(', '), vat_tu: c.filter(x => x.vt).map(x => x.ten + ': ' + x.vt).join('; ') } } }));
       toast('Đã lưu vào sổ'); location.hash = '#/so/bao_duong_he'; };
@@ -1241,7 +1243,7 @@
     const dongTheoId = {}; r.dong.forEach(d => { dongTheoId[d.id] = d; });
     const thucDung = (d) => r3((+d.ban_giao || 0) + (+d.bo_sung || 0) - (+d.tra || 0));
     const bb = r.bb.slice().sort((a, b) => a.hk.localeCompare(b.hk) || LOAI_BB(a).localeCompare(LOAI_BB(b), 'vi') || a.ten_mon.localeCompare(b.ten_mon, 'vi') || a.id.localeCompare(b.id));
-    const vungIn = loc.ids ? bb.length + ' biên bản đã chọn' : loc.hk ? 'học kỳ ' + loc.hk : 'mọi học kỳ', phu = 'Khoa Khoa học Sức khỏe – ' + vungIn + ', lập ngày ' + ngayVN(homNay()), lap = S.toi.nguoi.ten;
+    const vungIn = loc.ids ? bb.length + ' biên bản đã chọn' : loc.hk ? 'học kỳ ' + loc.hk : 'mọi học kỳ', phu = 'Khoa Khoa học Sức khỏe – ' + vungIn + ', lập ngày ' + ngayVN(homNay()), lap = (window.PTN_KY || {}).nguoi_lap || S.toi.nguoi.ten;
     const S1 = IN.bieuMau({ ten: 'Tổng hợp', tieuDe: 'TỔNG HỢP BIÊN BẢN BÀN GIAO VẬT TƯ – HÓA CHẤT – DỤNG CỤ', phuDe: phu, nguoiLap: lap,
       cot: ['STT', 'Số biên bản', 'Loại', 'Môn / đề tài', 'Lớp / mã hồ sơ', 'GVHD', 'Phòng', 'Thời gian', { ten: 'Sĩ số', so: 1 }, { ten: 'Số dòng', so: 1 }, { ten: 'Dòng bổ sung', so: 1 }, { ten: 'Dòng nợ', so: 1 }, 'Trạng thái'],
       dong: bb.map((b, i) => [i + 1, b.id, LOAI_BB(b), b.ten_mon, b.lop, b.gv, b.phong, (b.thoi_gian || '').split(' → ').map(ngayVN).join(' → '), b.si_so, b.so_dong, b.bo_sung, b.no, b.trang_thai]) });
@@ -1760,7 +1762,7 @@
   function trangDoiChieu(r, ten) {
     return window.PTN_IN.bieuMau({ ten: ten || ('Đối chiếu ' + r.ten).slice(0, 28), tieuDe: 'BẢNG ĐỐI CHIẾU DỰ TRÙ – BÀN GIAO HÓA CHẤT, VẬT TƯ',
       phuDe: ['Môn: ' + r.ten + ' – ' + r.hk + (r.lop.length ? ' · Lớp: ' + r.lop.map(l => l.lop).join(', ') + ' (' + r.lop.reduce((a, l) => a + (+l.si_so || 0), 0) + ' SV)' : ''),
-        'Biên bản: ' + (r.bien_ban.map(b => b.id).join(', ') || 'chưa có')], nguoiLap: S.toi.nguoi.ten, huong: 'ngang',
+        'Biên bản: ' + (r.bien_ban.map(b => b.id).join(', ') || 'chưa có')], nguoiLap: (window.PTN_KY || {}).nguoi_lap || S.toi.nguoi.ten, huong: 'ngang',
       ghiChu: 'Đã bàn giao = thực nhận + bổ sung trên biên bản bàn giao hóa chất. Chênh lệch = đã bàn giao − dự trù (âm: bàn giao thiếu; dương: bàn giao vượt).',
       cot: ['STT', 'Tên – quy cách', 'Mã VT', 'ĐVT', { ten: 'Dự trù', so: 1 }, { ten: 'Đã bàn giao', so: 1 }, { ten: 'Hoàn trả', so: 1 }, { ten: 'Chênh lệch', so: 1 }, 'Đánh giá', 'Ghi chú'],
       dong: r.dong.map((x, i) => [i + 1, x.ten, x.ma_vt, x.dvt, x.du_tru, x.ban_giao, x.tra, x.chenh || '', x.danh_gia, x.ghi_chu || '']) });
@@ -1768,7 +1770,7 @@
   // File in / tải: (1) tình hình thu thập, (2) dự trù các môn đã thu (mẫu kế hoạch vật tư), (3) đối chiếu từng môn
   function fileDTM(x) {
     const IN = window.PTN_IN, dung = {};
-    const t1 = IN.bieuMau({ ten: 'Tổng hợp thu thập', tieuDe: 'TÌNH HÌNH THU THẬP DỰ TRÙ HÓA CHẤT – VẬT TƯ CÁC MÔN THỰC HÀNH', phuDe: 'Khoa Khoa học Sức khỏe – ' + x.hk + ', lập ngày ' + ngayVN(homNay()), nguoiLap: S.toi.nguoi.ten, huong: 'ngang',
+    const t1 = IN.bieuMau({ ten: 'Tổng hợp thu thập', tieuDe: 'TÌNH HÌNH THU THẬP DỰ TRÙ HÓA CHẤT – VẬT TƯ CÁC MÔN THỰC HÀNH', phuDe: 'Khoa Khoa học Sức khỏe – ' + x.hk + ', lập ngày ' + ngayVN(homNay()), nguoiLap: (window.PTN_KY || {}).nguoi_lap || S.toi.nguoi.ten, huong: 'ngang',
       cot: ['Môn thực hành', 'Mã học phần', { ten: 'Số lớp', so: 1 }, { ten: 'Sĩ số', so: 1 }, 'Dự trù', { ten: 'Số dòng', so: 1 }, 'Ngày nộp', 'Biên bản hóa chất', { ten: 'Dòng khớp', so: 1 }, { ten: 'Chưa giao', so: 1 }, { ten: 'Dòng lệch', so: 1 }],
       dong: x.tong.map(t => [t.ten, t.ma_hp, t.so_lop, t.si_so, t.co_du_tru ? 'Đã nộp' : 'Chưa nộp', t.so_dong || '', ngayVN((t.ngay || '').slice(0, 10)), t.bien_ban.join(', '), t.co_du_tru ? t.khop : '', t.co_du_tru ? t.chua_giao : '', t.co_du_tru ? t.lech : '']),
       tong: undefined });
