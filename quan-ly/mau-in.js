@@ -79,6 +79,10 @@
   const pxCot = (w) => w * 7 + 5, ptTren = (hang, n) => hang.slice(0, n).reduce((a, h) => a + (h.cao || 15), 0);
   // chiều cao hàng đủ cho chữ xuống dòng: w = độ rộng ô (ký tự Excel), co = cỡ chữ
   const caoChu = (s, w, co, toiThieu) => Math.max(toiThieu, Math.ceil(String(s || '').length / Math.max(1, w * 1.25 * 11 / co)) * co * 1.32 + 3);
+  // ghi chú in khi biên bản có giao tủ kèm – tu_giao "D11.01 – tủ 03, 04 (cất hóa chất); …" → "Giao tủ số 03, 04 phòng D11.01"
+  const ghiChuTu = (tg) => 'Ghi chú: Giao tủ số ' + String(tg).split('; ').map(x => { const m = x.match(/^(.*?) – tủ (.*?)(?: \(.*\))?$/); return m ? m[2] + ' phòng ' + m[1] : x; }).join('; ') + '.\nKhi trả tủ phải vệ sinh sạch và trả lại chìa khóa.';
+  // chiều cao khung nhiều dòng (mỗi đoạn \n tính số dòng riêng): w = độ rộng ô (ký tự Excel), co = cỡ chữ
+  const caoGhiChu = (s, w, co) => s.split('\n').reduce((a, l) => a + Math.ceil(l.length / (w * 1.25 * 11 / co) || 1), 0) * co * 1.32 + 3;
   function bienBanHC(r, qr) {
     const b = r.bb, h = hk2(b.hk), n = 10, cot = [6, 34, 9, 8, 8, 9, 11, 11, 11, 16];
     const nhan = (k) => ({ v: k, cs: 2, b: 1 }), gt = (v, cs) => ({ v, cs, vien: 'b' });
@@ -109,6 +113,7 @@
     hang.push({ cao: 15, o: [{ v: 'Tổng số khoản:', cs: 2, b: 1 }, { v: r.dong.length, can: 'c', b: 1 }, { v: r.dong.some(d => d.canh_bao) ? '(*) Ngoài định mức – cấp bổ sung theo đề nghị (QR3) hoặc thêm khi bàn giao.' : '', cs: 7, i: 1, co: 10 }] },
       { cao: 15, o: [{ v: '', cs: n }] },
       { cao: 33.75, o: [{ v: 'Hai bên đã cùng kiểm tra số lượng, chất lượng vật tư - hóa chất nêu trên và thống nhất bàn giao. Hóa chất còn dư sau thực hành được hoàn trả PTN và ghi vào cột SL HOÀN TRẢ. Biên bản lập thành 02 bản, mỗi bên giữ 01 bản.', cs: n, i: 1 }] },
+      ...(b.tu_giao ? [{ cao: caoGhiChu(ghiChuTu(b.tu_giao), 96, 11) + 4, o: [{ v: ghiChuTu(b.tu_giao), cs: n, co: 11, doc: 't' }] }] : []),
       { cao: 15, o: [{ v: '', cs: n }] },
       { cao: 25.25, o: [{ v: 'BÊN NHẬN', cs: 3, can: 'c', b: 1 }, { v: 'GIẢNG VIÊN HƯỚNG DẪN', cs: 3, can: 'c', b: 1 }, { v: 'BÊN GIAO', cs: 4, can: 'c', b: 1 }] },
       { cao: 15, o: [{ v: '(Đại diện lớp - ký, ghi rõ họ tên, MSSV)', cs: 3, can: 'c', i: 1, co: 10 }, { v: '(Ký, ghi rõ họ tên)', cs: 3, can: 'c', i: 1, co: 10 }, { v: '(Cán bộ PTN - ký, ghi rõ họ tên)', cs: 4, can: 'c', i: 1, co: 10 }] });
@@ -137,7 +142,7 @@
         hang.push(trai('ĐỀ TÀI: ' + b.ten_mon, 'Mã hồ sơ: ' + b.lop), trai('TRƯỞNG NHÓM: ' + [tn.ho_ten, tn.ma_so, tn.sdt].filter(Boolean).join(' – '), 'Phòng: ' + b.phong),
           trai('GVHD: ' + b.gv, 'Thời gian: ' + tg(b.thoi_gian)));
       } else hang.push(trai('MÔN: ' + b.ten_mon, 'Thời gian: ' + tg(b.thoi_gian)), trai('TỔNG SỐ SV THỰC HÀNH: ' + (b.si_so || ''), 'Phòng: ' + b.phong), trai('GVHD: ' + b.gv, 'Lớp: ' + b.lop));
-      hang.push({ cao: 112, o: [{ v: 'Lưu ý:\n- Khi bàn giao sinh viên kiểm tra kỹ dụng cụ có bị nứt, mẻ, gãy, vỡ,…. hay có bất cứ vấn đề gì thì báo cho phòng thí nghiệm để xác nhận tình trạng.\n- Sau khi bàn giao phòng thí nghiệm sẽ không chịu trách nhiệm về các vấn đề xảy ra trong quá trình sử dụng. Kết thúc đợt học, sinh viên vệ sinh sạch sẽ và sấy khô trước khi trả lại cho phòng thí nghiệm.\n- Phòng thí nghiệm sẽ không nhận dụng cụ trả lại khác với tình trạng lúc bàn giao cho sinh viên.\n- Trước khi nhận và trả phải báo trước phòng thí nghiệm 1 ngày để PTN bố trí người và thời gian nhận.', cs: n, co: 12, doc: 't' }] },
+      hang.push({ cao: b.tu_giao ? 112 + caoGhiChu(ghiChuTu(b.tu_giao), 98, 12) : 112, o: [{ v: 'Lưu ý:\n- Khi bàn giao sinh viên kiểm tra kỹ dụng cụ có bị nứt, mẻ, gãy, vỡ,…. hay có bất cứ vấn đề gì thì báo cho phòng thí nghiệm để xác nhận tình trạng.\n- Sau khi bàn giao phòng thí nghiệm sẽ không chịu trách nhiệm về các vấn đề xảy ra trong quá trình sử dụng. Kết thúc đợt học, sinh viên vệ sinh sạch sẽ và sấy khô trước khi trả lại cho phòng thí nghiệm.\n- Phòng thí nghiệm sẽ không nhận dụng cụ trả lại khác với tình trạng lúc bàn giao cho sinh viên.\n- Trước khi nhận và trả phải báo trước phòng thí nghiệm 1 ngày để PTN bố trí người và thời gian nhận.' + (b.tu_giao ? '\n' + ghiChuTu(b.tu_giao) : ''), cs: n, co: 12, doc: 't' }] },
         { cao: 10, o: [{ v: '', cs: n }] },
         { cao: 16, o: ['STT', 'TÊN DỤNG CỤ', 'NSX', 'ĐVT'].map(v => ({ v, rs: 2, b: 1, can: 'c', vien: 1 })).concat([{ v: 'SỐ LƯỢNG', cs: 3, b: 1, can: 'c', vien: 1 }, { v: 'GHI CHÚ', rs: 2, b: 1, can: 'c', vien: 1 }]) },
         { cao: 16, o: ['MƯỢN', 'TRẢ', 'NỢ'].map(v => ({ v, b: 1, can: 'c', vien: 1 })) });
