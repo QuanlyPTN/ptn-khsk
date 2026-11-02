@@ -339,13 +339,14 @@
       return;
     }
     const cuMay = !!(p && p.ma_so); // máy đã có thông tin từ trước khi khóa → xác nhận một lần
-    M('<div class="card"><h2>Thông tin cá nhân (nhập một lần)</h2>' +
+    const dich = (/^#\/(QR[1-8])/.exec(location.hash) || [])[1]; // đang quét QR riêng → báo bước tiếp theo
+    M((dich ? '<div class="pre"><b>Bước 1/2:</b> nhập thông tin cá nhân (chỉ lần đầu). <b>Bước 2/2:</b> điền đơn ' + dich + ' – ' + esc(QR_TEN[dich]) + '.</div>' : '') + '<div class="card"><h2>Thông tin cá nhân (nhập một lần)</h2>' +
       '<div class="warn">⚠ <b>Nhập đúng và đầy đủ.</b> Thông tin chỉ nhập <b>một lần</b>, gắn với thiết bị này và tự điền vào mọi biểu mẫu. Sau khi lưu, muốn sửa phải gửi đề nghị kèm lý do và được PTN duyệt.\n' +
       '• Mỗi người chỉ dùng <b>một thiết bị</b> (điện thoại hoặc máy tính). Thiết bị khác khai cùng MSSV sẽ bị báo lỗi.\n• Không nhập thay người khác.</div>' +
       (cuMay ? '<p class="note">Thông tin đang lưu trên máy này – kiểm tra lại rồi xác nhận.</p>' : '') +
       (S.yc || []).filter(y => y.trang_thai === 'Từ chối').slice(0, 1).map(dongYC).join('') +
       '<form id="f">' + oTT(p) + '<label class="check" style="margin-top:6px"><input type="checkbox" name="xac_nhan"> Tôi đã kiểm tra: thông tin <b>đúng, đầy đủ</b> và là của tôi.</label>' +
-      '<div class="err" id="err"></div><div id="o-chuyen"></div><button class="btn g" id="b-luu">Lưu thông tin</button></form></div>');
+      '<div class="err" id="err"></div><div id="o-chuyen"></div><button class="btn g" id="b-luu">' + (dich ? 'Lưu và tiếp tục điền đơn ' + dich + ' ›' : 'Lưu thông tin') + '</button></form></div>');
     ganTT($('f'));
     $('f').onsubmit = async (e) => {
       e.preventDefault(); const f = e.target, [v, loi] = docTT(f);
@@ -353,7 +354,7 @@
       if (!f.xac_nhan.checked) { $('err').textContent = 'Đánh dấu ô xác nhận thông tin đúng, đầy đủ'; return; }
       try {
         const r = await api('ck_dang_ky_nd', { may: may(), ng: ngTu(v), xac_nhan: 1 });
-        ghi('khsk_ho_so', tuMayChu(r)); S.hs = null; S.ndXong = false; toast('Đã lưu'); location.hash = '#/'; if (lanDau) dieuHuong();
+        ghi('khsk_ho_so', tuMayChu(r)); S.hs = null; S.ndXong = false; toast('Đã lưu'); if (lanDau) dieuHuong(); else location.hash = '#/'; // quét QR riêng: lưu xong vào thẳng đơn của mã đó
       } catch (x) {
         $('err').textContent = x.message;
         if (x.code === 'MAY_KHAC') { // đã đăng ký ở máy khác → đề nghị chuyển sang máy này
