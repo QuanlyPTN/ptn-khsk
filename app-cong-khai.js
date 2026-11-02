@@ -209,8 +209,7 @@
     return '<div class="card gio-lv"><div><b>🕘 Giờ làm việc PTN</b> <span class="tag ' + (mo ? 't-ok">Đang trong giờ làm việc' : 't-gray">Ngoài giờ làm việc') + '</span></div>' +
       '<div class="note" style="margin-top:4px">' + GIO_LAM_VIEC.ca.map(c => c[0] + ': <b>' + gio(c[1]) + ' – ' + gio(c[2]) + '</b>').join(' · ') + ' · ' + GIO_LAM_VIEC.ngay + '</div></div>';
   }
-  const boLk = () => location.pathname + location.search.replace(/([?&])lk=[^&]*&?/, '$1').replace(/[?&]$/, '');
-  const laIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const laApp = () => !!(navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches)); // đang mở từ màn hình chính
   async function trangChu() {
     $('hb').classList.add('hide'); nutLui(false);
     const p = hoSo();
@@ -224,15 +223,9 @@
       '<a class="tile" href="#/DT">' + bieu('DT') + '<span class="qv">DT</span>Dự trù hóa chất môn học<span class="note" style="font-size:12px">Nhập bằng mã PTN cấp</span></a>' : '') +
       '</div><div class="tieu-de-nhom">Tiện ích</div><div class="grid"><a class="tile t2" href="#/don-cua-toi">' + bieu('cua_toi') + '<span><b>Đơn của tôi</b><br><span class="note" id="dem-don">Trạng thái các đơn đã gửi</span></span></a>' +
       '<a class="tile t2" href="#/bieu-mau">' + bieu('mau') + '<span><b>Biểu mẫu PTN</b><br><span class="note">Mẫu đơn, phiếu trống</span></span></a></div>' +
-      (navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ? '' : (laIOS ? '<div class="card" style="margin-top:14px"><button class="btn o" id="b-cai">📲 Thêm vào màn hình chính (iPhone)</button><div id="o-cai" class="note">Bấm nút này trước, rồi mới bấm Chia sẻ → <i>Thêm vào MH chính</i>: ứng dụng giữ thông tin của bạn, không phải nhập lại.</div></div>' :
-        '<div class="card note" style="margin-top:14px"><b>Cài như ứng dụng:</b> Android (Chrome): bấm ⋮ → <i>Thêm vào màn hình chính</i>.</div>')) +
+      (navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ? '' : '<div class="card note" style="margin-top:14px"><b>Cài như ứng dụng:</b> iPhone (Safari): bấm Chia sẻ → <i>Thêm vào MH chính</i>. Android (Chrome): bấm ⋮ → <i>Thêm vào màn hình chính</i>.</div>') +
       '<p class="note" style="text-align:center;margin-top:18px"><a href="' + (DEMO ? 'quan-ly/chay-thu.html' : 'quan-ly/') + '">Cán bộ PTN đăng nhập</a></p>';
     M(h); veDongTB();
-    if ($('b-cai')) $('b-cai').onclick = () => { // iPhone: ứng dụng màn hình chính không dùng chung bộ nhớ với Safari → gắn tạm mã máy vào địa chỉ (tự xóa sau 3 phút)
-      const m = may(), b = boLk(); history.replaceState(null, '', b + (b.indexOf('?') < 0 ? '?' : '&') + 'lk=' + m.ma + '.' + m.khoa + '#/');
-      $('o-cai').innerHTML = '<div class="pre" style="margin-top:10px"><b>Bước tiếp:</b> bấm nút <b>Chia sẻ</b> của Safari → <i>Thêm vào MH chính</i> → <i>Thêm</i>. Mở ứng dụng là dùng ngay, không phải nhập lại thông tin.<br><span class="note">Lúc này địa chỉ trang có mã máy của bạn – không gửi địa chỉ cho người khác (tự xóa sau 3 phút).</span></div>';
-      setTimeout(() => history.replaceState(null, '', boLk() + location.hash), 180000);
-    };
     try {
       const dm = await danhMuc(true);
       if (dm.thong_bao && $('tb')) $('tb').innerHTML = '<div class="warn" style="background:#FFF8E1;border-color:#F2D58A;color:#6B4A00">📢 ' + esc(dm.thong_bao) + '</div>';
@@ -356,6 +349,8 @@
     M((dich ? '<div class="pre"><b>Bước 1/2:</b> nhập thông tin cá nhân (chỉ lần đầu). <b>Bước 2/2:</b> điền đơn ' + dich + ' – ' + esc(QR_TEN[dich]) + '.</div>' : '') + '<div class="card"><h2>Thông tin cá nhân (nhập một lần)</h2>' +
       '<div class="warn">⚠ <b>Nhập đúng và đầy đủ.</b> Thông tin chỉ nhập <b>một lần</b>, gắn với thiết bị này và tự điền vào mọi biểu mẫu. Sau khi lưu, muốn sửa phải gửi đề nghị kèm lý do và được PTN duyệt.\n' +
       '• Mỗi người chỉ dùng <b>một thiết bị</b> (điện thoại hoặc máy tính). Thiết bị khác khai cùng MSSV sẽ bị báo lỗi.\n• Không nhập thay người khác.</div>' +
+      (laApp() || cuMay ? '' : '<div class="pre" style="white-space:pre-line">📲 <b>Muốn dùng như ứng dụng trên điện thoại?</b> Thêm trang vào màn hình chính <b>trước</b>, rồi mở ứng dụng và nhập thông tin ở đó – không phải nhập lại lần hai.\n' +
+        '• iPhone (Safari): bấm Chia sẻ → <i>Thêm vào MH chính</i> → Thêm.\n• Android (Chrome): bấm ⋮ → <i>Thêm vào màn hình chính</i>.</div>') +
       (cuMay ? '<p class="note">Thông tin đang lưu trên máy này – kiểm tra lại rồi xác nhận.</p>' : '') +
       (S.yc || []).filter(y => y.trang_thai === 'Từ chối').slice(0, 1).map(dongYC).join('') +
       '<form id="f">' + oTT(p) + '<label class="check" style="margin-top:6px"><input type="checkbox" name="xac_nhan"> Tôi đã kiểm tra: thông tin <b>đúng, đầy đủ</b> và là của tôi.</label>' +
@@ -933,9 +928,6 @@
 
   // ---------------- Điều hướng ----------------
   async function dieuHuong() {
-    // ứng dụng trên màn hình chính iPhone (bộ nhớ riêng, trống) mở bằng địa chỉ có lk=mã máy.khóa → nhận lại máy đã đăng ký trên Safari
-    const lk = /[?&]lk=(TB-[A-Z0-9]{6})\.([a-f0-9]{32})\b/.exec(location.search);
-    if (lk) { if (!(hoSo() || {}).ma_so) { ghi('khsk_dev', lk[1]); ghi('khsk_khoa', lk[2]); S.ndXong = false; } history.replaceState(null, '', boLk() + location.hash); }
     const qrCu = (/[?&]qr=(QR[1-8])/i.exec(location.search) || [])[1], boQr = location.pathname + location.search.replace(/([?&])qr=[^&]*&?/i, '$1').replace(/[?&]$/, '');
     // mã QR tổng: giữ ?qr=TONG trên địa chỉ; manifest không có start_url → "Thêm vào màn hình chính" mở đúng địa chỉ đang xem (iPhone: bộ nhớ riêng) vẫn đủ mã
     if (/[?&]qr=TONG\b/i.test(location.search)) ghi('khsk_qr_tong', true);

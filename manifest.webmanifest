@@ -3,6 +3,7 @@
   "short_name": "PTN KHSK",
   "description": "Đăng ký QR1–QR8, hồ sơ đề tài, biểu mẫu và đơn của tôi – phòng thí nghiệm Khoa Khoa học Sức khỏe, ĐH Công nghiệp TP.HCM",
   "lang": "vi",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
