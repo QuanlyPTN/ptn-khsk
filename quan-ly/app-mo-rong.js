@@ -18,7 +18,10 @@
   const dauTrang = '<table style="width:100%"><tr><td class="c">ĐẠI HỌC CÔNG NGHIỆP TP. HỒ CHÍ MINH<br><b>KHOA KHOA HỌC SỨC KHỎE</b><br>———</td><td class="c"><b>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b>Độc lập – Tự do – Hạnh phúc</b><br>———</td></tr></table>';
   // khối chữ ký trang in HTML: [chức danh, họ tên] – họ tên in đậm dưới khoảng ký
   const oKy = (ds) => '<table class="ky"><tr>' + ds.map(x => '<td><b>' + esc(x[0]) + '</b><br><i>(Ký, ghi rõ họ tên)</i><div style="margin-top:62px"><b>' + esc(x[1] || '') + '</b></div></td>').join('') + '</tr></table>';
-  async function svgQR(text, cell) { try { const QR = await napQR(), q = QR(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: cell || 2, margin: 0 }); } catch (e) { return ''; } }
+  async function svgQR(text, cell, logo) { try { const QR = await napQR(), q = QR(0, logo ? 'H' : 'M'); q.addData(text); q.make(); const svg = q.createSvgTag({ cellSize: cell || 2, margin: 0 });
+    if (!logo) return svg; // logo giữa mã (mức sửa lỗi H chịu được ~30% bị che): nền trắng ~22% cạnh mã
+    const n = q.getModuleCount() * (cell || 2), w = n * 0.22, x = (n - w) / 2;
+    return svg.replace('</svg>', '<rect x="' + x + '" y="' + x + '" width="' + w + '" height="' + w + '" rx="' + w * 0.12 + '" fill="#fff"/><image href="' + logo + '" x="' + (x + w * 0.14) + '" y="' + (x + w * 0.1) + '" width="' + w * 0.72 + '" height="' + w * 0.8 + '" preserveAspectRatio="xMidYMid meet"/></svg>'); } catch (e) { return ''; } }
   function napScript(url, ten) {
     if (window[ten]) return Promise.resolve(window[ten]);
     return new Promise((ok, loi) => { const s = document.createElement('script'); s.src = url; s.onload = () => ok(window[ten]); s.onerror = () => loi(new Error('Không tải được thư viện (cần mạng)')); document.head.appendChild(s); });
@@ -1190,16 +1193,16 @@
   async function manCaiDat() {
     if (!laAdmin()) { location.hash = '#/tong-quan'; return; }
     const nd = trang('Cài đặt – mã QR tổng');
-    const cd = await api('cd_doc'), url = trangCongKhai(), qr = await svgQR(url, 4);
+    const cd = await api('cd_doc'), url = trangCongKhai(), urlTong = url + '?qr=TONG', logo = url + 'logo-mark.png', qr = await svgQR(urlTong, 4, logo);
     nd.innerHTML = '<div class="grid g2"><div class="card"><h2>Trang chủ công khai</h2><form id="f">' +
       o('hk_qr', 'Học kỳ áp dụng cho mã QR (danh sách lớp thực hành trên trang công khai)', { select: [['', 'Tự động theo ngày (khuyên dùng)' + (cd.hk_tu_dong ? ' – hiện là ' + cd.hk_tu_dong : '')]].concat((S.dm.hoc_ky || []).map(h => [h, h])), v: cd.hk_qr }) +
       '<p class="note" id="hk-qr-note" style="margin-top:-6px">Trang công khai đang dùng thời khóa biểu <b>' + esc(cd.hk_qr_dang || '—') + '</b>. Tự động: học kỳ có ngày bắt đầu – kết thúc chứa hôm nay (giữa hai kỳ: kỳ bắt đầu gần nhất). Chọn hẳn một học kỳ khi muốn chuyển sớm sang thời khóa biểu mới; chọn lại "Tự động" khi xong.</p>' +
       o('thong_bao', 'Thông báo trang chủ (để trống nếu không có)', { v: cd.thong_bao, area: 1 }) +
       o('le_phi_ngoai', 'Lệ phí SV ngoài đơn vị (Phụ lục 3)', { v: cd.le_phi_ngoai, ph: 'VD: 200.000 đ / tháng' }) + o('kho_tu_tru', 'Cấp phát theo biên bản tự trừ kho hóa chất', { select: ['Có', 'Không'], v: cd.kho_tu_tru }) +
       '<h2 style="margin-top:12px">Người ký trên biểu mẫu (in họ tên dưới chữ ký)</h2>' + o('ky_hieu_truong', 'Hiệu trưởng', { v: cd.ky_hieu_truong }) + o('ky_truong_khoa', 'Trưởng khoa', { v: cd.ky_truong_khoa }) + o('ky_nguoi_lap', 'Người lập biểu', { v: cd.ky_nguoi_lap }) +
-      '<button class="btn">Lưu</button></form></div><div class="card"><h2>Mã QR tổng</h2><div class="qr-to">' + qr + '</div><p class="mono" style="word-break:break-all">' + esc(url) + '</p>' +
-      '<div class="btns"><button class="btn sm" id="b-poster">In poster QR tổng (A4)</button><button class="btn o sm" id="b-rieng">In mã QR riêng QR1 – QR8</button><a class="btn o sm" href="' + esc(url) + (Q.DEMO ? '?demo=1' : '') + '" target="_blank" rel="noopener">Mở trang công khai</a></div>' +
-      '<p class="note">Dán poster tại các phòng. Mã QR riêng từng biểu mẫu tạo sẵn, chưa dùng (theo bản chốt).</p></div></div>' +
+      '<button class="btn">Lưu</button></form></div><div class="card"><h2>Mã QR tổng</h2><div class="qr-to">' + qr + '</div><p class="mono" style="word-break:break-all">' + esc(urlTong) + '</p>' +
+      '<div class="btns"><button class="btn sm" id="b-poster">In poster QR tổng (A4)</button><button class="btn o sm" id="b-rieng">In mã QR riêng QR1 – QR8</button><a class="btn o sm" href="' + esc(url) + (Q.DEMO ? '?demo=1&' : '?') + 'qr=TONG" target="_blank" rel="noopener">Mở trang công khai</a></div>' +
+      '<p class="note">Mã QR tổng (có logo IUH) mở trang chủ đủ các biểu mẫu. Quét mã QR riêng QR1 – QR8: trang chủ chỉ còn "Đơn của tôi" và "Biểu mẫu PTN" (chưa phổ biến trang dùng chung).</p></div></div>' +
       '<div class="card"><h2>Xuất toàn bộ dữ liệu (sao lưu)</h2><p class="note">Một file Excel, mỗi bảng dữ liệu một trang tính: cán bộ, phòng, tủ, thiết bị, lịch sử thiết bị, học kỳ, vật tư, định mức, lớp TH, biên bản, dòng biên bản, cấp phát, đơn QR1 – QR8, hồ sơ đề tài, kho, dự trù, sổ theo dõi, nhật ký. Không gồm mật khẩu, khóa máy và phiên đăng nhập.</p>' +
       '<button class="btn sm" id="b-sao-luu">⇩ Tải toàn bộ dữ liệu (Excel)</button></div>' +
       '<div class="card"><h2>Làm mới dữ liệu</h2><p class="note">Hệ thống giữ tạm dữ liệu 10 phút để tải nhanh. Sau khi <b>sửa tay trực tiếp trong Google Sheet CSDL</b>, bấm nút này để mọi máy thấy ngay (thao tác trên web luôn cập nhật tức thì).</p><button class="btn o sm" id="b-lam-moi">↻ Làm mới dữ liệu</button></div>' +
@@ -1209,8 +1212,8 @@
       const cd2 = await api('cd_doc'); $('hk-qr-note').querySelector('b').textContent = cd2.hk_qr_dang || '—'; };
     const poster = async () => xem('<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><title>Poster QR tong</title><style>@page{size:A4;margin:16mm}body{font-family:Arial,sans-serif;text-align:center;color:#1F3E8C}h1{font-size:30px;margin:8px 0}h2{font-size:20px;color:#000;font-weight:normal}' +
       '.qr svg{width:120mm;height:120mm}ol{text-align:left;font-size:15px;color:#000;max-width:150mm;margin:10px auto}</style></head><body><div style="font-size:14px">ĐẠI HỌC CÔNG NGHIỆP TP. HỒ CHÍ MINH<br><b>KHOA KHOA HỌC SỨC KHỎE</b></div>' +
-      '<h1>PHÒNG THÍ NGHIỆM – QUÉT MÃ ĐỂ ĐĂNG KÝ</h1><h2>Mượn phòng, thiết bị, dụng cụ · Nhật ký sử dụng (QR5) · Tủ · Hóa chất bổ sung · Hồ sơ KLTN – NCKH</h2><div class="qr">' + await svgQR(url, 8) + '</div>' +
-      '<ol><li>Quét mã bằng camera điện thoại, nhập thông tin cá nhân một lần.</li><li>Chọn biểu mẫu QR1 – QR8 cần đăng ký.</li><li><b>Bắt buộc quét QR5 trước khi sử dụng thiết bị</b>; dùng xong bấm "Kết thúc sử dụng".</li><li>Theo dõi trạng thái ở "Đơn của tôi".</li></ol><p style="font-size:12px;color:#555">' + esc(url) + '</p></body></html>');
+      '<h1>PHÒNG THÍ NGHIỆM – QUÉT MÃ ĐỂ ĐĂNG KÝ</h1><h2>Mượn phòng, thiết bị, dụng cụ · Nhật ký sử dụng (QR5) · Tủ · Hóa chất bổ sung · Hồ sơ KLTN – NCKH</h2><div class="qr">' + await svgQR(urlTong, 8, logo) + '</div>' +
+      '<ol><li>Quét mã bằng camera điện thoại, nhập thông tin cá nhân một lần.</li><li>Chọn biểu mẫu QR1 – QR8 cần đăng ký.</li><li><b>Bắt buộc quét QR5 trước khi sử dụng thiết bị</b>; dùng xong bấm "Kết thúc sử dụng".</li><li>Theo dõi trạng thái ở "Đơn của tôi".</li></ol><p style="font-size:12px;color:#555">' + esc(urlTong) + '</p></body></html>');
     $('b-poster').onclick = poster;
     $('b-sao-luu').onclick = (e) => chay(e.target, xuatTatCa);
     $('b-lam-moi').onclick = async (e) => { await chay(e.target, () => api('cd_lam_moi')); toast('Đã làm mới – dữ liệu đọc lại từ Google Sheet'); };
