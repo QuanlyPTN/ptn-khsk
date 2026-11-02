@@ -210,11 +210,15 @@
       '<div class="note" style="margin-top:4px">' + GIO_LAM_VIEC.ca.map(c => c[0] + ': <b>' + gio(c[1]) + ' – ' + gio(c[2]) + '</b>').join(' · ') + ' · ' + GIO_LAM_VIEC.ngay + '</div></div>';
   }
   const laApp = () => !!(navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches)); // đang mở từ màn hình chính
+  // lưu ý đầu trang khi mở bằng trình duyệt (chưa phải ứng dụng màn hình chính): thêm vào màn hình chính TRƯỚC rồi mới nhập thông tin
+  // (iPhone: ứng dụng màn hình chính có bộ nhớ riêng – nhập trên Safari rồi mới cài thì phải nhập lại, báo "đã đăng ký trên thiết bị khác")
+  const luuYApp = (tat) => laApp() || (tat && doc('khsk_an_luu_y_app')) ? '' : '<div class="pre" id="luu-y-app" style="white-space:pre-line;border-color:#9FD0B3;color:#14482B">📲 <b>LƯU Ý: Thêm trang vào màn hình chính TRƯỚC, rồi mở ứng dụng vừa thêm và nhập thông tin cá nhân ở đó.</b> Nhập trên trình duyệt rồi mới thêm sẽ phải nhập lại và bị báo "đã đăng ký trên thiết bị khác".\n' +
+    '• iPhone (Safari): bấm Chia sẻ → <i>Thêm vào MH chính</i> → Thêm.\n• Android (Chrome): bấm ⋮ → <i>Thêm vào màn hình chính</i>.' + (tat ? '\n<button type="button" class="btn o" id="b-an-luu-y" style="margin-top:6px">Đã hiểu</button>' : '') + '</div>';
   async function trangChu() {
     $('hb').classList.add('hide'); nutLui(false);
     const p = hoSo();
     const du = duMa(), nhom1 = du ? Object.keys(QR_TEN).filter(q => QR_GV.indexOf(q) < 0) : [];
-    let h = '<div class="card prof"><div class="av">' + esc((p.ho_ten || '?').trim().split(' ').pop().charAt(0)) + '</div><div class="i"><b>' + esc(p.ho_ten) + '</b><span>' + esc([p.ma_so, ngGui().doi_tuong, p.lop].filter(Boolean).join(' · ')) +
+    let h = luuYApp(1) + '<div class="card prof"><div class="av">' + esc((p.ho_ten || '?').trim().split(' ').pop().charAt(0)) + '</div><div class="i"><b>' + esc(p.ho_ten) + '</b><span>' + esc([p.ma_so, ngGui().doi_tuong, p.lop].filter(Boolean).join(' · ')) +
       '</span></div><a class="lnk" href="#/ho-so">Thông tin</a></div>' +
       theGioLamViec() + '<div id="tb-moi"></div><div id="tb"></div>' +
       (nhom1.length ? '<div class="tieu-de-nhom">Đăng ký – biểu mẫu</div><div class="grid">' + nhom1.map(oQR).join('') + '</div>' : '') +
@@ -226,6 +230,7 @@
       (navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ? '' : '<div class="card note" style="margin-top:14px"><b>Cài như ứng dụng:</b> iPhone (Safari): bấm Chia sẻ → <i>Thêm vào MH chính</i>. Android (Chrome): bấm ⋮ → <i>Thêm vào màn hình chính</i>.</div>') +
       '<p class="note" style="text-align:center;margin-top:18px"><a href="' + (DEMO ? 'quan-ly/chay-thu.html' : 'quan-ly/') + '">Cán bộ PTN đăng nhập</a></p>';
     M(h); veDongTB();
+    if ($('b-an-luu-y')) $('b-an-luu-y').onclick = () => { ghi('khsk_an_luu_y_app', true); $('luu-y-app').remove(); };
     try {
       const dm = await danhMuc(true);
       if (dm.thong_bao && $('tb')) $('tb').innerHTML = '<div class="warn" style="background:#FFF8E1;border-color:#F2D58A;color:#6B4A00">📢 ' + esc(dm.thong_bao) + '</div>';
@@ -346,11 +351,9 @@
     }
     const cuMay = !!(p && p.ma_so); // máy đã có thông tin từ trước khi khóa → xác nhận một lần
     const dich = (/^#\/(QR[1-8])/.exec(location.hash) || [])[1]; // đang quét QR riêng → báo bước tiếp theo
-    M((dich ? '<div class="pre"><b>Bước 1/2:</b> nhập thông tin cá nhân (chỉ lần đầu). <b>Bước 2/2:</b> điền đơn ' + dich + ' – ' + esc(QR_TEN[dich]) + '.</div>' : '') + '<div class="card"><h2>Thông tin cá nhân (nhập một lần)</h2>' +
+    M(luuYApp(0) + (dich ? '<div class="pre"><b>Bước 1/2:</b> nhập thông tin cá nhân (chỉ lần đầu). <b>Bước 2/2:</b> điền đơn ' + dich + ' – ' + esc(QR_TEN[dich]) + '.</div>' : '') + '<div class="card"><h2>Thông tin cá nhân (nhập một lần)</h2>' +
       '<div class="warn">⚠ <b>Nhập đúng và đầy đủ.</b> Thông tin chỉ nhập <b>một lần</b>, gắn với thiết bị này và tự điền vào mọi biểu mẫu. Sau khi lưu, muốn sửa phải gửi đề nghị kèm lý do và được PTN duyệt.\n' +
       '• Mỗi người chỉ dùng <b>một thiết bị</b> (điện thoại hoặc máy tính). Thiết bị khác khai cùng MSSV sẽ bị báo lỗi.\n• Không nhập thay người khác.</div>' +
-      (laApp() || cuMay ? '' : '<div class="pre" style="white-space:pre-line">📲 <b>Muốn dùng như ứng dụng trên điện thoại?</b> Thêm trang vào màn hình chính <b>trước</b>, rồi mở ứng dụng và nhập thông tin ở đó – không phải nhập lại lần hai.\n' +
-        '• iPhone (Safari): bấm Chia sẻ → <i>Thêm vào MH chính</i> → Thêm.\n• Android (Chrome): bấm ⋮ → <i>Thêm vào màn hình chính</i>.</div>') +
       (cuMay ? '<p class="note">Thông tin đang lưu trên máy này – kiểm tra lại rồi xác nhận.</p>' : '') +
       (S.yc || []).filter(y => y.trang_thai === 'Từ chối').slice(0, 1).map(dongYC).join('') +
       '<form id="f">' + oTT(p) + '<label class="check" style="margin-top:6px"><input type="checkbox" name="xac_nhan"> Tôi đã kiểm tra: thông tin <b>đúng, đầy đủ</b> và là của tôi.</label>' +
