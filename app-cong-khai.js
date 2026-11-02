@@ -21,10 +21,10 @@
   const congDung = (q) => QR_CONG[q] ? '<div class="cd">' + QR_CONG[q][1] + '</div>' : '';
   const QR_AI = { QR1: 'Giảng viên, Sinh viên', QR5: 'Giảng viên, Sinh viên', QR6: 'Giảng viên, Sinh viên', QR8: 'Giảng viên, Sinh viên', QR7: 'Sinh viên', QR2: 'Giảng viên', QR3: 'Giảng viên', QR4: 'Giảng viên' };
   const QR_GV = ['QR2', 'QR3', 'QR4'];
-  // chưa phổ biến trang dùng chung (02/11/2026): trang chủ đủ các mã chỉ khi máy vào bằng mã QR tổng (?qr=TONG);
+  // 02/11/2026 (chiều): anh Phú chốt chỉ dùng 01 mã QR tổng, trang chủ luôn đủ biểu mẫu → TRANG_CHUNG = true. Đặt false nếu cần lại chế độ: trang chủ đủ các mã chỉ khi máy vào bằng mã QR tổng (?qr=TONG);
   // vào bằng mã QR riêng (?qr=QRx) → trang chủ chỉ còn Đơn của tôi, Biểu mẫu PTN. Lần quét sau cùng quyết định. Mở trang chung cho mọi người: TRANG_CHUNG = true
   // (bản chạy thử vẫn hiện đủ để kiểm thử; thêm ?chiqr=1 để thử chế độ này)
-  const TRANG_CHUNG = false, duMa = () => TRANG_CHUNG || !!doc('khsk_qr_tong') || (DEMO && !/[?&]chiqr=1/.test(location.search));
+  const TRANG_CHUNG = true, duMa = () => TRANG_CHUNG || !!doc('khsk_qr_tong') || (DEMO && !/[?&]chiqr=1/.test(location.search));
   const BIEU = { DT: '<path d="M9 3h6"/><path d="M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/><path d="M7 14h10"/>', QR1: '<path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 21v-6h6v6"/>', QR2: '<path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2z"/>',
     QR3: '<path d="M9 3h6"/><path d="M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/><path d="M7 15h10"/>', QR4: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
     QR5: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', QR6: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 3v18"/><path d="M9 12h.01M15 12h.01"/>',
@@ -209,6 +209,8 @@
     return '<div class="card gio-lv"><div><b>🕘 Giờ làm việc PTN</b> <span class="tag ' + (mo ? 't-ok">Đang trong giờ làm việc' : 't-gray">Ngoài giờ làm việc') + '</span></div>' +
       '<div class="note" style="margin-top:4px">' + GIO_LAM_VIEC.ca.map(c => c[0] + ': <b>' + gio(c[1]) + ' – ' + gio(c[2]) + '</b>').join(' · ') + ' · ' + GIO_LAM_VIEC.ngay + '</div></div>';
   }
+  const boLk = () => location.pathname + location.search.replace(/([?&])lk=[^&]*&?/, '$1').replace(/[?&]$/, '');
+  const laIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   async function trangChu() {
     $('hb').classList.add('hide'); nutLui(false);
     const p = hoSo();
@@ -222,9 +224,15 @@
       '<a class="tile" href="#/DT">' + bieu('DT') + '<span class="qv">DT</span>Dự trù hóa chất môn học<span class="note" style="font-size:12px">Nhập bằng mã PTN cấp</span></a>' : '') +
       '</div><div class="tieu-de-nhom">Tiện ích</div><div class="grid"><a class="tile t2" href="#/don-cua-toi">' + bieu('cua_toi') + '<span><b>Đơn của tôi</b><br><span class="note" id="dem-don">Trạng thái các đơn đã gửi</span></span></a>' +
       '<a class="tile t2" href="#/bieu-mau">' + bieu('mau') + '<span><b>Biểu mẫu PTN</b><br><span class="note">Mẫu đơn, phiếu trống</span></span></a></div>' +
-      (navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ? '' : '<div class="card note" style="margin-top:14px"><b>Cài như ứng dụng:</b> iPhone (Safari): bấm Chia sẻ → <i>Thêm vào MH chính</i>. Android (Chrome): bấm ⋮ → <i>Thêm vào màn hình chính</i>.</div>') +
+      (navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ? '' : (laIOS ? '<div class="card" style="margin-top:14px"><button class="btn o" id="b-cai">📲 Thêm vào màn hình chính (iPhone)</button><div id="o-cai" class="note">Bấm nút này trước, rồi mới bấm Chia sẻ → <i>Thêm vào MH chính</i>: ứng dụng giữ thông tin của bạn, không phải nhập lại.</div></div>' :
+        '<div class="card note" style="margin-top:14px"><b>Cài như ứng dụng:</b> Android (Chrome): bấm ⋮ → <i>Thêm vào màn hình chính</i>.</div>')) +
       '<p class="note" style="text-align:center;margin-top:18px"><a href="' + (DEMO ? 'quan-ly/chay-thu.html' : 'quan-ly/') + '">Cán bộ PTN đăng nhập</a></p>';
     M(h); veDongTB();
+    if ($('b-cai')) $('b-cai').onclick = () => { // iPhone: ứng dụng màn hình chính không dùng chung bộ nhớ với Safari → gắn tạm mã máy vào địa chỉ (tự xóa sau 3 phút)
+      const m = may(), b = boLk(); history.replaceState(null, '', b + (b.indexOf('?') < 0 ? '?' : '&') + 'lk=' + m.ma + '.' + m.khoa + '#/');
+      $('o-cai').innerHTML = '<div class="pre" style="margin-top:10px"><b>Bước tiếp:</b> bấm nút <b>Chia sẻ</b> của Safari → <i>Thêm vào MH chính</i> → <i>Thêm</i>. Mở ứng dụng là dùng ngay, không phải nhập lại thông tin.<br><span class="note">Lúc này địa chỉ trang có mã máy của bạn – không gửi địa chỉ cho người khác (tự xóa sau 3 phút).</span></div>';
+      setTimeout(() => history.replaceState(null, '', boLk() + location.hash), 180000);
+    };
     try {
       const dm = await danhMuc(true);
       if (dm.thong_bao && $('tb')) $('tb').innerHTML = '<div class="warn" style="background:#FFF8E1;border-color:#F2D58A;color:#6B4A00">📢 ' + esc(dm.thong_bao) + '</div>';
@@ -925,9 +933,14 @@
 
   // ---------------- Điều hướng ----------------
   async function dieuHuong() {
+    // ứng dụng trên màn hình chính iPhone (bộ nhớ riêng, trống) mở bằng địa chỉ có lk=mã máy.khóa → nhận lại máy đã đăng ký trên Safari
+    const lk = /[?&]lk=(TB-[A-Z0-9]{6})\.([a-f0-9]{32})\b/.exec(location.search);
+    if (lk) { if (!(hoSo() || {}).ma_so) { ghi('khsk_dev', lk[1]); ghi('khsk_khoa', lk[2]); S.ndXong = false; } history.replaceState(null, '', boLk() + location.hash); }
     const qrCu = (/[?&]qr=(QR[1-8])/i.exec(location.search) || [])[1], boQr = location.pathname + location.search.replace(/([?&])qr=[^&]*&?/i, '$1').replace(/[?&]$/, '');
-    if (/[?&]qr=TONG\b/i.test(location.search)) { ghi('khsk_qr_tong', true); history.replaceState(null, '', boQr + (location.hash || '#/')); }
+    // mã QR tổng: giữ ?qr=TONG trên địa chỉ; manifest không có start_url → "Thêm vào màn hình chính" mở đúng địa chỉ đang xem (iPhone: bộ nhớ riêng) vẫn đủ mã
+    if (/[?&]qr=TONG\b/i.test(location.search)) ghi('khsk_qr_tong', true);
     else if (qrCu) ghi('khsk_qr_tong', false);
+    else if (doc('khsk_qr_tong') && !location.hash.replace(/^#\/?/, '')) history.replaceState(null, '', location.pathname + (location.search ? location.search + '&' : '?') + 'qr=TONG#/');
     if (qrCu && !location.hash) { history.replaceState(null, '', boQr + '#/' + qrCu.toUpperCase()); }
     const p = (location.hash.replace(/^#\/?/, '') || '').split('/');
     // thông tin cá nhân: máy chủ là gốc (gắn với máy này); chưa đăng ký → nhập / xác nhận một lần
