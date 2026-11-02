@@ -1201,8 +1201,8 @@
       o('le_phi_ngoai', 'Lệ phí SV ngoài đơn vị (Phụ lục 3)', { v: cd.le_phi_ngoai, ph: 'VD: 200.000 đ / tháng' }) + o('kho_tu_tru', 'Cấp phát theo biên bản tự trừ kho hóa chất', { select: ['Có', 'Không'], v: cd.kho_tu_tru }) +
       '<h2 style="margin-top:12px">Người ký trên biểu mẫu (in họ tên dưới chữ ký)</h2>' + o('ky_hieu_truong', 'Hiệu trưởng', { v: cd.ky_hieu_truong }) + o('ky_truong_khoa', 'Trưởng khoa', { v: cd.ky_truong_khoa }) + o('ky_nguoi_lap', 'Người lập biểu', { v: cd.ky_nguoi_lap }) +
       '<button class="btn">Lưu</button></form></div><div class="card"><h2>Mã QR tổng</h2><div class="qr-to">' + qr + '</div><p class="mono" style="word-break:break-all">' + esc(urlTong) + '</p>' +
-      '<div class="btns"><button class="btn sm" id="b-poster">In poster QR tổng (A4)</button><button class="btn o sm" id="b-rieng">In mã QR riêng QR1 – QR8</button><a class="btn o sm" href="' + esc(url) + (Q.DEMO ? '?demo=1&' : '?') + 'qr=TONG" target="_blank" rel="noopener">Mở trang công khai</a></div>' +
-      '<p class="note">Chỉ dùng mã QR tổng (có logo IUH): dán tại các phòng; quét → nhập thông tin một lần → dùng đủ các biểu mẫu. Mã QR riêng QR1 – QR8 không dùng.</p></div></div>' +
+      '<div class="btns"><button class="btn sm" id="b-poster">In poster QR tổng (A4)</button><a class="btn o sm" href="' + esc(url) + (Q.DEMO ? '?demo=1&' : '?') + 'qr=TONG" target="_blank" rel="noopener">Mở trang công khai</a></div>' +
+      '<p class="note">Chỉ dùng mã QR tổng (có logo IUH): dán tại các phòng; quét → nhập thông tin một lần → dùng đủ các biểu mẫu. Mã QR riêng QR1 – QR8 đã bỏ.</p></div></div>' +
       '<div class="card"><h2>Xuất toàn bộ dữ liệu (sao lưu)</h2><p class="note">Một file Excel, mỗi bảng dữ liệu một trang tính: cán bộ, phòng, tủ, thiết bị, lịch sử thiết bị, học kỳ, vật tư, định mức, lớp TH, biên bản, dòng biên bản, cấp phát, đơn QR1 – QR8, hồ sơ đề tài, kho, dự trù, sổ theo dõi, nhật ký. Không gồm mật khẩu, khóa máy và phiên đăng nhập.</p>' +
       '<button class="btn sm" id="b-sao-luu">⇩ Tải toàn bộ dữ liệu (Excel)</button></div>' +
       '<div class="card"><h2>Làm mới dữ liệu</h2><p class="note">Hệ thống giữ tạm dữ liệu 10 phút để tải nhanh. Sau khi <b>sửa tay trực tiếp trong Google Sheet CSDL</b>, bấm nút này để mọi máy thấy ngay (thao tác trên web luôn cập nhật tức thì).</p><button class="btn o sm" id="b-lam-moi">↻ Làm mới dữ liệu</button></div>' +
@@ -1217,11 +1217,6 @@
     $('b-poster').onclick = poster;
     $('b-sao-luu').onclick = (e) => chay(e.target, xuatTatCa);
     $('b-lam-moi').onclick = async (e) => { await chay(e.target, () => api('cd_lam_moi')); toast('Đã làm mới – dữ liệu đọc lại từ Google Sheet'); };
-    $('b-rieng').onclick = async () => {
-      const ten = { QR1: 'Mượn phòng; TB – DC trong ngày', QR2: 'GV mượn thiết bị dài ngày', QR3: 'Cấp hóa chất – vật tư bổ sung', QR4: 'Mượn chìa khóa (Bảo vệ)', QR5: 'Nhật ký sử dụng phòng, thiết bị', QR6: 'Đăng ký sử dụng tủ', QR7: 'Hồ sơ đề tài KLTN – NCKH', QR8: 'Mượn thêm dụng cụ' };
-      let h = ''; for (const q of Object.keys(ten)) h += '<div class="o"><div class="qr">' + await svgQR(url + '?qr=' + q, 4) + '</div><b>' + q + '</b><div>' + ten[q] + '</div></div>';
-      xem('<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><title>Ma QR rieng</title><style>@page{size:A4;margin:12mm}body{font-family:Arial,sans-serif}.l{display:grid;grid-template-columns:1fr 1fr;gap:8mm}.o{text-align:center;border:1px dashed #aaa;padding:5mm}.qr svg{width:55mm;height:55mm}b{font-size:20px;color:#1F3E8C}</style></head><body><div class="l">' + h + '</div></body></html>');
-    };
   }
 
   // ---------------- Biên bản bàn giao: 3 mục riêng ----------------
