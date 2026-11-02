@@ -21,6 +21,11 @@
   const congDung = (q) => QR_CONG[q] ? '<div class="cd">' + QR_CONG[q][1] + '</div>' : '';
   const QR_AI = { QR1: 'Giảng viên, Sinh viên', QR5: 'Giảng viên, Sinh viên', QR6: 'Giảng viên, Sinh viên', QR8: 'Giảng viên, Sinh viên', QR7: 'Sinh viên', QR2: 'Giảng viên', QR3: 'Giảng viên', QR4: 'Giảng viên' };
   const QR_GV = ['QR2', 'QR3', 'QR4'];
+  // chưa phổ biến trang dùng chung (02/11/2026): trang chủ chỉ hiện các mã máy này đã quét. Mở trang chung cho mọi người: TRANG_CHUNG = true
+  // (bản chạy thử vẫn hiện đủ để kiểm thử; thêm ?chiqr=1 để thử chế độ này)
+  const TRANG_CHUNG = false, DU_MA = TRANG_CHUNG || (DEMO && !/[?&]chiqr=1/.test(location.search));
+  const daQuet = () => doc('khsk_qr_da_quet') || [];
+  const ghiQuet = (q) => { const d = daQuet(); if (d.indexOf(q) < 0) ghi('khsk_qr_da_quet', d.concat(q)); };
   const BIEU = { DT: '<path d="M9 3h6"/><path d="M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/><path d="M7 14h10"/>', QR1: '<path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 21v-6h6v6"/>', QR2: '<path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2z"/>',
     QR3: '<path d="M9 3h6"/><path d="M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/><path d="M7 15h10"/>', QR4: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
     QR5: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', QR6: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 3v18"/><path d="M9 12h.01M15 12h.01"/>',
@@ -208,13 +213,16 @@
   async function trangChu() {
     $('hb').classList.add('hide'); nutLui(false);
     const p = hoSo();
+    const dq = daQuet(), co = (q) => DU_MA || dq.indexOf(q) >= 0, coGV = DU_MA || p.doi_tuong === 'Giảng viên';
+    const nhom1 = Object.keys(QR_TEN).filter(q => QR_GV.indexOf(q) < 0 && co(q)), nhom2 = QR_GV.filter(co);
     let h = '<div class="card prof"><div class="av">' + esc((p.ho_ten || '?').trim().split(' ').pop().charAt(0)) + '</div><div class="i"><b>' + esc(p.ho_ten) + '</b><span>' + esc([p.ma_so, ngGui().doi_tuong, p.lop].filter(Boolean).join(' · ')) +
       '</span></div><a class="lnk" href="#/ho-so">Thông tin</a></div>' +
-      theGioLamViec() + '<div id="tb-moi"></div><div id="tb"></div><div class="tieu-de-nhom">Đăng ký – biểu mẫu</div><div class="grid">' +
-      Object.keys(QR_TEN).filter(q => QR_GV.indexOf(q) < 0).map(oQR).join('') +
-      '</div><div class="tieu-de-nhom">Giảng viên – thiết bị</div><div class="grid">' + QR_GV.map(oQR).join('') +
-      Object.keys(GV().LOAI).filter(q => !GV().LOAI[q].ngung).map(q => '<a class="tile" href="#/' + q + '">' + bieu(q) + '<span class="qv">' + q + '</span>' + esc(GV().LOAI[q].ten) + '</a>').join('') +
-      '<a class="tile" href="#/DT">' + bieu('DT') + '<span class="qv">DT</span>Dự trù hóa chất môn học<span class="note" style="font-size:12px">Nhập bằng mã PTN cấp</span></a>' +
+      theGioLamViec() + '<div id="tb-moi"></div><div id="tb"></div>' +
+      (nhom1.length ? '<div class="tieu-de-nhom">Đăng ký – biểu mẫu</div><div class="grid">' + nhom1.map(oQR).join('') + '</div>' : '') +
+      (!DU_MA && !nhom1.length && !nhom2.length ? '<div class="card note">Quét <b>mã QR dán tại PTN</b> để đăng ký. Các mã đã quét sẽ hiện ở đây để dùng lại.</div>' : '') +
+      (nhom2.length || coGV ? '<div class="tieu-de-nhom">Giảng viên – thiết bị</div><div class="grid">' + nhom2.map(oQR).join('') : '<div class="hide">') +
+      (coGV ? Object.keys(GV().LOAI).filter(q => !GV().LOAI[q].ngung).map(q => '<a class="tile" href="#/' + q + '">' + bieu(q) + '<span class="qv">' + q + '</span>' + esc(GV().LOAI[q].ten) + '</a>').join('') +
+      '<a class="tile" href="#/DT">' + bieu('DT') + '<span class="qv">DT</span>Dự trù hóa chất môn học<span class="note" style="font-size:12px">Nhập bằng mã PTN cấp</span></a>' : '') +
       '</div><div class="tieu-de-nhom">Tiện ích</div><div class="grid"><a class="tile t2" href="#/don-cua-toi">' + bieu('cua_toi') + '<span><b>Đơn của tôi</b><br><span class="note" id="dem-don">Trạng thái các đơn đã gửi</span></span></a>' +
       '<a class="tile t2" href="#/bieu-mau">' + bieu('mau') + '<span><b>Biểu mẫu PTN</b><br><span class="note">Mẫu đơn, phiếu trống</span></span></a></div>' +
       (navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ? '' : '<div class="card note" style="margin-top:14px"><b>Cài như ứng dụng:</b> iPhone (Safari): bấm Chia sẻ → <i>Thêm vào MH chính</i>. Android (Chrome): bấm ⋮ → <i>Thêm vào màn hình chính</i>.</div>') +
@@ -928,6 +936,7 @@
     if (!nd) return trangHoSo(true);
     setTimeout(noiQuanTrong, 500); // tin quan trọng chưa đọc: khung nổi sau khi trang hiện
     try {
+      if (/^(QR[1-8]|GV-(BH|SC|BS|TS)|DT)$/.test(p[0])) ghiQuet(p[0]);
       if (/^QR[1-8]$/.test(p[0])) {
         if (p[0] === 'QR7' && p[1]) { const r = await api('ck_cua_toi', { khoa: may().khoa }), x = r.ho_so.find(h => h.id === p[1]); return x && HS_SUA.indexOf(x.trang_thai) >= 0 ? trangQR7(x) : trangDonCuaToi(); }
         return await trangQR(p[0]);
