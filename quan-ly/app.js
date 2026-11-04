@@ -1013,7 +1013,7 @@
     h += '<div class="card"><h2>Thiết bị trong phòng (' + r.thiet_bi.filter(x => x.tinh_trang !== 'Đã thanh lý').length + ')</h2>' + bangTB(r.thiet_bi.filter(x => x.tinh_trang !== 'Đã thanh lý'), true) + '</div>';
     h += '<div id="lich-phong"></div>';
     nd.innerHTML = h;
-    ganBangTB(nd);
+    ganBangTB(nd, r.thiet_bi);
     nd.querySelectorAll('.locker').forEach(el => { el.onclick = () => hopTu(r.tu.find(t => t.so === el.dataset.so)); });
     if ($('b-them-tu')) $('b-them-tu').onclick = async (e) => {
       const n = prompt('Thêm bao nhiêu tủ cho phòng ' + ma + '? (đang có ' + r.tu.length + ' tủ; tủ mới đánh số tiếp theo)', '1'); if (!n) return;
@@ -1046,14 +1046,30 @@
   }
 
   // ---------------- Tài sản ----------------
+  const MUC_TB = [['khong', 'Không cho mượn'], ['gv', 'Chỉ giảng viên'], ['sv', 'GV và sinh viên']], mucTB = (x) => x.khung_gio === 'khong' ? 'khong' : x.muon === 'gv' ? 'gv' : 'sv';
   function bangTB(ds, gon) {
     if (!ds.length) return '<div class="empty">Chưa có thiết bị.</div>';
-    return '<div class="tbl-wrap"><table><thead><tr><th>Mã tài sản</th><th>Tên thiết bị</th>' + (gon ? '' : '<th>Phòng</th>') + '<th>Tình trạng</th><th>Kiểm định kế tiếp</th><th>Bảo dưỡng kế tiếp</th></tr></thead><tbody>' +
-      ds.map(x => '<tr class="click" data-id="' + esc(x.id) + '"><td class="mono">' + (x.ma_ts ? esc(x.ma_ts) : '<span class="tag t-warn">chưa có</span>') + '</td><td><b>' + esc(x.ten) + '</b>' +
+    const sua = coQuyen('tai-san', 'xu_ly');
+    return (sua ? '<div class="tools" style="margin-bottom:6px"><label class="check" style="margin:0"><input type="checkbox" data-tb-het> Chọn tất cả</label><span class="note"><b data-tb-dem>0</b> thiết bị đã chọn → </span><select data-tb-muc>' + MUC_TB.map(m => '<option value="' + m[0] + '">' + m[1] + '</option>').join('') + '</select><button type="button" class="btn o sm" data-tb-dat disabled>Đặt mức</button></div>' : '') +
+      '<div class="tbl-wrap"><table><thead><tr>' + (sua ? '<th style="width:28px"></th>' : '') + '<th>Mã tài sản</th><th>Tên thiết bị</th>' + (gon ? '' : '<th>Phòng</th>') + '<th>Tình trạng</th><th>Cho mượn</th><th>Kiểm định kế tiếp</th><th>Bảo dưỡng kế tiếp</th></tr></thead><tbody>' +
+      ds.map(x => '<tr class="click" data-id="' + esc(x.id) + '">' + (sua ? '<td><input type="checkbox" data-tb-chon="' + esc(x.id) + '"></td>' : '') + '<td class="mono">' + (x.ma_ts ? esc(x.ma_ts) : '<span class="tag t-warn">chưa có</span>') + '</td><td><b>' + esc(x.ten) + '</b>' +
         (x.hang || x.model ? '<div class="note">' + esc([x.hang, x.model].filter(Boolean).join(' · ')) + '</div>' : '') + (x.nguoi_muon ? '<div class="note">Đang mượn: ' + esc(x.nguoi_muon) + '</div>' : '') + '</td>' +
-        (gon ? '' : '<td>' + esc(x.phong || '—') + '</td>') + '<td>' + tag(x.tinh_trang) + '</td><td>' + hanTag(x.kd_ke) + '</td><td>' + hanTag(x.bd_ke) + '</td></tr>').join('') + '</tbody></table></div>';
+        (gon ? '' : '<td>' + esc(x.phong || '—') + '</td>') + '<td>' + tag(x.tinh_trang) + '</td><td>' + (sua ? '<select data-tb-mot="' + esc(x.id) + '">' + MUC_TB.map(m => '<option value="' + m[0] + '"' + (m[0] === mucTB(x) ? ' selected' : '') + '>' + m[1] + '</option>').join('') + '</select>' : esc((MUC_TB.find(m => m[0] === mucTB(x)) || [])[1])) + '</td><td>' + hanTag(x.kd_ke) + '</td><td>' + hanTag(x.bd_ke) + '</td></tr>').join('') + '</tbody></table></div>';
   }
-  function ganBangTB(root) { root.querySelectorAll('tr[data-id]').forEach(tr => { tr.onclick = () => { location.hash = '#/tai-san/' + tr.dataset.id; }; }); }
+  // ds: danh sách đang hiển thị (cập nhật tại chỗ sau khi đặt mức)
+  function ganBangTB(root, ds) {
+    root.querySelectorAll('tr[data-id]').forEach(tr => { tr.onclick = (e) => { if (!e.target.closest('input,select,label')) location.hash = '#/tai-san/' + tr.dataset.id; }; });
+    const chon = () => [...root.querySelectorAll('[data-tb-chon]:checked')], dem = () => { const n = chon().length, d = root.querySelector('[data-tb-dem]'), b = root.querySelector('[data-tb-dat]'); if (d) d.textContent = n; if (b) b.disabled = !n; };
+    const dat = async (nut, ids, muc) => {
+      const r = await chay(nut, () => api('tb_muc', { ids, muc }));
+      r.ds.forEach(c => { const x = (ds || []).find(t => t.id === c.id); if (x) Object.assign(x, c); const sl = root.querySelector('[data-tb-mot="' + c.id + '"]'); if (sl) sl.value = muc; });
+      toast('Đã đặt mức cho ' + r.so + ' thiết bị');
+    };
+    root.querySelectorAll('[data-tb-mot]').forEach(sl => { sl.onchange = () => dat(null, [sl.dataset.tbMot], sl.value); });
+    root.querySelectorAll('[data-tb-chon]').forEach(c => { c.onchange = dem; });
+    const het = root.querySelector('[data-tb-het]'); if (het) het.onchange = () => { root.querySelectorAll('[data-tb-chon]').forEach(c => { c.checked = het.checked; }); dem(); };
+    const nut = root.querySelector('[data-tb-dat]'); if (nut) nut.onclick = async () => { await dat(nut, chon().map(c => c.dataset.tbChon), root.querySelector('[data-tb-muc]').value); chon().forEach(c => { c.checked = false; }); if (het) het.checked = false; dem(); };
+  }
 
   async function manTaiSan() {
     const q = new URLSearchParams((location.hash.split('?')[1]) || '');
@@ -1062,20 +1078,21 @@
     const ttMacDinh = q.get('tt') || '';
     nd.innerHTML = '<div class="tools"><input type="search" id="q" placeholder="Tìm tên, mã tài sản, hãng, model, serial…">' +
       '<select id="f-phong"><option value="">Tất cả phòng</option>' + dsPhongChon().map(p => '<option value="' + esc(p[0]) + '">' + esc(p[0]) + '</option>').join('') + '<option value="-">Chưa xếp phòng</option></select>' +
+      '<select id="f-muon"><option value="">Mức cho mượn (tất cả)</option>' + MUC_TB.map(m => '<option value="' + m[0] + '">' + m[1] + '</option>').join('') + '</select>' +
       '<select id="f-tt"><option value="">Tình trạng (trừ đã thanh lý)</option><option value="*">Tất cả kể cả đã thanh lý</option><option value="hong">Hỏng / đang sửa</option>' + S.dm.tinh_trang_tb.map(t => '<option' + (t === ttMacDinh ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select>' +
       '<label class="check" style="margin:0"><input type="checkbox" id="f-thieu"' + (q.get('thieu') ? ' checked' : '') + '> Chưa có mã TS</label></div><div id="kq"></div>';
     if (ttMacDinh === 'hong') $('f-tt').value = 'hong';
     const loc = () => {
-      const tu = boDau($('q').value), ph = $('f-phong').value, tt = $('f-tt').value, thieu = $('f-thieu').checked;
+      const tu = boDau($('q').value), ph = $('f-phong').value, tt = $('f-tt').value, thieu = $('f-thieu').checked, mu = $('f-muon').value;
       const l = ds.filter(x => (!tu || boDau([x.ten, x.ma_ts, x.hang, x.model, x.serial, x.id, x.loai].join(' ')).indexOf(tu) >= 0) &&
         (!ph || (ph === '-' ? !x.phong : x.phong === ph)) &&
         (tt === '*' || (tt === 'hong' ? (x.tinh_trang === 'Hỏng – chờ sửa' || x.tinh_trang === 'Đang sửa') : tt ? x.tinh_trang === tt : x.tinh_trang !== 'Đã thanh lý')) &&
-        (!thieu || !x.ma_ts));
+        (!thieu || !x.ma_ts) && (!mu || mucTB(x) === mu));
       $('kq').innerHTML = '<p class="note">' + l.length + ' / ' + ds.length + ' thiết bị</p>' + bangTB(l);
       ganDieuHuong(l.map(x => '#/tai-san/' + x.id), 'thiết bị');
-      ganBangTB($('kq'));
+      ganBangTB($('kq'), ds);
     };
-    ['q', 'f-phong', 'f-tt', 'f-thieu'].forEach(id => { $(id).oninput = loc; $(id).onchange = loc; });
+    ['q', 'f-phong', 'f-muon', 'f-tt', 'f-thieu'].forEach(id => { $(id).oninput = loc; $(id).onchange = loc; });
     loc();
     $('b-them').onclick = () => hopThietBi(null);
     $('b-nhap').onclick = hopNhapExcel;
@@ -1088,6 +1105,7 @@
     ['ngay_nhan', 'Ngày nhận / đưa vào sử dụng', { type: 'date' }], ['nguyen_gia', 'Nguyên giá (VNĐ)', { ph: 'Chỉ nhập số' }],
     ['kd_gan', 'Kiểm định gần nhất', { type: 'date' }], ['kd_chu_ky', 'Chu kỳ kiểm định (tháng)', { type: 'number' }], ['kd_ke', 'Kiểm định kế tiếp', { type: 'date', help: 'Để trống: tự tính từ ngày gần nhất + chu kỳ' }],
     ['bd_gan', 'Bảo dưỡng gần nhất', { type: 'date' }], ['bd_chu_ky', 'Chu kỳ bảo dưỡng (tháng)', { type: 'number' }], ['bd_ke', 'Bảo dưỡng kế tiếp', { type: 'date' }],
+    ['muon', 'Đối tượng được mượn', { select: [['', 'Giảng viên và sinh viên'], ['gv', 'Chỉ giảng viên']] }],
     ['khung_gio', 'Mượn theo khung giờ (QR1)', { full: 1, select: [['', 'Không – mượn tự do (thiết bị đủ điều phối)'], ['khong', '⛔ Không giải quyết cho mượn (ẩn khỏi trang dùng chung)'], ['30', '30 phút / khung'], ['45', '45 phút / khung'], ['60', '1 giờ / khung'],
       ['90', '1 giờ 30 phút / khung'], ['120', '2 giờ / khung'], ['150', '2 giờ 30 phút / khung'], ['180', '3 giờ / khung']],
       help: 'Thiết bị ít, nhiều nhóm cần: người mượn chọn khung trống (sáng 7h–11h30, chiều 13h–16h30, thứ 2 – thứ 7), tối đa 2 khung liền nhau; quá 10 phút từ giờ bắt đầu khung chưa nhận thì đơn tự đóng. "Không giải quyết cho mượn": người quét mã không thấy thiết bị này ở mọi biểu mẫu (QR1 – QR8, phiếu giảng viên)' }],
@@ -1123,7 +1141,7 @@
     const ttin = [['ID', x.id], ['Mã tài sản', x.ma_ts || '— chưa có —'], ['Phòng', x.phong ? x.phong + ' – ' + phongTen(x.phong) : '— chưa xếp phòng —'], ['Loại', x.loai],
       ['Hãng / model', [x.hang, x.model].filter(Boolean).join(' · ')], ['Số serial', x.serial], ['Xuất xứ', x.xuat_xu], ['Nguồn vốn', x.nguon_von], ['Năm SX', x.nam_sx],
       ['Ngày nhận', ngayVN(x.ngay_nhan)], ['Nguyên giá', tien(x.nguyen_gia)], ['Người đang mượn', x.nguoi_muon ? x.nguoi_muon + (x.han_tra ? ' – hạn ' + ngayVN(x.han_tra) : '') : ''],
-      ['Mượn theo khung giờ', +x.khung_gio > 0 ? x.khung_gio + ' phút / khung' : x.khung_gio === 'khong' ? '⛔ Không giải quyết cho mượn (ẩn khỏi trang dùng chung)' : ''], ['Thông số', x.thong_so], ['Ghi chú', x.ghi_chu], ['Cập nhật', x.cap_nhat ? ngayVN(x.cap_nhat) + ' – ' + x.nguoi_cap_nhat : '']].filter(k => k[1]);
+      ['Mượn theo khung giờ', +x.khung_gio > 0 ? x.khung_gio + ' phút / khung' : x.khung_gio === 'khong' ? '⛔ Không giải quyết cho mượn (ẩn khỏi trang dùng chung)' : ''], ['Đối tượng được mượn', x.khung_gio !== 'khong' && x.muon === 'gv' ? 'Chỉ giảng viên' : ''], ['Thông số', x.thong_so], ['Ghi chú', x.ghi_chu], ['Cập nhật', x.cap_nhat ? ngayVN(x.cap_nhat) + ' – ' + x.nguoi_cap_nhat : '']].filter(k => k[1]);
     h += '<div class="grid g2"><div><div class="card"><h2>Thông tin</h2><dl class="kv">' + ttin.map(k => '<dt>' + k[0] + '</dt><dd>' + esc(k[1]) + '</dd>').join('') + '</dl></div>' +
       '<div class="card"><h2>Kiểm định – bảo dưỡng</h2><dl class="kv"><dt>Kiểm định gần nhất</dt><dd>' + (ngayVN(x.kd_gan) || '—') + (x.kd_chu_ky ? ' · chu kỳ ' + esc(x.kd_chu_ky) + ' tháng' : '') + '</dd><dt>Kiểm định kế tiếp</dt><dd>' + hanTag(x.kd_ke) + '</dd>' +
       '<dt>Bảo dưỡng gần nhất</dt><dd>' + (ngayVN(x.bd_gan) || '—') + (x.bd_chu_ky ? ' · chu kỳ ' + esc(x.bd_chu_ky) + ' tháng' : '') + '</dd><dt>Bảo dưỡng kế tiếp</dt><dd>' + hanTag(x.bd_ke) + '</dd></dl></div>' +
@@ -1389,7 +1407,7 @@
   window.__PTN_TEST = { ghepCot, chuanNgay, chuanPhong, boDau, docKeHoachVatTu, docPhieuDuTru, docDuTruNhom, docTKB, docMaVT, docDungCu };
 
   function hopNhapExcel() {
-    moHop('<h2>Nhập thiết bị từ Excel</h2><p class="note">Chọn file Excel danh mục thiết bị (ví dụ "Danh muc thiet bi - K.KHSK.xlsx"). Hệ thống tự nhận cột theo tiêu đề; anh/chị kiểm tra lại trước khi nhập. Dòng trùng mã tài sản sẽ bị bỏ qua.' + linkMau('thiet_bi') + '</p>' +
+    moHop('<h2>Nhập thiết bị từ Excel</h2><p class="note">Chọn file Excel danh mục thiết bị (ví dụ "Danh muc thiet bi - K.KHSK.xlsx"). Hệ thống tự nhận cột theo tiêu đề; anh/chị kiểm tra lại trước khi nhập. Dòng trùng mã tài sản sẽ bị bỏ qua. Thiết bị tải lên mặc định <b>Không cho mượn</b>; mở từng thiết bị ở cột "Cho mượn" trong trang Tài sản hoặc trang phòng.' + linkMau('thiet_bi') + '</p>' +
       '<label class="f"><span>File Excel (.xlsx, .xls)</span><input type="file" id="x-file" accept=".xlsx,.xls,.xlsm,.csv"></label><div id="x-kq"></div>');
     if (window.PTN_MAU_FILE) window.PTN_MAU_FILE.ganLink($('modal-body'));
     $('x-file').onchange = async (e) => {

@@ -157,7 +157,7 @@
       $('np-goi-y').classList.toggle('hide', mo); }; });
     form.addEventListener('change', (e) => { if (e.target.name === 'phong') dem(); }); dem();
   }
-  const dsTB = (phong) => S.dm.thiet_bi.filter(t => !phong || t.phong === phong).map(t => [t.id, esc(t.ten) + (t.khung_gio ? ' <span class="kg-nhan">⏱ mượn theo khung ' + esc(t.khung_gio) + ' phút</span>' : '') + (t.ma_ts ? ' <span class="note">' + esc(t.ma_ts) + '</span>' : '') + (phong ? '' : ' <span class="note">· ' + esc(t.phong || '—') + '</span>') + (t.ban ? ' <span class="note">(đang bận / hỏng)</span>' : ''), t.ban]);
+  const dsTB = (phong) => S.dm.thiet_bi.filter(t => (!phong || t.phong === phong) && (!t.muon || (hoSo() || {}).doi_tuong === 'Giảng viên')).map(t => [t.id, esc(t.ten) + (t.khung_gio ? ' <span class="kg-nhan">⏱ mượn theo khung ' + esc(t.khung_gio) + ' phút</span>' : '') + (t.ma_ts ? ' <span class="note">' + esc(t.ma_ts) + '</span>' : '') + (phong ? '' : ' <span class="note">· ' + esc(t.phong || '—') + '</span>') + (t.ban ? ' <span class="note">(đang bận / hỏng)</span>' : ''), t.ban]);
   // QR2, QR3: môn thực hành – giảng viên (gộp các lớp / nhóm cùng môn, cùng GV; giá trị = một lớp học phần đại diện)
   // QR3 (loai 'hc'): chỉ môn đã có biên bản hóa chất → số liệu ghi vào biên bản của môn
   const dsMonGV = (loai) => { const da = {}, out = []; S.dm.lop.filter(l => !loai || l['bb_' + loai]).forEach(l => { const k = l.ten_mon + '|' + (l.gv || ''); if (da[k]) return; da[k] = 1;
@@ -607,7 +607,7 @@
       (p.doi_tuong === 'Giảng viên' ? '' : '<div class="warn">Biểu mẫu dành cho giảng viên. Nếu bạn là giảng viên, sửa "Đối tượng" trong thông tin cá nhân.</div>') +
       '<form class="card" id="f" autocomplete="off"><div id="pg"></div><label class="opt"><input type="checkbox" name="cam_ket"><span>Tôi xác nhận thông tin trên là đúng.</span></label>' +
       '<div id="err" class="err"></div><button class="btn" id="sb">Gửi phiếu</button></form><p class="note">Cần bản trống để in viết tay: <a href="bieu-mau/' + esc(L.mau) + '" download>tải mẫu Word</a>.</p>');
-    GV().ve($('pg'), qr, { dm: S.dm });
+    GV().ve($('pg'), qr, { dm: /^GV-(BH|SC)$/.test(qr) && S.dm.tb_tat_ca ? Object.assign({}, S.dm, { thiet_bi: S.dm.tb_tat_ca }) : S.dm });
     danhDau($('f'));
     $('f').onsubmit = async (e) => {
       e.preventDefault();
