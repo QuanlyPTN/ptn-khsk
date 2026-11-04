@@ -1050,7 +1050,7 @@
   function bangTB(ds, gon) {
     if (!ds.length) return '<div class="empty">Chưa có thiết bị.</div>';
     const sua = coQuyen('tai-san', 'xu_ly');
-    return (sua ? '<div class="tools" style="margin-bottom:6px"><label class="check" style="margin:0"><input type="checkbox" data-tb-het> Chọn tất cả</label><span class="note"><b data-tb-dem>0</b> thiết bị đã chọn → </span><select data-tb-muc>' + MUC_TB.map(m => '<option value="' + m[0] + '">' + m[1] + '</option>').join('') + '</select><button type="button" class="btn o sm" data-tb-dat disabled>Đặt mức</button></div>' : '') +
+    return (sua ? '<div class="tools" style="margin-bottom:6px"><label class="check" style="margin:0"><input type="checkbox" data-tb-het> Chọn tất cả</label><span class="note"><b data-tb-dem>0</b> thiết bị đã chọn → </span><select data-tb-muc>' + MUC_TB.map(m => '<option value="' + m[0] + '">' + m[1] + '</option>').join('') + '</select><button type="button" class="btn o sm" data-tb-dat disabled>Đặt mức</button>' + (laAdmin() ? '<button type="button" class="btn o sm" data-tb-chuyen disabled>⇄ Điều chuyển</button>' : '') + '</div>' : '') +
       '<div class="tbl-wrap"><table><thead><tr>' + (sua ? '<th style="width:28px"></th>' : '') + '<th>Mã tài sản</th><th>Tên thiết bị</th>' + (gon ? '' : '<th>Phòng</th>') + '<th>Tình trạng</th><th>Cho mượn</th><th>Kiểm định kế tiếp</th><th>Bảo dưỡng kế tiếp</th></tr></thead><tbody>' +
       ds.map(x => '<tr class="click" data-id="' + esc(x.id) + '">' + (sua ? '<td><input type="checkbox" data-tb-chon="' + esc(x.id) + '"></td>' : '') + '<td class="mono">' + (x.ma_ts ? esc(x.ma_ts) : '<span class="tag t-warn">chưa có</span>') + '</td><td><b>' + esc(x.ten) + '</b>' +
         (x.hang || x.model ? '<div class="note">' + esc([x.hang, x.model].filter(Boolean).join(' · ')) + '</div>' : '') + (x.nguoi_muon ? '<div class="note">Đang mượn: ' + esc(x.nguoi_muon) + '</div>' : '') + '</td>' +
@@ -1059,7 +1059,7 @@
   // ds: danh sách đang hiển thị (cập nhật tại chỗ sau khi đặt mức)
   function ganBangTB(root, ds) {
     root.querySelectorAll('tr[data-id]').forEach(tr => { tr.onclick = (e) => { if (!e.target.closest('input,select,label')) location.hash = '#/tai-san/' + tr.dataset.id; }; });
-    const chon = () => [...root.querySelectorAll('[data-tb-chon]:checked')], dem = () => { const n = chon().length, d = root.querySelector('[data-tb-dem]'), b = root.querySelector('[data-tb-dat]'); if (d) d.textContent = n; if (b) b.disabled = !n; };
+    const chon = () => [...root.querySelectorAll('[data-tb-chon]:checked')], dem = () => { const n = chon().length, d = root.querySelector('[data-tb-dem]'), b = root.querySelector('[data-tb-dat]'), c = root.querySelector('[data-tb-chuyen]'); if (d) d.textContent = n; if (b) b.disabled = !n; if (c) c.disabled = !n; };
     const dat = async (nut, ids, muc) => {
       const r = await chay(nut, () => api('tb_muc', { ids, muc }));
       r.ds.forEach(c => { const x = (ds || []).find(t => t.id === c.id); if (x) Object.assign(x, c); const sl = root.querySelector('[data-tb-mot="' + c.id + '"]'); if (sl) sl.value = muc; });
@@ -1069,6 +1069,18 @@
     root.querySelectorAll('[data-tb-chon]').forEach(c => { c.onchange = dem; });
     const het = root.querySelector('[data-tb-het]'); if (het) het.onchange = () => { root.querySelectorAll('[data-tb-chon]').forEach(c => { c.checked = het.checked; }); dem(); };
     const nut = root.querySelector('[data-tb-dat]'); if (nut) nut.onclick = async () => { await dat(nut, chon().map(c => c.dataset.tbChon), root.querySelector('[data-tb-muc]').value); chon().forEach(c => { c.checked = false; }); if (het) het.checked = false; dem(); };
+    const nutCh = root.querySelector('[data-tb-chuyen]'); if (nutCh) nutCh.onclick = () => hopChuyenTB(chon().map(c => c.dataset.tbChon));
+  }
+  // điều chuyển nhiều thiết bị (admin)
+  function hopChuyenTB(ids) {
+    moHop('<h2>Điều chuyển ' + ids.length + ' thiết bị</h2><form id="f">' + o('den', 'Chuyển đến phòng', { select: dsPhongChon('— Chọn phòng —'), req: 1 }) + o('ngay', 'Ngày', { type: 'date', v: homNay(), req: 1 }) +
+      o('noi_dung', 'Lý do / nội dung', { area: 1 }) + '<div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Điều chuyển</button></div></form>');
+    $('f').onsubmit = async (e) => {
+      e.preventDefault(); const v = giaTri(e.target), r = await chay(e.submitter, () => api('tb_chuyen', Object.assign(v, { ids })));
+      if (!r.bo_qua.length) { dongHop(); toast('Đã điều chuyển ' + r.so + ' thiết bị'); return dieuHuong(); }
+      moHop('<h2>Đã điều chuyển ' + r.so + ' thiết bị</h2><p>Bỏ qua ' + r.bo_qua.length + ' thiết bị:</p><ul class="note">' + r.bo_qua.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul><div class="modal-foot"><button class="btn" data-dong>Đóng</button></div>');
+      dieuHuong();
+    };
   }
 
   async function manTaiSan() {
@@ -1133,7 +1145,7 @@
     const nd = trang('Hồ sơ thiết bị', '', '<a href="#/tai-san">Tài sản</a> ›');
     const r = await api('tb_ct', { id }), x = r.tb, tl = x.tinh_trang === 'Đã thanh lý';
     $('main').querySelector('h1').innerHTML = esc(x.ten) + ' ' + tag(x.tinh_trang);
-    const loai = S.dm.loai_su_kien.filter(l => !tl || l.ma === 'ghi_chu');
+    const loai = S.dm.loai_su_kien.filter(l => (!tl || l.ma === 'ghi_chu') && (l.ma !== 'dieu_chuyen' || laAdmin()));
     let h = '<div class="btns" style="margin-bottom:14px"><select id="sk-loai"><option value="">+ Ghi sự kiện…</option>' + loai.map(l => '<option value="' + l.ma + '">' + esc(l.ten) + '</option>').join('') + '</select>' +
       '<button class="btn o sm" id="b-sua">Sửa thông tin</button><button class="btn o sm" id="b-tep">Đính kèm tệp</button><a class="btn o sm" href="#/bao-cao/tb/' + esc(x.id) + '">Dashboard sử dụng</a>' +
       '<button class="btn o sm" id="b-tem">In tem</button><button class="btn o sm" onclick="window.print()">In hồ sơ</button>' +
