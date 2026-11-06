@@ -367,3 +367,47 @@ table.lpt th.hn, table.lpt td.hn { background: #FFFBEA; }
 .lpt-buoi.dang { border-left-color: var(--ok); background: #EEFBF3; }
 .lpt-luoi { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 .lpt-luoi > div > b { display: block; margin-bottom: 4px; }
+
+/* ---------- Giao diện kiểu Vista (Aero): nền trời xanh, khung cửa sổ, thanh tiêu đề bóng, nút bóng nửa trên. Dải màu thay cho kính mờ để chữ sắc; chỉ trên màn hình, không ảnh hưởng bản in ---------- */
+@media screen {
+  :root { --r: 8px; --r-sm: 4px; --line: #C5D6EC; --line-2: #DCE7F5; --v-vien: #9DB9DC;
+    --v-nen: radial-gradient(900px 520px at 88% -8%, rgba(255, 255, 255, .85) 0%, transparent 62%), linear-gradient(165deg, #CFE3F9 0%, #E3EFFC 48%, #BFD8F4 100%);
+    --v-tieu-de: linear-gradient(180deg, #F7FBFF 0%, #E6F0FC 49%, #D3E3F7 50%, #E4EFFB 100%);
+    --v-nut: linear-gradient(180deg, #5A92F0 0%, #3A72E6 48%, #1E4FC2 50%, #2A63DE 100%);
+    --v-nut-sang: linear-gradient(180deg, #6FA2F4 0%, #4A82EC 48%, #2A63DE 50%, #3A75E6 100%);
+    --v-nut-trang: linear-gradient(180deg, #FDFEFF 0%, #F0F5FC 48%, #DCE7F5 50%, #EBF2FB 100%);
+    --v-chon: linear-gradient(180deg, #F1FAFF 0%, #DDF2FD 48%, #BFE6FB 50%, #D6F0FD 100%); }
+  html, body { background-color: #CFE3F9; background-image: var(--v-nen); background-attachment: fixed; }
+  .side { background: linear-gradient(112deg, rgba(255, 255, 255, .2) 0%, rgba(255, 255, 255, .05) 34%, transparent 35%), linear-gradient(180deg, #2C68E0 0%, #1E4FC2 45%, #163C99 100%); box-shadow: inset -1px 0 0 rgba(255, 255, 255, .35), 2px 0 10px rgba(16, 48, 120, .28); }
+  .nav a:hover { background: linear-gradient(180deg, rgba(255, 255, 255, .24) 0%, rgba(255, 255, 255, .1) 50%, rgba(255, 255, 255, .04) 51%, rgba(255, 255, 255, .14) 100%); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .3); }
+  .nav a { border-radius: 4px; }
+  .nav a.on { background: linear-gradient(180deg, #2BBDCD 0%, #14A5B6 48%, #0B8796 50%, #0F97A8 100%); box-shadow: 0 1px 4px rgba(0, 0, 0, .3), inset 0 0 0 1px rgba(255, 255, 255, .45); }
+  .side-foot { background: linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(10, 30, 90, .22) 100%); }
+  .top { border-bottom-color: var(--v-vien); }
+  .card, .stat, .tools, .modal-box, .login-box { border: 1px solid var(--v-vien); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .9), 0 2px 8px rgba(30, 79, 160, .16); }
+  .card, .stat, .tools { border-radius: 8px; }
+  .modal-box, .login-box { border-radius: 10px; }
+  .login-box { border-top: 1px solid var(--v-vien); }
+  .card > h2:first-child, .modal-box > h2:first-child { margin: -18px -20px 14px; padding: 9px 20px; background: var(--v-tieu-de); border-bottom: 1px solid var(--v-vien); border-radius: 7px 7px 0 0; color: #123A8C; }
+  .modal-box > h2:first-child { margin: -24px -26px 16px; padding: 11px 26px; border-radius: 9px 9px 0 0; }
+  .stat { background: linear-gradient(180deg, #FFFFFF 0%, #F4F8FE 100%); }
+  .stat.link:hover { border-color: #5FA8DC; box-shadow: inset 0 0 0 1px #fff, 0 0 8px rgba(60, 150, 220, .55); }
+  .btn { background: var(--v-nut); border: 1px solid #143A96; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .28), 0 1px 2px rgba(16, 48, 120, .3); }
+  .btn:hover { background: var(--v-nut-sang); border-color: #143A96; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .4), 0 0 7px rgba(70, 150, 240, .7); }
+  .btn.o { background: var(--v-nut-trang); border-color: #8FA9CC; color: #1F2A44; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .85); }
+  .btn.o:hover { background: var(--v-chon); border-color: #3C8FC4; color: #123A8C; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .85), 0 0 6px rgba(60, 150, 220, .5); }
+  .btn.red { background: var(--v-nut-trang); border-color: #D59A95; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .85); }
+  .btn.red:hover { background: linear-gradient(180deg, #FFF6F5 0%, #FDE9E7 48%, #F9D3CF 50%, #FCE5E2 100%); }
+  .btn.sm { border-radius: 4px; }
+  .btn.chon, .crumb a.btn.chon { background: linear-gradient(180deg, #2BBDCD 0%, #14A5B6 48%, #0B8796 50%, #0F97A8 100%); border-color: #0A7382; }
+  .btn.chon:hover, .crumb a.btn.chon:hover { background: linear-gradient(180deg, #3CCAD9 0%, #1CB2C3 48%, #0F97A8 50%, #14A5B6 100%); }
+  input[type=text], input[type=email], input[type=password], input[type=date], input[type=month], input[type=number], input[type=search], select, textarea { border-color: #A9BEDA; border-radius: 3px; box-shadow: inset 0 1px 2px rgba(30, 60, 120, .12); }
+  input:focus, select:focus, textarea:focus { border-color: #3C8FC4; box-shadow: inset 0 1px 2px rgba(30, 60, 120, .1), 0 0 6px rgba(60, 150, 220, .6); }
+  th { background: var(--v-tieu-de); border-right: 1px solid #C9D9EE; border-bottom: 1px solid var(--v-vien); color: #123A8C; }
+  th:last-child { border-right: 0; }
+  tr.click:hover td { background: var(--v-chon); }
+  .modal { background: rgba(20, 50, 110, .38); backdrop-filter: none; }
+  .login-hero { background: linear-gradient(112deg, rgba(255, 255, 255, .22) 0%, rgba(255, 255, 255, .06) 38%, transparent 39%), radial-gradient(900px 420px at 110% 110%, rgba(120, 210, 240, .4) 0%, transparent 60%), linear-gradient(170deg, #2C68E0 0%, #1E4FC2 50%, #123A8C 100%); }
+  .login-form { background: transparent; }
+  .login { background-color: #CFE3F9; background-image: var(--v-nen); }
+}

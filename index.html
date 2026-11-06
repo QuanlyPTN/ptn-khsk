@@ -76,6 +76,29 @@ textarea{min-height:80px;resize:vertical}
 .dtm-bang th:first-child,.dtm-bang td.c-ten{position:sticky;left:0;z-index:1;background:var(--c,#fff);min-width:210px;width:210px;box-shadow:2px 0 3px -2px rgba(0,0,0,.18)}
 .dtm-bang td.c-ten input{font-weight:600}
 @media (max-width:700px){.dtm-bang td input,.dtm-bang td select{font-size:16px!important}}
+/* Giao diện kiểu Vista (Aero): nền trời xanh, khung cửa sổ, nút bóng nửa trên; dải màu thay cho kính mờ để chữ sắc; chỉ trên màn hình */
+@media screen{
+:root{--l:#C5D6EC;--vv:#9DB9DC;--vn:linear-gradient(180deg,#5A92F0 0%,#3A72E6 48%,#1E4FC2 50%,#2A63DE 100%);--vt:linear-gradient(180deg,#FDFEFF 0%,#F0F5FC 48%,#DCE7F5 50%,#EBF2FB 100%)}
+html{background:#CFE3F9}body{min-height:100vh;background-color:#CFE3F9;background-image:radial-gradient(700px 420px at 88% -8%,rgba(255,255,255,.85) 0%,transparent 62%),linear-gradient(165deg,#CFE3F9 0%,#E3EFFC 48%,#BFD8F4 100%)}
+header{background:linear-gradient(180deg,#FDFEFF 0%,#F0F6FD 49%,#DCE9F8 50%,#EDF4FC 100%);backdrop-filter:none;border-bottom:1px solid var(--vv);box-shadow:0 2px 6px rgba(30,79,160,.2)}
+.card,.tile{border:1px solid var(--vv);border-radius:8px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.9),0 2px 8px rgba(30,79,160,.16)}
+.tile{background:linear-gradient(180deg,#FFFFFF 0%,#F4F8FE 100%)}
+.tile:hover{border-color:#5FA8DC;box-shadow:inset 0 0 0 1px #fff,0 0 8px rgba(60,150,220,.55)}
+.tile .bieu{background:linear-gradient(180deg,#F1FAFF 0%,#DDF2FD 48%,#BFE6FB 50%,#D6F0FD 100%);border:1px solid #9CCBE8;border-radius:6px}
+.tile.t2{background:linear-gradient(180deg,#FFFFFF 0%,#F4F8FE 100%)}.tile.t2 .bieu{background:var(--vn);color:#fff;border-color:#143A96}
+.tile .q,span.q,.tile .qv{background:var(--vn);color:#fff;border-radius:3px}
+.prof{border:1px solid #143A96;border-radius:8px;background:linear-gradient(112deg,rgba(255,255,255,.24) 0%,rgba(255,255,255,.07) 38%,transparent 39%),linear-gradient(170deg,#2C68E0 0%,#1E4FC2 55%,#163C99 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),0 3px 10px rgba(16,48,120,.35)}
+.btn{background:var(--vn);border:1px solid #143A96;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),0 1px 3px rgba(16,48,120,.35)}
+.btn.g{background:linear-gradient(180deg,#6CC796 0%,#34A06A 48%,#1E7B4A 50%,#2C9460 100%);border-color:#155A36;box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),0 1px 3px rgba(16,48,120,.3)}
+.btn.o{background:var(--vt);color:var(--b);border-color:#8FA9CC;box-shadow:inset 0 0 0 1px rgba(255,255,255,.85)}
+.nho{background:var(--vn);border:1px solid #143A96;border-radius:4px}
+header .lui,header a.chuong{background:var(--vt);border-color:#8FA9CC;border-radius:5px}
+input[type=text],input[type=tel],input[type=email],input[type=date],input[type=time],input[type=number],input[type=search],textarea,select{border-color:#A9BEDA;border-radius:4px;box-shadow:inset 0 1px 2px rgba(30,60,120,.12)}
+input:focus,textarea:focus,select:focus{border-color:#3C8FC4;box-shadow:inset 0 1px 2px rgba(30,60,120,.1),0 0 6px rgba(60,150,220,.6)}
+.opt{border-color:#B9CCE5;border-radius:5px}.opt.on{border-color:#3C8FC4;background:linear-gradient(180deg,#F1FAFF 0%,#DDF2FD 48%,#BFE6FB 50%,#D6F0FD 100%);box-shadow:inset 0 0 0 1px #fff;color:#0B4F6A}
+.nhom-don .chip{background:var(--vt);border-color:#8FA9CC;border-radius:5px}.nhom-don .chip.on{background:var(--vn);border-color:#143A96}
+.tu span{border-radius:4px}.tu input:checked+span{background:var(--vn);border-color:#143A96}
+}
 </style></head><body>
 <header><button id="hl" class="lui hide" aria-label="Quay lại" title="Quay lại">‹</button><button id="hn" class="lui tiep hide" aria-label="Tiếp" title="Tiếp">›</button><img class="logo-ngang" src="logo-ngang-xanh.png" alt="Đại học Công nghiệp TP. Hồ Chí Minh – Khoa Khoa học Sức khỏe"><a id="hchuong" class="chuong hide" href="#/thong-bao" aria-label="Thông báo" title="Thông báo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><b id="hchuong-so" class="hide"></b></a><a id="hb" class="home hide" href="#/" aria-label="Trang chủ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/></svg></a></header>
 <main id="m"><div class="spin"></div><p class="note" style="text-align:center">Đang tải…</p></main>
