@@ -1,4 +1,4 @@
-/* Quản lý PTN – Khoa Khoa học Sức khỏe. Giao diện: navy của Khoa, điểm nhấn vàng từ logo, chữ Times New Roman. */
+/* Quản lý PTN – Khoa Khoa học Sức khỏe. Giao diện: navy của Khoa, điểm nhấn vàng từ logo; chữ màn hình theo font hệ thống (khối Vista cuối tệp), bản in Times New Roman. */
 :root {
   --ink: #2E333D; --brand: #1E4FC2; --brand-2: #2A63DE; --brand-soft: #EAF1FE; --gold: #D4A531; --gold-2: #F2C766; --gold-soft: #FCF5E3;
   --kim: linear-gradient(135deg, #6E7480 0%, #454A55 32%, #7C828E 52%, #4A4F5A 72%, #626874 100%); /* đen nhẹ ánh kim (ghi kim loại) */
@@ -370,14 +370,14 @@ table.lpt th.hn, table.lpt td.hn { background: #FFFBEA; }
 
 /* ---------- Giao diện kiểu Vista (Aero): nền trời xanh, khung cửa sổ, thanh tiêu đề bóng, nút bóng nửa trên. Dải màu thay cho kính mờ để chữ sắc; chỉ trên màn hình, không ảnh hưởng bản in ---------- */
 @media screen {
-  :root { --r: 8px; --r-sm: 4px; --line: #C5D6EC; --line-2: #DCE7F5; --v-vien: #9DB9DC;
+  :root { --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; --r: 8px; --r-sm: 4px; --line: #C5D6EC; --line-2: #DCE7F5; --v-vien: #9DB9DC;
     --v-nen: radial-gradient(900px 520px at 88% -8%, rgba(255, 255, 255, .85) 0%, transparent 62%), linear-gradient(165deg, #CFE3F9 0%, #E3EFFC 48%, #BFD8F4 100%);
     --v-tieu-de: linear-gradient(180deg, #F7FBFF 0%, #E6F0FC 49%, #D3E3F7 50%, #E4EFFB 100%);
     --v-nut: linear-gradient(180deg, #5A92F0 0%, #3A72E6 48%, #1E4FC2 50%, #2A63DE 100%);
     --v-nut-sang: linear-gradient(180deg, #6FA2F4 0%, #4A82EC 48%, #2A63DE 50%, #3A75E6 100%);
     --v-nut-trang: linear-gradient(180deg, #FDFEFF 0%, #F0F5FC 48%, #DCE7F5 50%, #EBF2FB 100%);
     --v-chon: linear-gradient(180deg, #F1FAFF 0%, #DDF2FD 48%, #BFE6FB 50%, #D6F0FD 100%); }
-  html, body { background-color: #CFE3F9; background-image: var(--v-nen); background-attachment: fixed; }
+  html, body { font-size: 15.5px; background-color: #CFE3F9; background-image: var(--v-nen); background-attachment: fixed; }
   .side { background: linear-gradient(112deg, rgba(255, 255, 255, .2) 0%, rgba(255, 255, 255, .05) 34%, transparent 35%), linear-gradient(180deg, #2C68E0 0%, #1E4FC2 45%, #163C99 100%); box-shadow: inset -1px 0 0 rgba(255, 255, 255, .35), 2px 0 10px rgba(16, 48, 120, .28); }
   .nav a:hover { background: linear-gradient(180deg, rgba(255, 255, 255, .24) 0%, rgba(255, 255, 255, .1) 50%, rgba(255, 255, 255, .04) 51%, rgba(255, 255, 255, .14) 100%); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .3); }
   .nav a { border-radius: 4px; }
@@ -403,7 +403,9 @@ table.lpt th.hn, table.lpt td.hn { background: #FFFBEA; }
   .btn.chon:hover, .crumb a.btn.chon:hover { background: linear-gradient(180deg, #3CCAD9 0%, #1CB2C3 48%, #0F97A8 50%, #14A5B6 100%); }
   input[type=text], input[type=email], input[type=password], input[type=date], input[type=month], input[type=number], input[type=search], select, textarea { border-color: #A9BEDA; border-radius: 3px; box-shadow: inset 0 1px 2px rgba(30, 60, 120, .12); }
   input:focus, select:focus, textarea:focus { border-color: #3C8FC4; box-shadow: inset 0 1px 2px rgba(30, 60, 120, .1), 0 0 6px rgba(60, 150, 220, .6); }
-  th { background: var(--v-tieu-de); border-right: 1px solid #C9D9EE; border-bottom: 1px solid var(--v-vien); color: #123A8C; }
+  table { font-size: 13.8px; }
+  .nav a { font-size: 15px; }
+  th { font-size: 11.5px; letter-spacing: .2px; padding-left: 10px; padding-right: 10px; background: var(--v-tieu-de); border-right: 1px solid #C9D9EE; border-bottom: 1px solid var(--v-vien); color: #123A8C; }
   th:last-child { border-right: 0; }
   tr.click:hover td { background: var(--v-chon); }
   .modal { background: rgba(20, 50, 110, .38); backdrop-filter: none; }
