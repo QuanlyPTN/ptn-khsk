@@ -451,16 +451,39 @@
     if (p[1] === 'ke' && p[2]) return manKeKho(kho, decodeURIComponent(p[2]));
     const nd = trang(K.ten, '<a class="btn o sm" href="#/' + K.duong + '/so-do">▦ Sơ đồ kệ</a>' + (kho === 'HC' ? '<a class="btn o sm" href="#/kho/so-ks">Sổ hóa chất kiểm soát</a>' : '') + '<button class="btn o sm" id="b-xuat-x">Xem trước – in / Excel</button><button class="btn o sm" id="b-xuat">Xuất / hủy</button><button class="btn o sm" id="b-nhap">+ Nhập tay</button><button class="btn sm" id="b-file">⇪ Tải file lên</button>');
     const [ds, kk] = await Promise.all([api('kho_ds', { kho }), api('kho_ke_ds', { kho })]); S.cache.kho = ds; const hc = kho === 'HC';
-    nd.innerHTML = '<div class="tools"><input type="search" id="q" placeholder="Tìm tên, ' + (kho === 'DL' ? 'tên khoa học' : 'mã VT') + ', số lô…"><select id="f-cb"><option value="">Tất cả (' + ds.length + ')</option><option value="cb">Hết / sắp hết (' + ds.filter(g => g.canh_bao.length).length + ')</option>' +
+    let xemDa = 'vt'; try { xemDa = localStorage.getItem('kho_xem') || 'vt'; } catch (e) { /* trình duyệt chặn lưu */ }
+    nd.innerHTML = '<div class="tools"><input type="search" id="q" placeholder="Tìm tên, ' + (kho === 'DL' ? 'tên khoa học' : 'công thức, mã VT') + ', số lô…"><select id="f-xem"><option value="vt">Xem theo vị trí (kệ – tầng)</option><option value="hc"' + (xemDa === 'hc' ? ' selected' : '') + '>Xem theo ' + K.vat + '</option></select><select id="f-cb"><option value="">Tất cả (' + ds.length + ')</option><option value="cb">Hết / sắp hết (' + ds.filter(g => g.canh_bao.length).length + ')</option>' +
       (kho === 'HC' ? '<option value="ks">Kiểm soát đặc biệt</option>' : '') + '</select><select id="f-ke"><option value="">Mọi vị trí</option><option value="tu-mat">Trong tủ mát</option>' +
       [...new Set([].concat(...ds.map(g => g.lo.map(x => x.ke))).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi', { numeric: true })).map(k => '<option value="ke:' + esc(k) + '">' + esc(tenKe(k)) + '</option>').join('') + '</select></div><div id="kq"></div>' +
       '<p class="note">Tồn = nhập − xuất. Bấm số ở cột "Tối thiểu" để đặt mức cảnh báo sắp hết. ' + (kho === 'HC' ? 'Cấp phát theo biên bản hóa chất tự trừ kho (lô hạn dùng gần nhất trước); giảm số hoặc hoàn trả trên biên bản thì kho được cộng lại.' : 'Dược liệu có trong biên bản thực hành (cùng tên, ĐVT) cũng tự trừ khi cấp phát.') + '</p>';
+    // Xem theo vị trí: mỗi dòng một lô còn hàng – kệ, tầng, vị trí, tên, công thức; bấm tiêu đề cột để sắp xếp
+    let sx = ['ke', 1];
+    const soKe = (x) => x.ke ? (/^TM/.test(x.ke) ? 'zz' : '') + x.ke : 'zzz';
+    const giaTriSx = { ke: (x) => [soKe(x), x.tang || '~', x.o_so || '~'].join('|'), ten: (x) => x.g.ten, cong_thuc: (x) => x.cong_thuc || x.g.cong_thuc || '~', ton: (x) => +x.ton || 0, han_dung: (x) => x.han_dung || '9999' };
+    const veViTri = (l, coCho) => {
+      const dong = [].concat(...l.map(g => g.lo.filter(coCho).map(x => Object.assign({ g }, x)))), f = giaTriSx[sx[0]];
+      dong.sort((a, b) => { const u = f(a), v = f(b); return (typeof u === 'number' ? u - v : String(u).localeCompare(String(v), 'vi', { numeric: true })) * sx[1]; });
+      const th = (k, t, c) => '<th' + (c ? ' class="' + c + '"' : '') + ' data-sx="' + k + '" style="cursor:pointer" title="Bấm để sắp xếp">' + t + (sx[0] === k ? (sx[1] > 0 ? ' ▲' : ' ▼') : '') + '</th>';
+      $('kq').innerHTML = !dong.length ? '<div class="card empty">Không có lô nào khớp.</div>' : '<p class="note">' + dong.length + ' lô còn hàng. Bấm tiêu đề cột để sắp xếp.</p><div class="tbl-wrap"><table><thead><tr>' +
+        th('ke', 'Kệ') + '<th>Tầng</th><th>Vị trí</th>' + th('ten', 'Tên ' + K.vat) + (hc ? th('cong_thuc', 'Công thức') + '<th>Mã VT</th>' : '') + th('ton', 'Tồn', 'num') + '<th>ĐVT</th>' + th('han_dung', 'Hạn dùng') + '<th>Số lô</th></tr></thead><tbody>' +
+        dong.map(x => '<tr><td><b>' + (x.ke ? esc(tenKe(x.ke)) : '<span class="note">' + esc(x.tu_mat ? 'Tủ mát' : x.vi_tri || 'Chưa xếp') + '</span>') + '</b>' + (x.xep_sai.length ? ' <span class="tag t-bad" title="' + esc(x.xep_sai.join('\n')) + '">⚠</span>' : '') + '</td><td>' + esc(x.tang || '—') + '</td><td>' + esc(x.o_so || '—') + '</td>' +
+          '<td><a href="#/' + K.duong + '/lo/' + esc(x.id) + '"><b>' + esc(x.g.ten) + '</b></a>' + (x.g.ten_kh ? ' <i class="note">' + esc(x.g.ten_kh) + '</i>' : '') + (x.g.kiem_soat ? ' <span class="tag t-bad">kiểm soát</span>' : '') + '</td>' +
+          (hc ? '<td class="mono">' + esc(x.cong_thuc || x.g.cong_thuc || '') + '</td><td class="mono">' + esc(x.g.ma_vt || '') + '</td>' : '') +
+          '<td class="num"><b>' + (fmt(x.ton) || 0) + '</b></td><td>' + esc(x.g.dvt) + '</td><td>' + (x.han_dung ? ngayVN(x.han_dung) : '—') + '</td><td>' + esc(x.so_lo || '') + '</td></tr>').join('') + '</tbody></table></div>';
+      $('kq').querySelectorAll('[data-sx]').forEach(t => { t.onclick = () => { sx = [t.dataset.sx, sx[0] === t.dataset.sx ? -sx[1] : 1]; ve(); }; });
+      Q.ganDieuHuong(dong.map(x => '#/' + K.duong + '/lo/' + x.id), 'lô');
+    };
+    // công thức so khớp không phân biệt hoa thường, chỉ số dưới (₂), dấu cách, dấu chấm, ngoặc: "h2so4" khớp "H₂SO₄"
+    const ctChuan = (s) => boDau(String(s || '').replace(/[₀-₉]/g, c => String(c.charCodeAt(0) - 8320))).replace(/[^a-z0-9]/g, '');
     const ve = () => {
-      const q = boDau($('q').value), f = $('f-cb').value, ke = $('f-ke').value;
+      const q = boDau($('q').value), qc = ctChuan($('q').value), f = $('f-cb').value, ke = $('f-ke').value, xem = $('f-xem').value;
+      try { localStorage.setItem('kho_xem', xem); } catch (e) { /* trình duyệt chặn lưu */ }
+      const khop = (g) => !q || boDau([g.ten, g.ma_vt, g.ten_kh, g.cong_thuc, g.lo.map(x => x.so_lo + ' ' + x.cho + ' ' + (x.cong_thuc || '')).join(' ')].join(' ')).indexOf(q) >= 0 || (qc.length > 1 && [g.cong_thuc].concat(g.lo.map(x => x.cong_thuc)).some(c => c && ctChuan(c).indexOf(qc) >= 0));
       const coCho = (x) => !ke || (ke === 'tu-mat' ? !!x.tu_mat || /^TM/.test(x.ke || '') : 'ke:' + x.ke === ke);
-      const l = ds.filter(g => (!q || boDau([g.ten, g.ma_vt, g.ten_kh, g.lo.map(x => x.so_lo + ' ' + x.cho).join(' ')].join(' ')).indexOf(q) >= 0) && (!f || (f === 'cb' ? g.canh_bao.length : g.kiem_soat)) && (!ke || g.lo.some(coCho)));
+      const l = ds.filter(g => khop(g) && (!f || (f === 'cb' ? g.canh_bao.length : g.kiem_soat)) && (!ke || g.lo.some(coCho)));
+      if (xem === 'vt') return veViTri(l, coCho);
       $('kq').innerHTML = !l.length ? '<div class="card empty">Kho chưa có ' + K.vat + '. Bấm "+ Nhập kho".</div>' : '<div class="tbl-wrap"><table><thead><tr>' + (kho === 'HC' ? '<th>Mã VT</th>' : '') + '<th>Tên ' + K.vat + '</th>' + (hc ? '<th>Nhóm</th>' : '') + '<th>ĐVT</th><th class="num">Tồn</th><th class="num">Tối thiểu</th><th>Lô (số lô · hạn dùng · tồn)</th><th>Vị trí</th><th>Cảnh báo</th></tr></thead><tbody>' +
-        l.map(g => '<tr>' + (kho === 'HC' ? '<td class="mono">' + esc(g.ma_vt || '—') + '</td>' : '') + '<td><b>' + esc(g.ten) + '</b>' + (g.ten_kh ? ' <i class="note">' + esc(g.ten_kh) + '</i>' : '') + (g.kiem_soat ? ' <span class="tag t-bad">kiểm soát</span>' : '') + '</td>' + (hc ? '<td><a href="#" data-nnh="' + esc(g.khoa) + '" title="Đặt nhóm nguy hiểm">' + esc(kk.nhom[g.nhom_nh] || 'đặt') + '</a></td>' : '') + '<td>' + esc(g.dvt) + '</td><td class="num"><b>' + (fmt(g.ton) || 0) + '</b></td>' +
+        l.map(g => '<tr>' + (kho === 'HC' ? '<td class="mono">' + esc(g.ma_vt || '—') + '</td>' : '') + '<td><b>' + esc(g.ten) + '</b>' + (g.cong_thuc ? ' <span class="mono note">' + esc(g.cong_thuc) + '</span>' : '') + (g.ten_kh ? ' <i class="note">' + esc(g.ten_kh) + '</i>' : '') + (g.kiem_soat ? ' <span class="tag t-bad">kiểm soát</span>' : '') + '</td>' + (hc ? '<td><a href="#" data-nnh="' + esc(g.khoa) + '" title="Đặt nhóm nguy hiểm">' + esc(kk.nhom[g.nhom_nh] || 'đặt') + '</a></td>' : '') + '<td>' + esc(g.dvt) + '</td><td class="num"><b>' + (fmt(g.ton) || 0) + '</b></td>' +
           '<td class="num"><a href="#" data-ttt="' + esc(g.khoa) + '" title="Đặt mức tồn tối thiểu">' + (fmt(g.ton_toi_thieu) || 'đặt') + '</a></td><td>' +
           g.lo.map(x => '<a href="#/' + K.duong + '/lo/' + esc(x.id) + '">' + esc(x.so_lo || x.id) + '</a> · ' + (x.han_dung ? ngayVN(x.han_dung) : '—') + ' · ' + fmt(x.ton)).join('<br>') + '</td><td class="vi-tri">' +
           g.lo.map(x => x.cho ? '<span class="cho' + (x.tu_mat ? ' lanh' : '') + (x.xep_sai.length ? ' sai' : '') + '"' + (x.xep_sai.length ? ' title="' + esc(x.xep_sai.join('\n')) + '"' : '') + '>' + (x.xep_sai.length ? '⚠ ' : x.tu_mat ? '❄ ' : '') + esc(x.cho) + '</span>' : '<span class="note">—</span>').join('<br>') + '</td><td>' +
@@ -474,7 +497,7 @@
       }; });
       Q.ganDieuHuong([].concat(...l.map(g => g.lo.map(x => '#/' + K.duong + '/lo/' + x.id))), 'lô');
     };
-    $('q').oninput = ve; $('f-cb').onchange = ve; $('f-ke').onchange = ve; ve();
+    $('q').oninput = ve; $('f-cb').onchange = ve; $('f-ke').onchange = ve; $('f-xem').onchange = ve; ve();
     $('b-nhap').onclick = () => hopNhapKho(kho);
     $('b-file').onclick = () => hopNhapKhoFile(kho);
     $('b-xuat').onclick = () => hopXuatKho(null, ds);
@@ -489,7 +512,7 @@
   async function hopNhapKho(kho, dat) {
     const dl = kho === 'DL', kk = await api('kho_ke_ds', { kho });
     moHop('<h2>Nhập ' + KHO[kho].ten.toLowerCase() + ' (một lô)' + (dat ? ' → ' + esc(tenKe(dat.ke)) + (dat.tang ? ' · tầng ' + esc(dat.tang) : '') : '') + '</h2><form id="f"><div class="form-grid">' + (dl ? '' : o('tim', 'Tìm trong danh mục vật tư (mã VT hoặc tên)', { full: 1, ph: 'Gõ ít nhất 2 ký tự…' }) + '<div id="goi-y" class="full"></div>' + o('ma_vt', 'Mã VT')) +
-      o('ten', dl ? 'Tên dược liệu' : 'Tên – quy cách', { req: 1 }) + (dl ? o('ten_kh', 'Tên khoa học') + o('bo_phan', 'Bộ phận dùng', { ph: 'Lá, rễ, thân, hoa…' }) + o('xuat_xu', 'Xuất xứ – nguồn gốc') : o('nsx', 'NSX')) +
+      o('ten', dl ? 'Tên dược liệu' : 'Tên – quy cách', { req: 1 }) + (dl ? o('ten_kh', 'Tên khoa học') + o('bo_phan', 'Bộ phận dùng', { ph: 'Lá, rễ, thân, hoa…' }) + o('xuat_xu', 'Xuất xứ – nguồn gốc') : o('cong_thuc', 'Công thức', { ph: 'VD: H2SO4' }) + o('nsx', 'NSX')) +
       o('dvt', 'ĐVT', { req: 1, ph: dl ? 'kg, g' : '' }) + o('so_lo', 'Số lô') + o('han_dung', 'Hạn dùng', { type: 'date' }) +
       o('sl', 'Số lượng nhập', { type: 'number', req: 1, extra: ' step="any" min="0"' }) + o('ngay_nhap', 'Ngày nhập', { type: 'date', v: homNay() }) + o('nguon', 'Nguồn / chứng từ', { ph: 'Phiếu xuất kho P.KHĐT số …', full: 1 }) +
       oKeTang(kk.ke, dat) + o('tu_mat', 'Tủ mát', { ph: 'Để trống nếu không; ghi "Có" hoặc số tủ' }) + o('vi_tri', 'Vị trí khác') + (dl ? '' : oNhomNH(kk.nhom)) + o('ghi_chu', 'Ghi chú', { full: 1 }) + '</div><label class="f"><span>' + (dl ? 'Phiếu kiểm nghiệm / chứng từ' : 'COA / phiếu kiểm nghiệm') + ' (không bắt buộc)</span><input type="file" name="tep"></label>' +
@@ -511,7 +534,7 @@
   }
   // Nhập kho từ file Excel: tự nhận cột theo tiêu đề, cho chọn lại, xem trước, báo dòng lỗi
   const COT_KHO = {
-    HC: [['ma_vt', 'Mã VT', /^ma\s*vt|ma vat tu/], ['ten', 'Tên hóa chất – quy cách *', /^ten(?! khoa)|qu[iy] cach|danh muc|hoa chat/], ['nsx', 'NSX', /^nsx|hang sx|nha san xuat/], ['dvt', 'ĐVT *', /^dv|don vi/],
+    HC: [['ma_vt', 'Mã VT', /^ma\s*vt|ma vat tu/], ['ten', 'Tên hóa chất – quy cách *', /^ten(?! khoa)|qu[iy] cach|danh muc|hoa chat/], ['cong_thuc', 'Công thức', /cong thuc|^cthh|^ctpt/], ['nsx', 'NSX', /^nsx|hang sx|nha san xuat/], ['dvt', 'ĐVT *', /^dv|don vi/],
       ['sl', 'Số lượng nhập *', /so luong|^slg?\b|ton kho|^ton$/], ['so_lo', 'Số lô', /so lo|^lot/], ['han_dung', 'Hạn dùng', /han (dung|su dung)|hsd|^exp/], ['ngay_nhap', 'Ngày nhập', /ngay nhap/],
       ['ke', 'Kệ số', /^ke\b|ke so/], ['tang', 'Tầng', /^tang/], ['o_so', 'Vị trí trên tầng', /vi tri tren tang|^vi tri( so)?$|^o so|^o$|vi tri tren ke/], ['tu_mat', 'Tủ mát', /tu mat|bao quan lanh|tu lanh/], ['vi_tri', 'Vị trí khác', /vi tri khac|ghi chu vi tri/], ['nguon', 'Nguồn / chứng từ', /nguon|chung tu|phieu/], ['ghi_chu', 'Ghi chú', /ghi chu/],
       ['nhom_nh', 'Nhóm nguy hiểm', /nhom nguy hiem|phan nhom|nhom hoa chat|^nhom$/]],
@@ -532,10 +555,11 @@
   const MO_TA_COT = {
     ma_vt: ['', 'Mã vật tư theo danh mục của Trường. Có mã thì tên, ĐVT bỏ trống được (lấy từ danh mục).'],
     ten: ['Có *', 'Tên và quy cách đóng gói, VD: Acid sulfuric 98% – chai 500 mL. (* bắt buộc nếu không có Mã VT)'],
+    cong_thuc: ['', 'Công thức hóa học, VD: H2SO4, NaOH, C2H5OH. Dùng để tìm kiếm – gõ "h2so4" là ra.'],
     ten_kh: ['', 'Tên khoa học / tên thương mại.'], bo_phan: ['', 'Dạng – trạng thái: tươi, khô, bột, lỏng, đông lạnh…'], xuat_xu: ['', 'Xuất xứ – nguồn gốc.'],
     nsx: ['', 'Nhà sản xuất / hãng.'], dvt: ['Có', 'Đơn vị tính: Chai, Lọ, Lít, mL, g, kg, Ống…'], sl: ['Có', 'Số lượng nhập của lô (chỉ ghi số; số lẻ dùng dấu chấm hoặc phẩy).'],
     so_lo: ['', 'Số lô (Lot) trên nhãn.'], han_dung: ['', 'Ngày/tháng/năm (dd/mm/yyyy); chỉ có tháng/năm thì ghi mm/yyyy.'], ngay_nhap: ['', 'dd/mm/yyyy; bỏ trống = ngày tải file lên.'],
-    ke: ['', 'Số kệ đã khai báo (1, 2, 3…) hoặc "Tủ mát" – chọn trong ô. Bỏ trống = hệ thống tự xếp.'],
+    ke: ['', 'Số kệ (1, 2, 3…) hoặc "Tủ mát". Kệ chưa có trên hệ thống được tự tạo khi tải file lên. Bỏ trống = hệ thống tự xếp.'],
     tang: ['', 'Tầng của kệ: 1 = tầng dưới cùng.'],
     o_so: ['', 'Vị trí trên tầng: số thứ tự ô tính từ trái sang phải (1 → sức chứa của tầng). Nhiều lô cùng một hóa chất ghi cùng vị trí.'],
     tu_mat: ['', 'Ghi "Có" nếu cần bảo quản lạnh – không ghi kệ thì hệ thống xếp vào tủ mát.'], vi_tri: ['', 'Vị trí ngoài kệ (VD: tủ an toàn, thùng dưới gầm kệ).'],
@@ -543,12 +567,12 @@
     nhom_nh: ['', 'Chọn trong ô: ' + NHOM_FILE.join(' · ') + '. Bỏ trống = hệ thống gợi ý theo tên (kiểm tra ở bảng xem trước).']
   };
   const VD_KHO = {
-    HC: [{ ten: 'Acid sulfuric 98% – chai 500 mL', nsx: 'Merck', dvt: 'Chai', sl: 2, so_lo: 'K51234', han_dung: '30/06/2028', ngay_nhap: '01/11/2026', ke: '1', tang: '1', o_so: '1', nguon: 'PXK P.KHĐT 12/2026', nhom_nh: 'Axit' },
-      { ma_vt: '1053', ten: 'Cồn 96 độ', nsx: 'VN', dvt: 'Lít', sl: 20, so_lo: 'L2601', han_dung: '30/06/2028', ke: '3', tang: '2', o_so: '4', nhom_nh: 'Dễ cháy' },
-      { ten: 'Natri hydroxid (NaOH) viên – lọ 500 g', nsx: 'Xilong', dvt: 'Lọ', sl: 3, han_dung: '12/2027', ke: '2', ghi_chu: 'Chỉ ghi kệ – hệ thống chọn tầng, vị trí còn trống', nhom_nh: 'Bazơ' },
-      { ten: 'Natri clorid (NaCl) – lọ 500 g', nsx: 'Xilong', dvt: 'Lọ', sl: 5, ghi_chu: 'Không ghi kệ – hệ thống tự xếp' },
+    HC: [{ ten: 'Acid sulfuric 98% – chai 500 mL', cong_thuc: 'H2SO4', nsx: 'Merck', dvt: 'Chai', sl: 2, so_lo: 'K51234', han_dung: '30/06/2028', ngay_nhap: '01/11/2026', ke: '1', tang: '1', o_so: '1', nguon: 'PXK P.KHĐT 12/2026', nhom_nh: 'Axit' },
+      { ma_vt: '1053', ten: 'Cồn 96 độ', cong_thuc: 'C2H5OH', nsx: 'VN', dvt: 'Lít', sl: 20, so_lo: 'L2601', han_dung: '30/06/2028', ke: '3', tang: '2', o_so: '4', nhom_nh: 'Dễ cháy' },
+      { ten: 'Natri hydroxid viên – lọ 500 g', cong_thuc: 'NaOH', nsx: 'Xilong', dvt: 'Lọ', sl: 3, han_dung: '12/2027', ke: '2', tang: '1', o_so: '3', nhom_nh: 'Bazơ' },
+      { ten: 'Natri clorid – lọ 500 g', cong_thuc: 'NaCl', nsx: 'Xilong', dvt: 'Lọ', sl: 5, ke: '4', tang: '3', o_so: '2' },
       { ten: 'Taq DNA polymerase 500 U', nsx: 'Thermo', dvt: 'Ống', sl: 2, han_dung: '31/12/2026', ke: 'Tủ mát', tang: '1', o_so: '1', tu_mat: 'Có', ghi_chu: 'Bảo quản 2 – 8 °C' },
-      { ten: 'Kali permanganat (KMnO4) – lọ 500 g', dvt: 'Lọ', sl: 1, vi_tri: 'Tủ an toàn', nhom_nh: 'Chất oxy hóa' }],
+      { ten: 'Kali permanganat – lọ 500 g', cong_thuc: 'KMnO4', dvt: 'Lọ', sl: 1, ke: '5', tang: '2', o_so: '1', nhom_nh: 'Chất oxy hóa' }],
     DL: [{ ten: 'Lá trà xanh', ten_kh: 'Camellia sinensis', bo_phan: 'Lá', xuat_xu: 'Lâm Đồng', dvt: 'kg', sl: 2, so_lo: 'DL-01', han_dung: '31/12/2027', ke: '1', tang: '2', o_so: '1' },
       { ten: 'Cam thảo', ten_kh: 'Glycyrrhiza uralensis', bo_phan: 'Rễ', xuat_xu: 'Trung Quốc', dvt: 'kg', sl: 1, han_dung: '06/2028', ke: '1', ghi_chu: 'Chỉ ghi kệ – hệ thống chọn tầng, vị trí' },
       { ten: 'Nghệ vàng', ten_kh: 'Curcuma longa', bo_phan: 'Bột', xuat_xu: 'Việt Nam', dvt: 'kg', sl: 1, ghi_chu: 'Không ghi kệ – hệ thống tự xếp' }]
@@ -566,9 +590,9 @@
     const dong = (v, x) => ({ cao: 20, o: [Object.assign({ v, cs: 3, can: 'l' }, x)] });
     const quyTac = ['Điền ở trang tính "Nhap kho" (trang đầu). Giữ nguyên dòng tiêu đề, không đổi tên / xóa cột. Mỗi dòng một lô (cùng ' + K.vat + ' khác số lô, hạn dùng → mỗi lô một dòng).',
       'Cột bắt buộc (tô cam): Tên, ĐVT, Số lượng nhập.' + (hc ? ' Có Mã VT thì tên được bỏ trống.' : ''),
-      'Kệ – Tầng – Vị trí: ghi đủ → nhập đúng chỗ; chỉ ghi Kệ (hoặc Kệ + Tầng) → hệ thống chọn tầng, vị trí còn trống; bỏ trống → hệ thống tự xếp' + (hc ? ' theo nhóm nguy hiểm (kệ dành cho nhóm, tránh nhóm kỵ nhau; axit, bazơ, chất độc, chất oxy hóa để tầng thấp)' : '') + ', hàng cần bảo quản lạnh vào tủ mát, theo sức chứa từng tầng.',
+      'Kệ – Tầng – Vị trí: mọi dòng ghi đủ cả 3 cột → tải lên là nhập thẳng đúng chỗ trong file, không qua bước xếp kệ; kệ chưa có trên hệ thống được tự tạo (số tầng theo file). Chỉ ghi Kệ (hoặc Kệ + Tầng) → hệ thống chọn tầng, vị trí còn trống; bỏ trống → hệ thống tự xếp' + (hc ? ' theo nhóm nguy hiểm (kệ dành cho nhóm, tránh nhóm kỵ nhau; axit, bazơ, chất độc, chất oxy hóa để tầng thấp)' : '') + ', hàng cần bảo quản lạnh vào tủ mát, theo sức chứa từng tầng.',
       'Vị trí đã có hóa chất khác hoặc vượt sức chứa tầng → hệ thống chuyển sang vị trí trống gần nhất và báo. Hai dòng cùng ghi một vị trí → dòng phía trên giữ vị trí.',
-      'Tải lên: ' + K.ten + ' › "⇪ Tải file lên" → chọn file → kiểm tra cột → "Tiếp: xem xếp kệ" → sửa kệ, tầng, vị trí' + (hc ? ', nhóm' : '') + ' từng dòng nếu cần → "Nhập".',
+      'Tải lên: ' + K.ten + ' › "⇪ Tải file lên" → chọn file → kiểm tra cột → "Nhập … dòng theo vị trí trong file" (file ghi đủ vị trí) hoặc "Tiếp: xem xếp kệ" → sửa kệ, tầng, vị trí' + (hc ? ', nhóm' : '') + ' từng dòng nếu cần → "Nhập".',
       'Trang "Vi du" chỉ để tham khảo, hệ thống không đọc.'].concat(keDs.length ? ['Kệ đang khai báo (lúc tải mẫu): ' + kk.ke.map(k => tenKe(k.ma) + ' – ' + k.so_tang + ' tầng' + (k.ten_nhom ? ', ' + k.ten_nhom.toLowerCase() : '') + (k.cho.some(x => x) ? ', sức chứa ' + k.cho.join('/') + ' loại' : '')).join('; ') + '.'] : []);
     const hd = { ten: 'Huong dan', huong: 'doc', cot: [26, 9, 70], hang: [dong('HƯỚNG DẪN ĐIỀN FILE NHẬP ' + K.ten.toUpperCase(), { b: 1, co: 13 }), dong('')]
       .concat(quyTac.map((t, i) => ({ cao: Math.max(20, Math.ceil(t.length / 95) * 15 + 5), o: [{ v: (i + 1) + '. ' + t, cs: 3, can: 'l' }] })), [dong(''), dong('CÁC CỘT', { b: 1 })],
@@ -598,6 +622,8 @@
             '<p><b>' + du.length + '</b> dòng dữ liệu (tiêu đề ở dòng ' + (hd + 1) + ').</p><div class="tbl-wrap" style="max-height:240px"><table class="import-map"><thead><tr><th>Trường</th><th>Lấy từ cột</th></tr></thead><tbody>' +
             C.map(f => '<tr><td>' + esc(f[1]) + '</td><td><select data-k="' + f[0] + '"><option value="">— không có —</option>' + td.map((t, j) => t ? '<option value="' + j + '"' + (map[f[0]] === j ? ' selected' : '') + '>' + esc(t) + '</option>' : '').join('') + '</select></td></tr>').join('') +
             '</tbody></table></div><div id="x-xem"></div><div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn" id="x-ok">Tiếp: xem xếp kệ (' + du.length + ' dòng)</button></div>';
+          // mọi dòng hợp lệ ghi đủ Kệ – Tầng – Vị trí → nhập thẳng theo file, không qua bước xếp kệ
+          const duViTri = (ds) => { const hl = ds.filter(x => (x.ten || x.ma_vt) && x.sl > 0); return hl.length > 0 && hl.every(x => String(x.ke || '').trim() && String(x.tang || '').trim() && String(x.o_so || '').trim()); };
           if ($('x-sheet')) $('x-sheet').onchange = (ev) => ve(ev.target.value);
           const docDs = () => {
             const m = {}; $('x-kq').querySelectorAll('[data-k]').forEach(s2 => { if (s2.value !== '') m[s2.dataset.k] = +s2.value; });
@@ -608,12 +634,15 @@
             const { ds } = docDs(), thieu = ds.filter(x => (!x.ten && !x.ma_vt) || !(x.sl > 0));
             $('x-xem').innerHTML = '<div class="tbl-wrap" style="max-height:200px;margin-top:8px"><table><thead><tr>' + C.slice(0, 7).map(f => '<th>' + esc(f[1].replace(' *', '')) + '</th>').join('') + '</tr></thead><tbody>' +
               ds.slice(0, 6).map(x => '<tr>' + C.slice(0, 7).map(f => '<td>' + esc(x[f[0]] === undefined ? '' : x[f[0]]) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>' +
+              (duViTri(ds) ? '<p class="note" style="color:#1E7B45">✓ Mọi dòng đã ghi đủ Kệ – Tầng – Vị trí: bấm nút dưới để nhập thẳng theo file. Kệ chưa có trên hệ thống sẽ được tự tạo.</p>' : '') +
               (thieu.length ? '<p class="err">⚠ ' + thieu.length + ' dòng thiếu tên hoặc số lượng sẽ bị bỏ qua (dòng ' + thieu.slice(0, 8).map(x => x._dong).join(', ') + (thieu.length > 8 ? '…' : '') + ').</p>' : '<p class="note">Xem trước 6 dòng đầu.</p>');
           };
-          $('x-kq').querySelectorAll('[data-k]').forEach(s2 => { s2.onchange = xem; }); xem();
+          const nutOk = () => { const { ds } = docDs(), th = duViTri(ds); $('x-ok').textContent = th ? 'Nhập ' + ds.filter(x => (x.ten || x.ma_vt) && x.sl > 0).length + ' dòng theo vị trí trong file' : 'Tiếp: xem xếp kệ (' + du.length + ' dòng)'; };
+          $('x-kq').querySelectorAll('[data-k]').forEach(s2 => { s2.onchange = () => { xem(); nutOk(); }; }); xem(); nutOk();
           $('x-ok').onclick = async (ev) => {
             const { m, ds } = docDs();
             if (m.sl === undefined || (m.ten === undefined && m.ma_vt === undefined)) return toast('Chọn cột số lượng và cột tên' + (kho === 'HC' ? ' hoặc mã VT' : ''), true);
+            if (duViTri(ds)) return nhapFileXep(ev.target, ds);
             const [p, kk] = await chay(ev.target, () => Promise.all([api('kho_xep_thu', { kho, ds }), api('kho_ke_ds', { kho })]));
             $('x-kq').innerHTML = '<label class="check"><input type="checkbox" id="x-tu-xep" checked> Tự xếp kệ – tầng theo sức chứa (sửa được từng dòng trước khi nhập)</label><div id="x-bang-xep">' + bangXep(p.xep.map((x, i) => Object.assign(x, { ten: ds[i].ten || ds[i].ma_vt, sl: ds[i].sl, dvt: ds[i].dvt, dong: ds[i]._dong })), kk, kho === 'HC') + '</div>' +
               '<div class="modal-foot"><button class="btn o" data-dong>Hủy</button><button class="btn" id="x-ok2">Nhập ' + ds.length + ' dòng</button></div>';
@@ -622,9 +651,9 @@
             $('x-ok2').onclick = (e2) => nhapFileXep(e2.target, ds);
           };
           const nhapFileXep = async (nut, ds) => {
-            if ($('x-tu-xep').checked) docBangXep($('x-bang-xep')).forEach(x => Object.assign(ds[x.i], { ke: x.ke, tang: x.tang, o_so: x.o_so }, x.nhom_nh !== undefined ? { nhom_nh: x.nhom_nh } : {}));
+            if ($('x-tu-xep') && $('x-tu-xep').checked) docBangXep($('x-bang-xep')).forEach(x => Object.assign(ds[x.i], { ke: x.ke, tang: x.tang, o_so: x.o_so }, x.nhom_nh !== undefined ? { nhom_nh: x.nhom_nh } : {}));
             const r = await chay(nut, () => api('kho_nhap_ds', { kho, ds }));
-            $('x-kq').innerHTML = '<div class="card"><b>Đã nhập ' + r.them + ' lô vào ' + esc(KHO[kho].ten) + '.</b>' + (r.bo_qua.length ? '<p>Bỏ qua ' + r.bo_qua.length + ' dòng:</p><ul class="note">' + r.bo_qua.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>' : '') +
+            $('x-kq').innerHTML = '<div class="card"><b>Đã nhập ' + r.them + ' lô vào ' + esc(KHO[kho].ten) + '.</b>' + (r.bo_qua.length ? '<p>Bỏ qua ' + r.bo_qua.length + ' dòng:</p><ul class="note">' + r.bo_qua.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>' : '') + ((r.ke_moi || []).length ? '<p>Kệ cập nhật theo file: ' + r.ke_moi.map(esc).join('; ') + '.</p>' : '') +
               '</div><div class="modal-foot"><button class="btn" data-dong>Đóng</button></div>';
             setTimeout(dieuHuong, 200);
           };
@@ -653,8 +682,8 @@
     nd.innerHTML = '<div class="btns" style="margin-bottom:12px"><button class="btn sm" id="b-x">Xuất từ lô</button><button class="btn o sm" id="b-kk">Kiểm kê (điều chỉnh tồn)</button><button class="btn o sm" id="b-chuyen">Chuyển kệ</button><button class="btn o sm" id="b-sua">Sửa lô</button>' +
       '<label class="btn o sm">Đính kèm chứng từ<input type="file" id="tep-lo" hidden></label><button class="btn o sm" id="b-tem">In tem</button>' +
       (r.gd.every(g => g.loai === 'nhap' || g.loai === 'chuyen') ? '<button class="btn red sm" id="b-xoa-lo" title="Chỉ xóa được khi lô chưa xuất / chưa điều chỉnh">Xóa lô (nhập nhầm)</button>' : '') + '</div>' +
-      '<div class="grid g2"><div class="card"><dl class="kv">' + [['Mã lô', l.id], ['Kho', K.ten], ['Mã VT', l.ma_vt], ['Tên khoa học', l.ten_kh], ['Bộ phận dùng', l.bo_phan], ['Xuất xứ', l.xuat_xu], ['NSX', l.nsx], ['Số lô', l.so_lo], ['Hạn dùng', ngayVN(l.han_dung)],
-        ['Ngày nhập', ngayVN(l.ngay_nhap)], ['SL nhập', fmt(l.sl_nhap) + ' ' + l.dvt], ['Nguồn', l.nguon], ['Kệ số', l.ke], ['Tầng', l.tang], ['Tủ mát', l.tu_mat], ['Vị trí khác', l.vi_tri], ['Ghi chú', l.ghi_chu]]
+      '<div class="grid g2"><div class="card"><dl class="kv">' + [['Mã lô', l.id], ['Kho', K.ten], ['Mã VT', l.ma_vt], ['Công thức', l.cong_thuc], ['Tên khoa học', l.ten_kh], ['Bộ phận dùng', l.bo_phan], ['Xuất xứ', l.xuat_xu], ['NSX', l.nsx], ['Số lô', l.so_lo], ['Hạn dùng', ngayVN(l.han_dung)],
+        ['Ngày nhập', ngayVN(l.ngay_nhap)], ['SL nhập', fmt(l.sl_nhap) + ' ' + l.dvt], ['Nguồn', l.nguon], ['Kệ số', l.ke], ['Tầng', l.tang], ['Vị trí trên tầng', l.o_so], ['Tủ mát', l.tu_mat], ['Vị trí khác', l.vi_tri], ['Ghi chú', l.ghi_chu]]
         .filter(x => x[1]).map(x => '<dt>' + x[0] + '</dt><dd>' + esc(x[1]) + '</dd>').join('') + '</dl></div>' +
       '<div class="card"><h2>Tệp (' + r.tep.length + ')</h2>' + (r.tep.length ? '<ul class="files">' + r.tep.map(f => '<li><span>📄 ' + esc(f.ten) + '</span><button class="btn o sm" data-tai="' + esc(f.id) + '">Tải về</button></li>').join('') + '</ul>' : '<div class="note">Chưa có.</div>') + '</div></div>' +
       '<div class="card"><h2>Nhập – xuất (' + r.gd.length + ')</h2><div class="tbl-wrap"><table><thead><tr><th>Ngày</th><th>Loại</th><th class="num">Số lượng</th><th>Biên bản / lý do</th><th>Người nhận</th><th>Người ghi</th></tr></thead><tbody>' +
@@ -675,7 +704,7 @@
     };
     $('b-sua').onclick = () => {
       moHop('<h2>Sửa lô</h2><form id="f"><div class="form-grid">' + o('so_lo', 'Số lô', { v: l.so_lo }) + o('han_dung', 'Hạn dùng', { type: 'date', v: l.han_dung }) + oKeTang(kk.ke, l) +
-        o('tu_mat', 'Tủ mát', { v: l.tu_mat, ph: 'Có / số tủ' }) + o('vi_tri', 'Vị trí khác', { v: l.vi_tri }) + o('nguon', 'Nguồn', { v: l.nguon }) +
+        o('tu_mat', 'Tủ mát', { v: l.tu_mat, ph: 'Có / số tủ' }) + o('vi_tri', 'Vị trí khác', { v: l.vi_tri }) + o('nguon', 'Nguồn', { v: l.nguon }) + (l.kho === 'DL' ? '' : o('cong_thuc', 'Công thức', { v: l.cong_thuc })) +
         (l.kho === 'DL' ? o('ten_kh', 'Tên khoa học', { v: l.ten_kh }) + o('bo_phan', 'Bộ phận dùng', { v: l.bo_phan }) + o('xuat_xu', 'Xuất xứ', { v: l.xuat_xu }) : '') + o('ghi_chu', 'Ghi chú', { v: l.ghi_chu, full: 1 }) +
         '</div><div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>');
       ganKeTang($('f'), kk.ke, l);
