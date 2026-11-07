@@ -453,11 +453,11 @@
     const [ds, kk] = await Promise.all([api('kho_ds', { kho }), api('kho_ke_ds', { kho })]); S.cache.kho = ds; const hc = kho === 'HC';
     let xemDa = 'vt'; try { xemDa = localStorage.getItem('kho_xem') || 'vt'; } catch (e) { /* trình duyệt chặn lưu */ }
     nd.innerHTML = '<div class="tools"><input type="search" id="q" placeholder="Tìm tên, ' + (kho === 'DL' ? 'tên khoa học' : 'công thức, mã VT') + ', số lô…"><select id="f-xem"><option value="vt">Xem theo vị trí (kệ – tầng)</option><option value="hc"' + (xemDa === 'hc' ? ' selected' : '') + '>Xem theo ' + K.vat + '</option></select><select id="f-cb"><option value="">Tất cả (' + ds.length + ')</option><option value="cb">Hết / sắp hết (' + ds.filter(g => g.canh_bao.length).length + ')</option>' +
-      (kho === 'HC' ? '<option value="ks">Kiểm soát đặc biệt</option>' : '') + '</select><select id="f-ke"><option value="">Mọi vị trí</option><option value="tu-mat">Trong tủ mát</option><option value="chua">Chưa xếp kệ</option>' +
+      (kho === 'HC' ? '<option value="ks">Kiểm soát đặc biệt</option>' : '') + '</select><select id="f-tt"><option value="">Mọi trạng thái</option>' + TT_HC.map(x => '<option value="' + x[0] + '">' + x[1] + '</option>').join('') + '<option value="~">Chưa ghi trạng thái</option></select><select id="f-ke"><option value="">Mọi vị trí</option><option value="tu-mat">Trong tủ mát</option><option value="chua">Chưa xếp kệ</option>' +
       [...new Set([].concat(...ds.map(g => g.lo.map(x => x.ke))).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi', { numeric: true })).map(k => '<option value="ke:' + esc(k) + '">' + esc(tenKe(k)) + '</option>').join('') + '</select><button class="btn o sm" id="b-sua-vt" title="Sửa kệ, tầng, vị trí của nhiều hóa chất rồi lưu một lần">✎ Chỉnh vị trí</button></div><div id="kq"></div>' +
       '<p class="note">Tồn = nhập − xuất. Bấm số ở cột "Tối thiểu" để đặt mức cảnh báo sắp hết. ' + (kho === 'HC' ? 'Cấp phát theo biên bản hóa chất tự trừ kho (lô hạn dùng gần nhất trước); giảm số hoặc hoàn trả trên biên bản thì kho được cộng lại.' : 'Dược liệu có trong biên bản thực hành (cùng tên, ĐVT) cũng tự trừ khi cấp phát.') + '</p>';
     // Xem theo vị trí: mỗi dòng một lô còn hàng – kệ, tầng, vị trí, tên, công thức; bấm tiêu đề cột để sắp xếp
-    let sx = ['ke', 1], sua = null; // sua: {mã lô: {ke, tang, o_so}} khi đang chỉnh vị trí
+    let sx = ['ke', 1], sua = null, suaTT = {}; // suaTT: {khóa hóa chất: {t, gc}} khi đang chỉnh // sua: {mã lô: {ke, tang, o_so}} khi đang chỉnh vị trí
     const soKe = (x) => x.ke ? (/^TM/.test(x.ke) ? 'zz' : '') + x.ke : 'zzz';
     const giaTriSx = { ke: (x) => [soKe(x), x.tang || '~', x.o_so || '~'].join('|'), ten: (x) => x.g.ten, cong_thuc: (x) => x.cong_thuc || x.g.cong_thuc || '~', ton: (x) => +x.ton || 0, han_dung: (x) => x.han_dung || '9999' };
     const veViTri = (l, coCho) => {
@@ -473,17 +473,21 @@
         return n ? '<select data-sv="tang" data-id="' + esc(x.id) + '"><option value=""></option>' + ds2.map(t => '<option' + (t === String(v.tang) ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select>'
           : '<input data-sv="tang" data-id="' + esc(x.id) + '" value="' + esc(v.tang) + '" style="width:52px">'; };
       const oViTri = (x) => '<input type="number" min="1" step="1" data-sv="o_so" data-id="' + esc(x.id) + '" value="' + esc(hien(x).o_so) + '" style="width:60px">';
-      const soDoi = () => Object.keys(sua || {}).filter(daDoi).length;
+      const ttHien = (g) => suaTT[g.khoa] || g.tinh_trang || {};
+      const ttDoi = (k) => { const g = ds.find(z => z.khoa === k), a = suaTT[k], b = (g && g.tinh_trang) || {}; return !!a && (String(a.t || '') !== String(b.t || '') || String(a.gc || '') !== String(b.gc || '')); };
+      const soDoi = () => Object.keys(sua || {}).filter(daDoi).length + Object.keys(suaTT).filter(ttDoi).length;
+      const oTT = (x) => sua ? '<td><select data-stt="' + esc(x.g.khoa) + '"><option value="">—</option>' + TT_HC.map(z => '<option value="' + z[0] + '"' + (ttHien(x.g).t === z[0] ? ' selected' : '') + '>' + z[1] + '</option>').join('') + '</select></td>'
+        : '<td>' + ttTag(x.g.tinh_trang) + ' <a href="#" data-tt="' + esc(x.g.khoa) + '" title="Ghi trạng thái, ghi chú">' + ((x.g.tinh_trang || {}).t || (x.g.tinh_trang || {}).gc ? '✎' : 'ghi') + '</a>' + ((x.g.tinh_trang || {}).gc ? '<div class="note">' + esc(x.g.tinh_trang.gc) + '</div>' : '') + '</td>';
       dong.sort((a, b) => { const u = f(a), v = f(b); return (typeof u === 'number' ? u - v : String(u).localeCompare(String(v), 'vi', { numeric: true })) * sx[1]; });
       const th = (k, t, c) => '<th' + (c ? ' class="' + c + '"' : '') + ' data-sx="' + k + '" style="cursor:pointer" title="Bấm để sắp xếp">' + t + (sx[0] === k ? (sx[1] > 0 ? ' ▲' : ' ▼') : '') + '</th>';
-      $('kq').innerHTML = (sua ? '<div class="card" style="position:sticky;top:0;z-index:5;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-color:#E6B85C;background:#FFF8E6"><b>Đang chỉnh vị trí</b><span class="note">Chọn kệ, tầng, ghi vị trí cho từng dòng (lọc "Chưa xếp kệ" để xếp hóa chất chưa có chỗ). Dòng đã đổi tô vàng.</span><span style="flex:1"></span><button class="btn sm" id="b-luu-vt">Lưu thay đổi (' + soDoi() + ')</button><button class="btn o sm" id="b-thoat-vt">Thoát</button></div>' : '') +
+      $('kq').innerHTML = (sua ? '<div class="card" style="position:sticky;top:0;z-index:5;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-color:#E6B85C;background:#FFF8E6"><b>Đang chỉnh vị trí</b><span class="note">Chọn kệ, tầng, ghi vị trí cho từng dòng (lọc "Chưa xếp kệ" để xếp hóa chất chưa có chỗ). Dòng đã đổi tô vàng.</span><span style="flex:1"></span><select id="tt-loat" title="Đặt cùng một trạng thái cho mọi hóa chất đang hiện trong bảng (theo ô tìm, bộ lọc)"><option value="">Đặt trạng thái cho mọi dòng đang hiện…</option>' + TT_HC.map(z => '<option value="' + z[0] + '">' + z[1] + '</option>').join('') + '</select><button class="btn sm" id="b-luu-vt">Lưu thay đổi (' + soDoi() + ')</button><button class="btn o sm" id="b-thoat-vt">Thoát</button></div>' : '') +
         (!dong.length ? '<div class="card empty">Không có lô nào khớp.</div>' : '<p class="note">' + dong.length + ' lô còn hàng. Bấm tiêu đề cột để sắp xếp.</p><div class="tbl-wrap"><table><thead><tr>') + (!dong.length ? '' : '' +
-        th('ke', 'Kệ') + '<th>Tầng</th><th>Vị trí</th>' + th('ten', 'Tên ' + K.vat) + (hc ? th('cong_thuc', 'Công thức') + '<th>Mã VT</th>' : '') + th('ton', 'Tồn', 'num') + '<th>ĐVT</th>' + th('han_dung', 'Hạn dùng') + '<th>Số lô</th></tr></thead><tbody>' +
+        th('ke', 'Kệ') + '<th>Tầng</th><th>Vị trí</th>' + th('ten', 'Tên ' + K.vat) + (hc ? th('cong_thuc', 'Công thức') + '<th>Mã VT</th>' : '') + th('ton', 'Tồn', 'num') + '<th>ĐVT</th>' + th('han_dung', 'Hạn dùng') + '<th>Trạng thái</th><th>Số lô</th></tr></thead><tbody>' +
         dong.map(x => '<tr data-dong="' + esc(x.id) + '"' + (daDoi(x.id) ? ' style="background:#FFF1C9"' : '') + '>' + (sua ? '<td>' + oKe(x) + '</td><td>' + oTang(x) + '</td><td>' + oViTri(x) + '</td>' :
           '<td><b>' + (x.ke ? esc(tenKe(x.ke)) : '<span class="note">' + esc(x.tu_mat ? 'Tủ mát' : x.vi_tri || 'Chưa xếp') + '</span>') + '</b>' + (x.xep_sai.length ? ' <span class="tag t-bad" title="' + esc(x.xep_sai.join('\n')) + '">⚠</span>' : '') + '</td><td>' + esc(x.tang || '—') + '</td><td>' + esc(x.o_so || '—') + '</td>') +
           '<td><a href="#/' + K.duong + '/lo/' + esc(x.id) + '"><b>' + esc(x.g.ten) + '</b></a>' + (x.g.ten_kh ? ' <i class="note">' + esc(x.g.ten_kh) + '</i>' : '') + (x.g.kiem_soat ? ' <span class="tag t-bad">kiểm soát</span>' : '') + '</td>' +
           (hc ? '<td class="mono">' + esc(x.cong_thuc || x.g.cong_thuc || '') + '</td><td class="mono">' + esc(x.g.ma_vt || '') + '</td>' : '') +
-          '<td class="num"><b>' + (fmt(x.ton) || 0) + '</b></td><td>' + esc(x.g.dvt) + '</td><td>' + (x.han_dung ? ngayVN(x.han_dung) : '—') + '</td><td>' + esc(x.so_lo || '') + '</td></tr>').join('') + '</tbody></table></div>');
+          '<td class="num"><b>' + (fmt(x.ton) || 0) + '</b></td><td>' + esc(x.g.dvt) + '</td><td>' + (x.han_dung ? ngayVN(x.han_dung) : '—') + '</td>' + oTT(x) + '<td>' + esc(x.so_lo || '') + '</td></tr>').join('') + '</tbody></table></div>');
       if (sua) {
         $('kq').querySelectorAll('[data-sv]').forEach(e => { e.onchange = () => {
           const id = e.dataset.id, x = goc[id], v = sua[id] = Object.assign({ ke: x.ke || '', tang: x.tang || '', o_so: x.o_so || '' }, sua[id]);
@@ -491,25 +495,33 @@
           if (e.dataset.sv === 'ke') { v.tang = ''; v.o_so = ''; return ve(); } // đổi kệ → vẽ lại ô tầng theo số tầng của kệ mới
           e.closest('tr').style.background = daDoi(id) ? '#FFF1C9' : ''; $('b-luu-vt').textContent = 'Lưu thay đổi (' + soDoi() + ')';
         }; });
-        $('b-thoat-vt').onclick = () => { if (soDoi() && !confirm('Bỏ ' + soDoi() + ' thay đổi chưa lưu?')) return; sua = null; $('b-sua-vt').classList.remove('on'); ve(); };
+        $('kq').querySelectorAll('[data-stt]').forEach(e => { e.onchange = () => { const k = e.dataset.stt, g = ds.find(z => z.khoa === k);
+          suaTT[k] = { t: e.value, gc: ((g && g.tinh_trang) || {}).gc || '' }; $('kq').querySelectorAll('[data-stt="' + k + '"]').forEach(s2 => { s2.value = e.value; });
+          $('b-luu-vt').textContent = 'Lưu thay đổi (' + soDoi() + ')'; }; });
+        $('tt-loat').onchange = (e) => { const v = e.target.value; if (!v) return; const ks = [...new Set(dong.map(x => x.g.khoa))];
+          if (!confirm('Đặt "' + TT_HC.find(z => z[0] === v)[1] + '" cho ' + ks.length + ' hóa chất đang hiện?')) { e.target.value = ''; return; }
+          ks.forEach(k => { const g = ds.find(z => z.khoa === k); suaTT[k] = { t: v, gc: ((g && g.tinh_trang) || {}).gc || '' }; }); ve(); };
+        $('b-thoat-vt').onclick = () => { if (soDoi() && !confirm('Bỏ ' + soDoi() + ' thay đổi chưa lưu?')) return; sua = null; suaTT = {}; $('b-sua-vt').classList.remove('on'); ve(); };
         $('b-luu-vt').onclick = async (ev) => {
-          const thay = Object.keys(sua).filter(daDoi).map(id => Object.assign({ id }, sua[id]));
-          if (!thay.length) return toast('Chưa có thay đổi nào', true);
-          const r = await chay(ev.target, () => api('kho_doi_cho', { kho, ds: thay }));
-          sua = null; toast('Đã chuyển chỗ ' + r.doi + ' lô' + (r.ke_moi.length ? ' · ' + r.ke_moi.join('; ') : '')); baoXep(r.canh_bao); dieuHuong();
+          const thay = Object.keys(sua).filter(daDoi).map(id => Object.assign({ id }, sua[id])), tt = Object.keys(suaTT).filter(ttDoi).map(k => Object.assign({ khoa: k }, suaTT[k]));
+          if (!thay.length && !tt.length) return toast('Chưa có thay đổi nào', true);
+          const [r, r2] = await chay(ev.target, () => Promise.all([thay.length ? api('kho_doi_cho', { kho, ds: thay }) : null, tt.length ? api('kho_tth_luu', { kho, ds: tt }) : null]));
+          sua = null; suaTT = {};
+          toast([r && 'Đã chuyển chỗ ' + r.doi + ' lô' + (r.ke_moi.length ? ' · ' + r.ke_moi.join('; ') : ''), r2 && 'Đã ghi trạng thái ' + tt.length + ' hóa chất'].filter(Boolean).join(' · ')); if (r) baoXep(r.canh_bao); dieuHuong();
         };
       }
+      $('kq').querySelectorAll('[data-tt]').forEach(a => { a.onclick = (e) => { e.preventDefault(); hopTT(ds.find(z => z.khoa === a.dataset.tt)); }; });
       $('kq').querySelectorAll('[data-sx]').forEach(t => { t.onclick = () => { sx = [t.dataset.sx, sx[0] === t.dataset.sx ? -sx[1] : 1]; ve(); }; });
       Q.ganDieuHuong(dong.map(x => '#/' + K.duong + '/lo/' + x.id), 'lô');
     };
     // công thức so khớp không phân biệt hoa thường, chỉ số dưới (₂), dấu cách, dấu chấm, ngoặc: "h2so4" khớp "H₂SO₄"
     const ctChuan = (s) => boDau(String(s || '').replace(/[₀-₉]/g, c => String(c.charCodeAt(0) - 8320))).replace(/[^a-z0-9]/g, '');
     const ve = () => {
-      const q = boDau($('q').value), qc = ctChuan($('q').value), f = $('f-cb').value, ke = $('f-ke').value, xem = $('f-xem').value;
+      const q = boDau($('q').value), qc = ctChuan($('q').value), f = $('f-cb').value, ttLoc = $('f-tt').value, ke = $('f-ke').value, xem = $('f-xem').value;
       try { localStorage.setItem('kho_xem', xem); } catch (e) { /* trình duyệt chặn lưu */ }
       const khop = (g) => !q || boDau([g.ten, g.ma_vt, g.ten_kh, g.cong_thuc, g.lo.map(x => x.so_lo + ' ' + x.cho + ' ' + (x.cong_thuc || '')).join(' ')].join(' ')).indexOf(q) >= 0 || (qc.length > 1 && [g.cong_thuc].concat(g.lo.map(x => x.cong_thuc)).some(c => c && ctChuan(c).indexOf(qc) >= 0));
       const coCho = (x) => !ke || (ke === 'chua' ? !x.ke : ke === 'tu-mat' ? !!x.tu_mat || /^TM/.test(x.ke || '') : 'ke:' + x.ke === ke);
-      const l = ds.filter(g => khop(g) && (!f || (f === 'cb' ? g.canh_bao.length : g.kiem_soat)) && (!ke || g.lo.some(coCho)));
+      const l = ds.filter(g => khop(g) && (!ttLoc || (ttLoc === '~' ? !(g.tinh_trang || {}).t : (g.tinh_trang || {}).t === ttLoc)) && (!f || (f === 'cb' ? g.canh_bao.length : g.kiem_soat)) && (!ke || g.lo.some(coCho)));
       $('b-sua-vt').style.display = xem === 'vt' ? '' : 'none';
       if (xem === 'vt') return veViTri(l, coCho);
       $('kq').innerHTML = !l.length ? '<div class="card empty">Kho chưa có ' + K.vat + '. Bấm "+ Nhập kho".</div>' : '<div class="tbl-wrap"><table><thead><tr>' + (kho === 'HC' ? '<th>Mã VT</th>' : '') + '<th>Tên ' + K.vat + '</th>' + (hc ? '<th>Nhóm</th>' : '') + '<th>ĐVT</th><th class="num">Tồn</th><th class="num">Tối thiểu</th><th>Lô (số lô · hạn dùng · tồn)</th><th>Vị trí</th><th>Cảnh báo</th></tr></thead><tbody>' +
@@ -517,7 +529,7 @@
           '<td class="num"><a href="#" data-ttt="' + esc(g.khoa) + '" title="Đặt mức tồn tối thiểu">' + (fmt(g.ton_toi_thieu) || 'đặt') + '</a></td><td>' +
           g.lo.map(x => '<a href="#/' + K.duong + '/lo/' + esc(x.id) + '">' + esc(x.so_lo || x.id) + '</a> · ' + (x.han_dung ? ngayVN(x.han_dung) : '—') + ' · ' + fmt(x.ton)).join('<br>') + '</td><td class="vi-tri">' +
           g.lo.map(x => x.cho ? '<span class="cho' + (x.tu_mat ? ' lanh' : '') + (x.xep_sai.length ? ' sai' : '') + '"' + (x.xep_sai.length ? ' title="' + esc(x.xep_sai.join('\n')) + '"' : '') + '>' + (x.xep_sai.length ? '⚠ ' : x.tu_mat ? '❄ ' : '') + esc(x.cho) + '</span>' : '<span class="note">—</span>').join('<br>') + '</td><td>' +
-          g.canh_bao.map(c => '<span class="tag ' + (c === 'Sắp hết' ? 't-warn' : 't-bad') + '"' + (c === 'Xếp sai nhóm' ? ' title="' + esc([].concat(...g.lo.map(x => x.xep_sai)).join('\n')) + '"' : '') + '>' + esc(c) + '</span>').join(' ') + '</td></tr>').join('') + '</tbody></table></div>';
+          ttTag(g.tinh_trang) + ' ' + g.canh_bao.map(c => '<span class="tag ' + (c === 'Sắp hết' ? 't-warn' : 't-bad') + '"' + (c === 'Xếp sai nhóm' ? ' title="' + esc([].concat(...g.lo.map(x => x.xep_sai)).join('\n')) + '"' : '') + '>' + esc(c) + '</span>').join(' ') + '</td></tr>').join('') + '</tbody></table></div>';
       $('kq').querySelectorAll('[data-ttt]').forEach(a => { a.onclick = async (e) => { e.preventDefault(); const g = ds.find(x => x.khoa === a.dataset.ttt), v = prompt('Tồn tối thiểu của "' + g.ten + '" (' + g.dvt + '):', g.ton_toi_thieu || ''); if (v === null) return; await chay(null, () => api('kho_ttt', { khoa: g.khoa, gia_tri: v })); toast('Đã đặt mức tối thiểu'); dieuHuong(); }; });
       $('kq').querySelectorAll('[data-nnh]').forEach(a => { a.onclick = (e) => { e.preventDefault(); const g = ds.find(x => x.khoa === a.dataset.nnh);
         moHop('<h2>Nhóm nguy hiểm – ' + esc(g.ten) + '</h2><form id="f"><div class="form-grid">' + o('nhom', 'Nhóm', { select: [['', '— Chưa phân nhóm —']].concat(Object.keys(kk.nhom).map(n => [n, kk.nhom[n]])), v: g.nhom_nh, full: 1 }) +
@@ -527,7 +539,15 @@
       }; });
       Q.ganDieuHuong([].concat(...l.map(g => g.lo.map(x => '#/' + K.duong + '/lo/' + x.id))), 'lô');
     };
-    $('q').oninput = ve; $('f-cb').onchange = ve; $('f-ke').onchange = ve; $('f-xem').onchange = ve; ve();
+    $('q').oninput = ve; $('f-cb').onchange = ve; $('f-ke').onchange = ve; $('f-xem').onchange = ve; $('f-tt').onchange = ve; ve();
+    // ghi trạng thái + ghi chú cho một hóa chất
+    const hopTT = (g) => {
+      const tt = g.tinh_trang || {};
+      moHop('<h2>Trạng thái – ' + esc(g.ten) + '</h2><form id="f"><div class="form-grid">' + o('t', 'Trạng thái', { select: [['', '— Chưa ghi —']].concat(TT_HC.map(z => [z[0], z[1]])), v: tt.t || '', full: 1 }) +
+        o('gc', 'Ghi chú', { v: tt.gc || '', full: 1, ph: 'VD: còn ½ chai, đã đề nghị mua đợt 2, chai bị vón cục…' }) + '</div>' + (tt.ngay ? '<p class="note">Ghi lần cuối: ' + esc(ngayVN(tt.ngay)) + ' – ' + esc(tt.nguoi || '') + '</p>' : '') +
+        '<div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>');
+      $('f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target); await chay(e.submitter, () => api('kho_tth_luu', { kho, ds: [{ khoa: g.khoa, t: v.t, gc: v.gc }] })); dongHop(); toast('Đã lưu trạng thái'); dieuHuong(); };
+    };
     $('b-sua-vt').onclick = () => { if (sua) return $('b-thoat-vt').click(); sua = {}; ve(); };
     $('b-nhap').onclick = () => hopNhapKho(kho);
     $('b-file').onclick = () => hopNhapKhoFile(kho);
@@ -569,10 +589,10 @@
     HC: [['ma_vt', 'Mã VT', /^ma\s*vt|ma vat tu/], ['ten', 'Tên hóa chất – quy cách *', /^ten(?! khoa)|qu[iy] cach|danh muc|hoa chat/], ['cong_thuc', 'Công thức', /cong thuc|^cthh|^ctpt/], ['nsx', 'NSX', /^nsx|hang sx|nha san xuat/], ['dvt', 'ĐVT *', /^dv|don vi/],
       ['sl', 'Số lượng nhập *', /so luong|^slg?\b|ton kho|^ton$/], ['so_lo', 'Số lô', /so lo|^lot/], ['han_dung', 'Hạn dùng', /han (dung|su dung)|hsd|^exp/], ['ngay_nhap', 'Ngày nhập', /ngay nhap/],
       ['ke', 'Kệ số', /^ke\b|ke so/], ['tang', 'Tầng', /^tang/], ['o_so', 'Vị trí trên tầng', /vi tri tren tang|^vi tri( so)?$|^o so|^o$|vi tri tren ke/], ['tu_mat', 'Tủ mát', /tu mat|bao quan lanh|tu lanh/], ['vi_tri', 'Vị trí khác', /vi tri khac|ghi chu vi tri/], ['nguon', 'Nguồn / chứng từ', /nguon|chung tu|phieu/], ['ghi_chu', 'Ghi chú', /ghi chu/],
-      ['nhom_nh', 'Nhóm nguy hiểm', /nhom nguy hiem|phan nhom|nhom hoa chat|^nhom$/]],
+      ['nhom_nh', 'Nhóm nguy hiểm', /nhom nguy hiem|phan nhom|nhom hoa chat|^nhom$/], ['tinh_trang', 'Trạng thái', /trang thai|tinh trang/]],
     DL: [['ten', 'Tên dược liệu *', /^ten(?! khoa)|duoc lieu|ten vi thuoc/], ['ten_kh', 'Tên khoa học', /ten khoa hoc|ten latin|latin/], ['bo_phan', 'Bộ phận dùng', /bo phan/], ['xuat_xu', 'Xuất xứ', /xuat xu|nguon goc|noi thu hai/],
       ['dvt', 'ĐVT *', /^dv|don vi/], ['sl', 'Số lượng nhập *', /so luong|^slg?\b|ton kho|^ton$|khoi luong/], ['so_lo', 'Số lô', /so lo|^lot/], ['han_dung', 'Hạn dùng', /han (dung|su dung)|hsd|^exp/],
-      ['ngay_nhap', 'Ngày nhập', /ngay nhap/], ['ke', 'Kệ số', /^ke\b|ke so/], ['tang', 'Tầng', /^tang/], ['o_so', 'Vị trí trên tầng', /vi tri tren tang|^vi tri( so)?$|^o so|^o$|vi tri tren ke/], ['tu_mat', 'Tủ mát', /tu mat|bao quan lanh|tu lanh/], ['vi_tri', 'Vị trí khác', /vi tri khac|ghi chu vi tri/], ['nguon', 'Nguồn / chứng từ', /nguon nhap|chung tu|phieu/], ['ghi_chu', 'Ghi chú', /ghi chu/]]
+      ['ngay_nhap', 'Ngày nhập', /ngay nhap/], ['ke', 'Kệ số', /^ke\b|ke so/], ['tang', 'Tầng', /^tang/], ['o_so', 'Vị trí trên tầng', /vi tri tren tang|^vi tri( so)?$|^o so|^o$|vi tri tren ke/], ['tu_mat', 'Tủ mát', /tu mat|bao quan lanh|tu lanh/], ['vi_tri', 'Vị trí khác', /vi tri khac|ghi chu vi tri/], ['nguon', 'Nguồn / chứng từ', /nguon nhap|chung tu|phieu/], ['ghi_chu', 'Ghi chú', /ghi chu/], ['tinh_trang', 'Trạng thái', /trang thai|tinh trang/]]
   };
   const ngayIso = (v) => {
     if (v == null || v === '') return '';
@@ -584,6 +604,10 @@
   };
   // File mẫu nhập kho: 3 trang tính – "Nhap kho" (trang đầu, hệ thống đọc trang này; ô chọn Kệ / Tủ mát / Nhóm), "Huong dan" (từng cột + quy tắc), "Vi du"
   const NHOM_FILE = ['Axit', 'Bazơ', 'Chất oxy hóa', 'Dễ cháy', 'Độc', 'Phản ứng với nước', 'Ít nguy hiểm']; // máy chủ đọc được (chuanNhom_)
+  // trạng thái hóa chất do cán bộ ghi (cùng mã với TT_HC ở 21_KeKho.gs)
+  const TT_HC = [['chua_kk', 'Chưa kiểm kê', 't-gray'], ['du', 'Đủ dùng', 't-ok'], ['gan_het', 'Gần hết', 't-warn'], ['het', 'Đã hết', 't-bad'], ['can_mua', 'Cần mua', 't-info'],
+    ['sap_hh', 'Sắp hết hạn', 't-warn'], ['het_han', 'Hết hạn', 't-bad'], ['hong', 'Hư / biến chất', 't-bad'], ['ngung', 'Ngưng dùng', 't-gray']];
+  const ttTag = (tt) => { const x = tt && TT_HC.find(z => z[0] === tt.t); return x ? '<span class="tag ' + x[2] + '"' + (tt.gc ? ' title="' + esc(tt.gc) + '"' : '') + '>' + esc(x[1]) + '</span>' : ''; };
   const MO_TA_COT = {
     ma_vt: ['', 'Mã vật tư theo danh mục của Trường. Có mã thì tên, ĐVT bỏ trống được (lấy từ danh mục).'],
     ten: ['Có *', 'Tên và quy cách đóng gói, VD: Acid sulfuric 98% – chai 500 mL. (* bắt buộc nếu không có Mã VT)'],
@@ -596,6 +620,7 @@
     o_so: ['', 'Vị trí trên tầng: số thứ tự ô tính từ trái sang phải (1 → sức chứa của tầng). Nhiều lô cùng một hóa chất ghi cùng vị trí.'],
     tu_mat: ['', 'Ghi "Có" nếu cần bảo quản lạnh – không ghi kệ thì hệ thống xếp vào tủ mát.'], vi_tri: ['', 'Vị trí ngoài kệ (VD: tủ an toàn, thùng dưới gầm kệ).'],
     nguon: ['', 'Nguồn nhập / chứng từ, VD: PXK P.KHĐT số 12/2026.'], ghi_chu: ['', 'Ghi chú khác.'],
+    tinh_trang: ['', 'Chọn trong ô: ' + TT_HC.map(z => z[1]).join(' · ') + '. Ghi chú thêm sửa sau trên web (bấm "ghi" ở cột Trạng thái).'],
     nhom_nh: ['', 'Chọn trong ô: ' + NHOM_FILE.join(' · ') + '. Bỏ trống = hệ thống gợi ý theo tên (kiểm tra ở bảng xem trước).']
   };
   const VD_KHO = {
@@ -604,7 +629,7 @@
       { ten: 'Natri hydroxid viên – lọ 500 g', cong_thuc: 'NaOH', nsx: 'Xilong', dvt: 'Lọ', sl: 3, han_dung: '12/2027', ke: '2', tang: '1', o_so: '3', nhom_nh: 'Bazơ' },
       { ten: 'Natri clorid – lọ 500 g', cong_thuc: 'NaCl', nsx: 'Xilong', dvt: 'Lọ', sl: 5, ke: '4', tang: '3', o_so: '2' },
       { ten: 'Taq DNA polymerase 500 U', nsx: 'Thermo', dvt: 'Ống', sl: 2, han_dung: '31/12/2026', ke: 'Tủ mát', tang: '1', o_so: '1', tu_mat: 'Có', ghi_chu: 'Bảo quản 2 – 8 °C' },
-      { ten: 'Kali permanganat – lọ 500 g', cong_thuc: 'KMnO4', dvt: 'Lọ', sl: 1, ke: '5', tang: '2', o_so: '1', nhom_nh: 'Chất oxy hóa' }],
+      { ten: 'Kali permanganat – lọ 500 g', cong_thuc: 'KMnO4', dvt: 'Lọ', sl: 1, ke: '5', tang: '2', o_so: '1', nhom_nh: 'Chất oxy hóa', tinh_trang: 'Gần hết' }],
     DL: [{ ten: 'Lá trà xanh', ten_kh: 'Camellia sinensis', bo_phan: 'Lá', xuat_xu: 'Lâm Đồng', dvt: 'kg', sl: 2, so_lo: 'DL-01', han_dung: '31/12/2027', ke: '1', tang: '2', o_so: '1' },
       { ten: 'Cam thảo', ten_kh: 'Glycyrrhiza uralensis', bo_phan: 'Rễ', xuat_xu: 'Trung Quốc', dvt: 'kg', sl: 1, han_dung: '06/2028', ke: '1', ghi_chu: 'Chỉ ghi kệ – hệ thống chọn tầng, vị trí' },
       { ten: 'Nghệ vàng', ten_kh: 'Curcuma longa', bo_phan: 'Bột', xuat_xu: 'Việt Nam', dvt: 'kg', sl: 1, ghi_chu: 'Không ghi kệ – hệ thống tự xếp' }]
@@ -616,7 +641,7 @@
     const tieuDe = { cao: 32, o: C.map(c => ({ v: c[1].replace(' *', ''), b: 1, can: 'c', vien: 1, nen: BAT[c[0]] ? '#FCE4D6' : '#D9E2F3' })) };
     const chon = [];
     const ds = (k, gt) => { const i = C.findIndex(c => c[0] === k); if (i >= 0 && gt.length) chon.push({ cot: i, tu: 2, den: N + 1, ds: gt }); };
-    ds('ke', keDs); ds('tu_mat', ['Có']); if (hc) ds('nhom_nh', NHOM_FILE);
+    ds('ke', keDs); ds('tu_mat', ['Có']); if (hc) ds('nhom_nh', NHOM_FILE); ds('tinh_trang', TT_HC.map(z => z[1]));
     const nhap = { ten: 'Nhap kho', huong: 'ngang', cot: C.map(c => Math.max(11, c[1].length + 2)), dongBang: 1, lapLai: [1, 1], chon,
       hang: [tieuDe].concat(Array.from({ length: N }, () => ({ cao: 18, o: C.map(() => ({ v: '', vien: 1 })) }))) };
     const dong = (v, x) => ({ cao: 20, o: [Object.assign({ v, cs: 3, can: 'l' }, x)] });
