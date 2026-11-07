@@ -449,27 +449,56 @@
     if (p[1] === 'so-ks' && kho === 'HC') return manSoKS();
     if (p[1] === 'so-do') return manSoDoKho(kho);
     if (p[1] === 'ke' && p[2]) return manKeKho(kho, decodeURIComponent(p[2]));
-    const nd = trang(K.ten, '<a class="btn o sm" href="#/' + K.duong + '/so-do">▦ Sơ đồ kệ</a>' + (kho === 'HC' ? '<a class="btn o sm" href="#/kho/so-ks">Sổ hóa chất kiểm soát</a>' : '') + '<button class="btn o sm" id="b-xuat-x">Xem trước – in / Excel</button><button class="btn o sm" id="b-xuat">Xuất / hủy</button><button class="btn o sm" id="b-nhap">+ Nhập tay</button><button class="btn sm" id="b-file">⇪ Tải file lên</button>');
+    const nd = trang(K.ten, '<a class="btn o sm" href="#/' + K.duong + '/so-do">▦ Sơ đồ kệ</a>' + (kho === 'HC' ? '<a class="btn o sm" href="#/kho/so-ks">Sổ hóa chất kiểm soát</a>' : '') + '<button class="btn o sm" id="b-xuat-x">Xem trước – in / Excel</button><button class="btn o sm" id="b-xuat">Xuất / hủy</button><button class="btn o sm" id="b-nhap">+ Nhập tay</button><button class="btn sm" id="b-file">⇪ Tải file lên</button>' + (laAdmin() ? '<button class="btn o sm" id="b-tep-kho" title="Tải về / xóa file danh mục đã tải lên">📁 File đã tải lên</button>' : ''));
     const [ds, kk] = await Promise.all([api('kho_ds', { kho }), api('kho_ke_ds', { kho })]); S.cache.kho = ds; const hc = kho === 'HC';
     let xemDa = 'vt'; try { xemDa = localStorage.getItem('kho_xem') || 'vt'; } catch (e) { /* trình duyệt chặn lưu */ }
     nd.innerHTML = '<div class="tools"><input type="search" id="q" placeholder="Tìm tên, ' + (kho === 'DL' ? 'tên khoa học' : 'công thức, mã VT') + ', số lô…"><select id="f-xem"><option value="vt">Xem theo vị trí (kệ – tầng)</option><option value="hc"' + (xemDa === 'hc' ? ' selected' : '') + '>Xem theo ' + K.vat + '</option></select><select id="f-cb"><option value="">Tất cả (' + ds.length + ')</option><option value="cb">Hết / sắp hết (' + ds.filter(g => g.canh_bao.length).length + ')</option>' +
-      (kho === 'HC' ? '<option value="ks">Kiểm soát đặc biệt</option>' : '') + '</select><select id="f-ke"><option value="">Mọi vị trí</option><option value="tu-mat">Trong tủ mát</option>' +
-      [...new Set([].concat(...ds.map(g => g.lo.map(x => x.ke))).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi', { numeric: true })).map(k => '<option value="ke:' + esc(k) + '">' + esc(tenKe(k)) + '</option>').join('') + '</select></div><div id="kq"></div>' +
+      (kho === 'HC' ? '<option value="ks">Kiểm soát đặc biệt</option>' : '') + '</select><select id="f-ke"><option value="">Mọi vị trí</option><option value="tu-mat">Trong tủ mát</option><option value="chua">Chưa xếp kệ</option>' +
+      [...new Set([].concat(...ds.map(g => g.lo.map(x => x.ke))).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi', { numeric: true })).map(k => '<option value="ke:' + esc(k) + '">' + esc(tenKe(k)) + '</option>').join('') + '</select><button class="btn o sm" id="b-sua-vt" title="Sửa kệ, tầng, vị trí của nhiều hóa chất rồi lưu một lần">✎ Chỉnh vị trí</button></div><div id="kq"></div>' +
       '<p class="note">Tồn = nhập − xuất. Bấm số ở cột "Tối thiểu" để đặt mức cảnh báo sắp hết. ' + (kho === 'HC' ? 'Cấp phát theo biên bản hóa chất tự trừ kho (lô hạn dùng gần nhất trước); giảm số hoặc hoàn trả trên biên bản thì kho được cộng lại.' : 'Dược liệu có trong biên bản thực hành (cùng tên, ĐVT) cũng tự trừ khi cấp phát.') + '</p>';
     // Xem theo vị trí: mỗi dòng một lô còn hàng – kệ, tầng, vị trí, tên, công thức; bấm tiêu đề cột để sắp xếp
-    let sx = ['ke', 1];
+    let sx = ['ke', 1], sua = null; // sua: {mã lô: {ke, tang, o_so}} khi đang chỉnh vị trí
     const soKe = (x) => x.ke ? (/^TM/.test(x.ke) ? 'zz' : '') + x.ke : 'zzz';
     const giaTriSx = { ke: (x) => [soKe(x), x.tang || '~', x.o_so || '~'].join('|'), ten: (x) => x.g.ten, cong_thuc: (x) => x.cong_thuc || x.g.cong_thuc || '~', ton: (x) => +x.ton || 0, han_dung: (x) => x.han_dung || '9999' };
     const veViTri = (l, coCho) => {
       const dong = [].concat(...l.map(g => g.lo.filter(coCho).map(x => Object.assign({ g }, x)))), f = giaTriSx[sx[0]];
+      // chỉnh vị trí: ô chọn Kệ → Tầng (theo số tầng của kệ), ô số Vị trí; dòng đã đổi tô màu
+      const goc = {}; ds.forEach(g => g.lo.forEach(x => { goc[x.id] = x; }));
+      const hien = (x) => (sua && sua[x.id]) || { ke: x.ke || '', tang: x.tang || '', o_so: x.o_so || '' };
+      const daDoi = (id) => { const a = sua && sua[id], b = goc[id]; return !!a && ['ke', 'tang', 'o_so'].some(k => String(a[k] || '') !== String(b[k] || '')); };
+      const oKe = (x) => { const v = hien(x).ke; return '<select data-sv="ke" data-id="' + esc(x.id) + '"><option value="">— Chưa xếp —</option>' + kk.ke.map(k => '<option value="' + esc(k.ma) + '"' + (k.ma === v ? ' selected' : '') + '>' + esc(tenKe(k.ma)) + '</option>').join('') +
+        (v && !kk.ke.some(k => k.ma === v) ? '<option value="' + esc(v) + '" selected>' + esc(tenKe(v)) + '</option>' : '') + '</select>'; };
+      const oTang = (x) => { const v = hien(x), k = kk.ke.find(z => z.ma === v.ke), n = k ? +k.so_tang : 0, ds2 = Array.from({ length: n }, (_, i) => String(i + 1));
+        if (v.tang && ds2.indexOf(String(v.tang)) < 0) ds2.push(String(v.tang));
+        return n ? '<select data-sv="tang" data-id="' + esc(x.id) + '"><option value=""></option>' + ds2.map(t => '<option' + (t === String(v.tang) ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select>'
+          : '<input data-sv="tang" data-id="' + esc(x.id) + '" value="' + esc(v.tang) + '" style="width:52px">'; };
+      const oViTri = (x) => '<input type="number" min="1" step="1" data-sv="o_so" data-id="' + esc(x.id) + '" value="' + esc(hien(x).o_so) + '" style="width:60px">';
+      const soDoi = () => Object.keys(sua || {}).filter(daDoi).length;
       dong.sort((a, b) => { const u = f(a), v = f(b); return (typeof u === 'number' ? u - v : String(u).localeCompare(String(v), 'vi', { numeric: true })) * sx[1]; });
       const th = (k, t, c) => '<th' + (c ? ' class="' + c + '"' : '') + ' data-sx="' + k + '" style="cursor:pointer" title="Bấm để sắp xếp">' + t + (sx[0] === k ? (sx[1] > 0 ? ' ▲' : ' ▼') : '') + '</th>';
-      $('kq').innerHTML = !dong.length ? '<div class="card empty">Không có lô nào khớp.</div>' : '<p class="note">' + dong.length + ' lô còn hàng. Bấm tiêu đề cột để sắp xếp.</p><div class="tbl-wrap"><table><thead><tr>' +
+      $('kq').innerHTML = (sua ? '<div class="card" style="position:sticky;top:0;z-index:5;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-color:#E6B85C;background:#FFF8E6"><b>Đang chỉnh vị trí</b><span class="note">Chọn kệ, tầng, ghi vị trí cho từng dòng (lọc "Chưa xếp kệ" để xếp hóa chất chưa có chỗ). Dòng đã đổi tô vàng.</span><span style="flex:1"></span><button class="btn sm" id="b-luu-vt">Lưu thay đổi (' + soDoi() + ')</button><button class="btn o sm" id="b-thoat-vt">Thoát</button></div>' : '') +
+        (!dong.length ? '<div class="card empty">Không có lô nào khớp.</div>' : '<p class="note">' + dong.length + ' lô còn hàng. Bấm tiêu đề cột để sắp xếp.</p><div class="tbl-wrap"><table><thead><tr>') + (!dong.length ? '' : '' +
         th('ke', 'Kệ') + '<th>Tầng</th><th>Vị trí</th>' + th('ten', 'Tên ' + K.vat) + (hc ? th('cong_thuc', 'Công thức') + '<th>Mã VT</th>' : '') + th('ton', 'Tồn', 'num') + '<th>ĐVT</th>' + th('han_dung', 'Hạn dùng') + '<th>Số lô</th></tr></thead><tbody>' +
-        dong.map(x => '<tr><td><b>' + (x.ke ? esc(tenKe(x.ke)) : '<span class="note">' + esc(x.tu_mat ? 'Tủ mát' : x.vi_tri || 'Chưa xếp') + '</span>') + '</b>' + (x.xep_sai.length ? ' <span class="tag t-bad" title="' + esc(x.xep_sai.join('\n')) + '">⚠</span>' : '') + '</td><td>' + esc(x.tang || '—') + '</td><td>' + esc(x.o_so || '—') + '</td>' +
+        dong.map(x => '<tr data-dong="' + esc(x.id) + '"' + (daDoi(x.id) ? ' style="background:#FFF1C9"' : '') + '>' + (sua ? '<td>' + oKe(x) + '</td><td>' + oTang(x) + '</td><td>' + oViTri(x) + '</td>' :
+          '<td><b>' + (x.ke ? esc(tenKe(x.ke)) : '<span class="note">' + esc(x.tu_mat ? 'Tủ mát' : x.vi_tri || 'Chưa xếp') + '</span>') + '</b>' + (x.xep_sai.length ? ' <span class="tag t-bad" title="' + esc(x.xep_sai.join('\n')) + '">⚠</span>' : '') + '</td><td>' + esc(x.tang || '—') + '</td><td>' + esc(x.o_so || '—') + '</td>') +
           '<td><a href="#/' + K.duong + '/lo/' + esc(x.id) + '"><b>' + esc(x.g.ten) + '</b></a>' + (x.g.ten_kh ? ' <i class="note">' + esc(x.g.ten_kh) + '</i>' : '') + (x.g.kiem_soat ? ' <span class="tag t-bad">kiểm soát</span>' : '') + '</td>' +
           (hc ? '<td class="mono">' + esc(x.cong_thuc || x.g.cong_thuc || '') + '</td><td class="mono">' + esc(x.g.ma_vt || '') + '</td>' : '') +
-          '<td class="num"><b>' + (fmt(x.ton) || 0) + '</b></td><td>' + esc(x.g.dvt) + '</td><td>' + (x.han_dung ? ngayVN(x.han_dung) : '—') + '</td><td>' + esc(x.so_lo || '') + '</td></tr>').join('') + '</tbody></table></div>';
+          '<td class="num"><b>' + (fmt(x.ton) || 0) + '</b></td><td>' + esc(x.g.dvt) + '</td><td>' + (x.han_dung ? ngayVN(x.han_dung) : '—') + '</td><td>' + esc(x.so_lo || '') + '</td></tr>').join('') + '</tbody></table></div>');
+      if (sua) {
+        $('kq').querySelectorAll('[data-sv]').forEach(e => { e.onchange = () => {
+          const id = e.dataset.id, x = goc[id], v = sua[id] = Object.assign({ ke: x.ke || '', tang: x.tang || '', o_so: x.o_so || '' }, sua[id]);
+          v[e.dataset.sv] = e.value.trim();
+          if (e.dataset.sv === 'ke') { v.tang = ''; v.o_so = ''; return ve(); } // đổi kệ → vẽ lại ô tầng theo số tầng của kệ mới
+          e.closest('tr').style.background = daDoi(id) ? '#FFF1C9' : ''; $('b-luu-vt').textContent = 'Lưu thay đổi (' + soDoi() + ')';
+        }; });
+        $('b-thoat-vt').onclick = () => { if (soDoi() && !confirm('Bỏ ' + soDoi() + ' thay đổi chưa lưu?')) return; sua = null; $('b-sua-vt').classList.remove('on'); ve(); };
+        $('b-luu-vt').onclick = async (ev) => {
+          const thay = Object.keys(sua).filter(daDoi).map(id => Object.assign({ id }, sua[id]));
+          if (!thay.length) return toast('Chưa có thay đổi nào', true);
+          const r = await chay(ev.target, () => api('kho_doi_cho', { kho, ds: thay }));
+          sua = null; toast('Đã chuyển chỗ ' + r.doi + ' lô' + (r.ke_moi.length ? ' · ' + r.ke_moi.join('; ') : '')); baoXep(r.canh_bao); dieuHuong();
+        };
+      }
       $('kq').querySelectorAll('[data-sx]').forEach(t => { t.onclick = () => { sx = [t.dataset.sx, sx[0] === t.dataset.sx ? -sx[1] : 1]; ve(); }; });
       Q.ganDieuHuong(dong.map(x => '#/' + K.duong + '/lo/' + x.id), 'lô');
     };
@@ -479,8 +508,9 @@
       const q = boDau($('q').value), qc = ctChuan($('q').value), f = $('f-cb').value, ke = $('f-ke').value, xem = $('f-xem').value;
       try { localStorage.setItem('kho_xem', xem); } catch (e) { /* trình duyệt chặn lưu */ }
       const khop = (g) => !q || boDau([g.ten, g.ma_vt, g.ten_kh, g.cong_thuc, g.lo.map(x => x.so_lo + ' ' + x.cho + ' ' + (x.cong_thuc || '')).join(' ')].join(' ')).indexOf(q) >= 0 || (qc.length > 1 && [g.cong_thuc].concat(g.lo.map(x => x.cong_thuc)).some(c => c && ctChuan(c).indexOf(qc) >= 0));
-      const coCho = (x) => !ke || (ke === 'tu-mat' ? !!x.tu_mat || /^TM/.test(x.ke || '') : 'ke:' + x.ke === ke);
+      const coCho = (x) => !ke || (ke === 'chua' ? !x.ke : ke === 'tu-mat' ? !!x.tu_mat || /^TM/.test(x.ke || '') : 'ke:' + x.ke === ke);
       const l = ds.filter(g => khop(g) && (!f || (f === 'cb' ? g.canh_bao.length : g.kiem_soat)) && (!ke || g.lo.some(coCho)));
+      $('b-sua-vt').style.display = xem === 'vt' ? '' : 'none';
       if (xem === 'vt') return veViTri(l, coCho);
       $('kq').innerHTML = !l.length ? '<div class="card empty">Kho chưa có ' + K.vat + '. Bấm "+ Nhập kho".</div>' : '<div class="tbl-wrap"><table><thead><tr>' + (kho === 'HC' ? '<th>Mã VT</th>' : '') + '<th>Tên ' + K.vat + '</th>' + (hc ? '<th>Nhóm</th>' : '') + '<th>ĐVT</th><th class="num">Tồn</th><th class="num">Tối thiểu</th><th>Lô (số lô · hạn dùng · tồn)</th><th>Vị trí</th><th>Cảnh báo</th></tr></thead><tbody>' +
         l.map(g => '<tr>' + (kho === 'HC' ? '<td class="mono">' + esc(g.ma_vt || '—') + '</td>' : '') + '<td><b>' + esc(g.ten) + '</b>' + (g.cong_thuc ? ' <span class="mono note">' + esc(g.cong_thuc) + '</span>' : '') + (g.ten_kh ? ' <i class="note">' + esc(g.ten_kh) + '</i>' : '') + (g.kiem_soat ? ' <span class="tag t-bad">kiểm soát</span>' : '') + '</td>' + (hc ? '<td><a href="#" data-nnh="' + esc(g.khoa) + '" title="Đặt nhóm nguy hiểm">' + esc(kk.nhom[g.nhom_nh] || 'đặt') + '</a></td>' : '') + '<td>' + esc(g.dvt) + '</td><td class="num"><b>' + (fmt(g.ton) || 0) + '</b></td>' +
@@ -498,8 +528,10 @@
       Q.ganDieuHuong([].concat(...l.map(g => g.lo.map(x => '#/' + K.duong + '/lo/' + x.id))), 'lô');
     };
     $('q').oninput = ve; $('f-cb').onchange = ve; $('f-ke').onchange = ve; $('f-xem').onchange = ve; ve();
+    $('b-sua-vt').onclick = () => { if (sua) return $('b-thoat-vt').click(); sua = {}; ve(); };
     $('b-nhap').onclick = () => hopNhapKho(kho);
     $('b-file').onclick = () => hopNhapKhoFile(kho);
+    if ($('b-tep-kho')) $('b-tep-kho').onclick = () => hopTepKho(kho);
     $('b-xuat').onclick = () => hopXuatKho(null, ds);
     $('b-xuat-x').onclick = () => {
       const dong = []; ds.forEach((g, i) => (g.lo.length ? g.lo : [{}]).forEach((x, j) => dong.push([j ? '' : i + 1, j ? '' : (kho === 'HC' ? g.ma_vt || 'Chưa MVT' : g.ten_kh || ''), j ? '' : g.ten, j ? '' : g.dvt, x.so_lo || '', ngayVN(x.han_dung || ''), x.ton || 0, j ? '' : g.ton, x.cho || '', j ? '' : g.canh_bao.join(', ')])));
@@ -602,6 +634,22 @@
     return window.PTN_IN.taiExcel({ ten: '' + (kho === 'DL' ? 'Mau nhap kho duoc lieu D11' : 'Mau nhap kho hoa chat D11.01') + '', trang: [nhap, hd, vd] });
   }
 
+  // admin: file danh mục đã tải lên kho – tải về file gốc, xóa (gỡ các lô nhập từ file, xóa file)
+  async function hopTepKho(kho) {
+    const ds = await chay(null, () => api('kho_tep_ds', { kho }));
+    const kb = (n) => n ? (n / 1024 < 1024 ? Math.ceil(n / 1024) + ' KB' : (n / 1048576).toFixed(1) + ' MB') : '';
+    moHop('<h2>File đã tải lên – ' + esc(KHO[kho].ten) + '</h2><p class="note">Xóa = gỡ các lô đã nhập từ file đó khỏi kho rồi xóa file (chỉ được khi các lô chưa xuất, chưa sửa, chưa có lần tải sau đè lên). File tải lên trước 07/11/2026 không lưu file gốc nên không tải về được.</p>' +
+      (ds.length ? '<div class="tbl-wrap" style="max-height:60vh"><table><thead><tr><th>Thời gian</th><th>Tên file</th><th>Người tải</th><th>Thay đổi</th><th>Trạng thái</th><th></th></tr></thead><tbody>' +
+        ds.map(x => '<tr><td>' + esc(x.tg) + '</td><td><b>' + esc(x.tep || '(không rõ tên)') + '</b>' + (x.kich_thuoc ? ' <span class="note">' + kb(+x.kich_thuoc) + '</span>' : '') + '</td><td>' + esc(x.nguoi) + '</td><td class="note">' + esc(x.tom_tat) + '</td><td>' + esc(x.trang_thai) + '</td>' +
+          '<td style="white-space:nowrap">' + (x.tep_id ? '<button class="btn o sm" data-tai="' + esc(x.tep_id) + '">⬇ Tải về</button> ' : '<span class="note">không có file gốc</span> ') + '<button class="btn red sm" data-xoa="' + esc(x.id) + '">🗑 Xóa</button></td></tr>').join('') + '</tbody></table></div>'
+        : '<div class="card empty">Chưa có file nào tải lên ' + esc(KHO[kho].ten.toLowerCase()) + '.</div>') + '<div class="modal-foot"><button class="btn" data-dong>Đóng</button></div>');
+    document.querySelectorAll('#modal [data-tai]').forEach(b => { b.onclick = () => chay(b, () => Q.taiVe(b.dataset.tai)); });
+    document.querySelectorAll('#modal [data-xoa]').forEach(b => { b.onclick = async () => {
+      const x = ds.find(y => y.id === b.dataset.xoa);
+      if (!confirm('Xóa file "' + (x.tep || x.id) + '"?' + (x.trang_thai === 'Đã tải' ? '\nCác lô đã nhập từ file này sẽ được gỡ khỏi kho (' + x.tom_tat + ').' : ''))) return;
+      await chay(b, () => api('kho_tep_xoa', { id: x.id })); toast('Đã xóa file' + (x.trang_thai === 'Đã tải' ? ' và gỡ các lô nhập từ file' : '')); dieuHuong(); setTimeout(() => hopTepKho(kho), 300);
+    }; });
+  }
   function hopNhapKhoFile(kho) {
     const C = COT_KHO[kho];
     moHop('<h2>Tải file lên – ' + esc(KHO[kho].ten) + '</h2><p class="note">Chọn file Excel danh mục ' + KHO[kho].vat + ' (mỗi dòng một lô). Hệ thống tự nhận cột theo tiêu đề – kiểm tra lại trước khi nhập. Dòng thiếu tên, ĐVT, số lượng hoặc sai ngày sẽ bị bỏ qua và báo lại. ' +
@@ -652,7 +700,8 @@
           };
           const nhapFileXep = async (nut, ds) => {
             if ($('x-tu-xep') && $('x-tu-xep').checked) docBangXep($('x-bang-xep')).forEach(x => Object.assign(ds[x.i], { ke: x.ke, tang: x.tang, o_so: x.o_so }, x.nhom_nh !== undefined ? { nhom_nh: x.nhom_nh } : {}));
-            const r = await chay(nut, () => api('kho_nhap_ds', { kho, ds }));
+            // gửi kèm file gốc (≤ 15 MB) để admin tải về / xóa sau ở "📁 File đã tải lên"
+            const r = await chay(nut, async () => api('kho_nhap_ds', Object.assign({ kho, ds, tep: file.name }, file.size <= 15 * 1024 * 1024 ? { tep_mime: file.type || 'application/octet-stream', tep_b64: await Q.docB64(file) } : {})));
             $('x-kq').innerHTML = '<div class="card"><b>Đã nhập ' + r.them + ' lô vào ' + esc(KHO[kho].ten) + '.</b>' + (r.bo_qua.length ? '<p>Bỏ qua ' + r.bo_qua.length + ' dòng:</p><ul class="note">' + r.bo_qua.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>' : '') + ((r.ke_moi || []).length ? '<p>Kệ cập nhật theo file: ' + r.ke_moi.map(esc).join('; ') + '.</p>' : '') +
               '</div><div class="modal-foot"><button class="btn" data-dong>Đóng</button></div>';
             setTimeout(dieuHuong, 200);
