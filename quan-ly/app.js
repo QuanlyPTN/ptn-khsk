@@ -411,9 +411,11 @@
     };
     Object.keys(TUYEN).forEach(k => { r[k] = () => TUYEN[k](p); });
     const f = r[p[0]] || r['tong-quan'];
-    Promise.resolve(f()).catch(e => { const nd = $('nd'); if (nd) nd.innerHTML = '<div class="card">Lỗi: ' + esc(e.message) + '</div>'; });
+    return Promise.resolve(f()).catch(e => { const nd = $('nd'); if (nd) nd.innerHTML = '<div class="card">Lỗi: ' + esc(e.message) + '</div>'; });
   }
   window.addEventListener('hashchange', dieuHuong);
+  // vẽ lại trang hiện tại nhưng giữ nguyên chỗ đang cuộn (đổi nhóm, sửa, xóa dòng định mức – không nhảy về đầu trang)
+  async function veLaiGiuCho() { const y = window.scrollY; await dieuHuong(); window.scrollTo(0, y); }
   const phongTen = (ma) => { const p = (S.dm.phong || []).find(x => x.ma === ma); return p ? p.ten : ''; };
   const dsPhongChon = (rong) => (rong ? [['', rong]] : []).concat((S.dm.phong || []).map(p => [p.ma, p.ma + ' – ' + p.ten]));
 
@@ -865,8 +867,8 @@
       const d = r.dinh_muc.find(x => x.id === sl.dataset.doiNhom);
       try { const k = await api('dm_luu', { dm: Object.assign({}, d, { nhom: sl.value }) }); toast('Đã chuyển "' + d.ten + '" sang nhóm ' + sl.value + ttBBDM(k)); }
       catch (e) { toast(e.message, true); sl.value = d.nhom; return; }
-      dieuHuong(); }; });
-    nd.querySelectorAll('[data-xoa]').forEach(b => { b.onclick = async (e) => { if (!confirm('Xóa dòng định mức này?')) return; const r = await chay(e.target, () => api('dm_xoa', { id: b.dataset.xoa })); toast('Đã xóa' + ttBBDM(r)); dieuHuong(); }; });
+      veLaiGiuCho(); }; });
+    nd.querySelectorAll('[data-xoa]').forEach(b => { b.onclick = async (e) => { if (!confirm('Xóa dòng định mức này?')) return; const r = await chay(e.target, () => api('dm_xoa', { id: b.dataset.xoa })); toast('Đã xóa' + ttBBDM(r)); veLaiGiuCho(); }; });
   }
   const tenSo = (s) => boDau(s).replace(/[^a-z0-9]+/g, ' ').trim(); // so tên hóa chất: bỏ dấu, hoa thường, ký tự lạ
   // sửa định mức từng dòng → biên bản lớp thực hành của môn đã cập nhật bao nhiêu
@@ -888,7 +890,7 @@
     oTen.addEventListener('input', kiem); f.querySelector('[name=loai]').onchange = kiem;
     f.querySelector('[name=stt]').closest('label').remove(); // STT tự đánh theo tên A → Z
     f.onsubmit = async (e) => { e.preventDefault(); if (kiem()) return toast('Hóa chất đã có trong định mức', true); const v = giaTri(e.target); v.id = d.id; v.mon = d.mon; const chon = v.loai; v.loai = chon === 'DC' ? 'DC' : 'HC'; v.nhom = NHOM_CHON[chon]; // nhóm theo lựa chọn
-      const r = await chay(e.submitter, () => api('dm_luu', { dm: v })); dongHop(); toast('Đã lưu · STT ' + r.stt + ttBBDM(r) + (r.ma_vt ? ' · mã VT ' + r.ma_vt : ' · Chưa MVT')); dieuHuong(); };
+      const r = await chay(e.submitter, () => api('dm_luu', { dm: v })); dongHop(); toast('Đã lưu · STT ' + r.stt + ttBBDM(r) + (r.ma_vt ? ' · mã VT ' + r.ma_vt : ' · Chưa MVT')); veLaiGiuCho(); };
   }
 
   async function manVatTu(nd) {
