@@ -66,10 +66,13 @@
   }
   // tên file vừa chọn ở hộp tải file (ô #x-file) → gửi kèm lệnh nhập để ghi vào Lịch sử tải file
   const LENH_TAI_FILE = /^(lop_nhap|dm_nhap|vt_nhap|dtm_nhap|dt_nhap_cap|kho_nhap_ds|tb_nhap)$/;
-  document.addEventListener('change', (e) => { if (e.target && e.target.id === 'x-file' && e.target.files && e.target.files[0]) S.tepTai = e.target.files[0].name; });
+  document.addEventListener('change', (e) => { if (e.target && e.target.id === 'x-file' && e.target.files && e.target.files[0]) { S.tepFiles = [...e.target.files]; S.tepTai = S.tepFiles.map(f => f.name).join(', ').slice(0, 150); } });
   async function goiMayChu(act, data) {
     const body = Object.assign({ act, tk: S.tk }, data || {});
     if (LENH_TAI_FILE.test(act) && S.tepTai && !body.tep) body.tep = S.tepTai;
+    // gửi kèm file gốc (≤ 15 MB mỗi file) để tải về / xóa ở "Lịch sử tải file"; lệnh ghi tên khác (VD "Nhập / sửa trên web") = không từ file
+    const tuFile = LENH_TAI_FILE.test(act) && S.tepFiles && S.tepFiles.length && !body.tep_b64 && !body.tep_ds && (!body.tep || body.tep === S.tepTai || S.tepFiles.some(f => f.name === body.tep));
+    if (tuFile) body.tep_ds = await Promise.all(S.tepFiles.filter(f => f.size <= 15 * 1024 * 1024).slice(0, 10).map(async f => ({ ten: f.name, mime: f.type || 'application/octet-stream', b64: await docB64(f) })));
     let j;
     if (DEMO) j = window.PTN_DEMO(body);
     else {
@@ -83,6 +86,7 @@
       if (j.code === 'AUTH' && act !== 'dang_nhap') { xoaTk(); S.tk = null; manDangNhap(j.err); }
       throw new Error(j.err || 'Lỗi máy chủ');
     }
+    if (LENH_TAI_FILE.test(act)) { S.tepFiles = null; S.tepTai = ''; } // đã gửi – không gắn nhầm file này vào lệnh sau
     return j.r;
   }
   // chạy một thao tác có nút bấm: khóa nút, báo lỗi
