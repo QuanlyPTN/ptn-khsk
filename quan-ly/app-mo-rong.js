@@ -1565,26 +1565,31 @@
   }
 
   // ---------------- Dự trù vật tư theo đợt (mục Hóa chất – vật tư, chỉ admin) ----------------
-  // Mỗi học kỳ 2 đợt: đợt 1 tối thiểu 70% nhu cầu cả học kỳ; đợt 2 = nhu cầu cả học kỳ (cộng môn chưa dự trù) − đã nhận đợt 1; thêm đợt 3, 4 khi chưa nhận đủ
+  // Mỗi học kỳ 2 đợt, chia theo môn (môn học trước → đợt 1, môn học sau → đợt 2): đợt 1 tối thiểu 70% nhu cầu cả học kỳ của môn; đợt 2 = nhu cầu cả học kỳ (cộng môn chưa dự trù) − đã nhận đợt 1; thêm đợt 3, 4 khi chưa nhận đủ
   const thangVN = (t) => t ? t.slice(5) + '/' + t.slice(0, 4) : '';
   const tenDot = (d) => d === 'HK' ? 'cả học kỳ' : 'đợt ' + d;
   Q.manDuTru = async (nd) => {
     if (!(S.dm.hoc_ky || []).length) { nd.innerHTML = '<div class="card empty">Chưa có học kỳ – tạo ở thẻ "Học kỳ & thời khóa biểu".</div>'; return; }
     const hk = Q.S.hk || S.dm.hoc_ky[0], [bd, cap] = await Promise.all([api('dt_dot', { hk }), api('dt_cap_ds', { hk })]);
     const capDot = {}; cap.forEach(c => { capDot[c.dot] = c; });
-    const moTa = (n) => n === 1 ? 'Tối thiểu ' + bd.ty_le + '% nhu cầu cả học kỳ của mỗi môn; môn học giai đoạn 1 nhiều hơn thì lấy theo lớp giai đoạn 1.'
-      : n === 2 ? 'Nhu cầu cả học kỳ (cộng các môn chưa dự trù ở đợt 1) trừ danh sách nhận hàng đợt 1.'
+    const moTa = (n) => n === 1 ? 'Chỉ các môn học trước (bắt đầu học ở giai đoạn 1): tối thiểu ' + bd.ty_le + '% nhu cầu cả học kỳ của môn; lớp học giai đoạn 1 nhiều hơn thì lấy theo lớp giai đoạn 1.'
+      : n === 2 ? 'Các môn học sau (giai đoạn 2) – đủ nhu cầu cả học kỳ – cộng phần còn lại của môn đợt 1, trừ danh sách nhận hàng đợt 1.'
       : 'Nhu cầu cả học kỳ trừ tổng đã nhận đợt ' + Array.from({ length: n - 1 }, (_, i) => i + 1).join(', ') + ' – dùng khi các đợt trước chưa nhận đủ.';
     nd.innerHTML = '<div class="tools"><b>Học kỳ</b> <select id="f-hk">' + S.dm.hoc_ky.map(h => '<option' + (h === hk ? ' selected' : '') + '>' + esc(h) + '</option>').join('') + '</select></div>' +
       '<div class="grid g2"><div class="card"><h2>Cách chia đợt dự trù</h2><p class="note">Mỗi học kỳ dự trù 2 đợt, căn cứ thời gian học: lớp bắt đầu học trong tháng nào thì thuộc giai đoạn 1 hoặc 2 (mặc định 2 tháng đầu học kỳ → giai đoạn 1). ' +
-      'Đợt 1 luôn được ưu tiên: dù giai đoạn 2 có nhiều lớp, đợt 1 vẫn dự trù tối thiểu tỷ lệ bên dưới của nhu cầu cả học kỳ. Đợt 2 lấy phần còn lại và căn cứ danh sách nhận hàng của đợt 1 để trừ.</p>' +
+      'Chia theo môn: môn bắt đầu học ở giai đoạn 1 → dự trù đợt 1; môn bắt đầu ở giai đoạn 2 → không vào đợt 1, dự trù ở đợt 2. Môn của đợt 1 dự trù tối thiểu tỷ lệ bên dưới của nhu cầu cả học kỳ; đợt 2 lấy phần còn lại, trừ danh sách nhận hàng của đợt 1.</p>' +
       '<table><thead><tr><th>Tháng bắt đầu học</th><th class="num">Số nhóm TH</th><th>Giai đoạn</th></tr></thead><tbody>' +
       Object.keys(bd.map).map(t => '<tr><td>Tháng ' + thangVN(t) + '</td><td class="num">' + bd.so_lop[t] + '</td><td><select data-thang="' + t + '">' +
         [1, 2].map(g => '<option value="' + g + '"' + (bd.map[t] === g ? ' selected' : '') + '>Giai đoạn ' + g + '</option>').join('') + '</select></td></tr>').join('') +
       '</tbody></table><div class="form-grid" style="margin-top:10px"><label class="f"><span>Đợt 1 dự trù tối thiểu (% nhu cầu cả học kỳ)</span><input type="number" id="dt-ty-le" min="50" max="100" step="5" value="' + bd.ty_le + '"></label></div>' +
+      '<h2 style="margin-top:14px">Môn – đợt dự trù</h2><p class="note">Tự chia theo ngày bắt đầu học của môn (lớp học sớm nhất). Đổi ô "Đợt" để chỉnh tay từng môn rồi bấm "Lưu cách chia đợt".</p>' +
+      (bd.mon.length ? '<div class="tbl-wrap" style="max-height:340px"><table><thead><tr><th>Môn</th><th>Bắt đầu học</th><th class="num">Nhóm TH</th><th>Đợt</th></tr></thead><tbody>' +
+        bd.mon.slice().sort((a, b) => String(a.bat_dau).localeCompare(String(b.bat_dau)) || a.ten.localeCompare(b.ten, 'vi')).map(x => '<tr><td style="min-width:190px">' + esc(x.ten) + '</td><td style="white-space:nowrap">' + (x.bat_dau ? ngayVN(x.bat_dau) : '—') + '</td><td class="num">' + x.so_nhom + '</td><td><select data-mon-dot="' + esc(x.ma) + '">' +
+          [1, 2].map(g => '<option value="' + g + '"' + (x.dot === g ? ' selected' : '') + '>Đợt ' + g + (g === x.dot_md ? '' : ' (chỉnh tay)') + '</option>').join('') + '</select></td></tr>').join('') + '</tbody></table></div>'
+        : '<div class="note">Học kỳ chưa có thời khóa biểu thực hành.</div>') +
       '<button class="btn o sm" id="b-luu-dot" style="margin-top:6px">Lưu cách chia đợt</button></div>' +
       '<div class="card"><h2>Các đợt dự trù ' + esc(hk) + '</h2>' + bd.dots.map(d => { const c = capDot[d.dot], n = +d.dot;
-        return '<div class="dot-dt"><div><b>' + esc(d.ten) + '</b>' + (n <= 2 ? ' · ' + d.so_lop + ' nhóm TH học giai đoạn ' + n : ' <span class="tag t-gray">tùy chọn</span>') +
+        return '<div class="dot-dt"><div><b>' + esc(d.ten) + '</b>' + (n <= 2 ? ' · ' + (d.so_mon || 0) + ' môn · ' + d.so_lop + ' nhóm TH học giai đoạn ' + n : ' <span class="tag t-gray">tùy chọn</span>') +
           '<div class="note">' + moTa(n) + '</div><div class="note">Nộp P.KHĐT ngày <input type="date" data-ngay="' + d.dot + '" value="' + esc(d.ngay_nop) + '" style="width:auto;padding:2px 4px"> · Danh sách nhận hàng: ' +
           (c ? '<b>' + esc(c.loai) + '</b> ' + ngayVN(c.ngay) + ' · ' + c.so_dong + ' dòng' : 'chưa nhập') + '</div></div><div class="btns">' +
           '<button class="btn sm" data-xem="' + d.dot + '">Xem dự trù</button><button class="btn o sm" data-in="' + d.dot + '" title="3 trang tính: tổng dự trù học kỳ theo lớp · dự trù đợt · tổng hợp HC – VT – DL của đợt">Xem trước – in / Excel (3 sheet)</button><button class="btn o sm" data-cap="' + d.dot + '">' + (c ? 'Nhập lại' : 'Nhập') + ' DS nhận hàng</button>' +
@@ -1592,8 +1597,9 @@
       (bd.so_dot < 4 ? '<div class="dot-dt"><div><b>Thêm đợt ' + (bd.so_dot + 1) + '</b><div class="note">Khi đợt 1' + (bd.so_dot > 2 ? ' – ' + bd.so_dot : ', 2') + ' chưa nhận đủ hàng: dự trù tiếp phần còn thiếu.</div></div><div class="btns"><button class="btn o sm" id="b-them-dot">+ Thêm đợt ' + (bd.so_dot + 1) + '</button></div></div>' : '') +
       '<div class="dot-dt"><div><b>Cả học kỳ</b><div class="note">Tổng nhu cầu mọi lớp (chưa trừ đã nhận).</div></div><div class="btns"><button class="btn sm" data-xem="HK">Xem</button><button class="btn o sm" data-in="HK">Xem trước – in / Excel</button></div></div></div></div>' +
       '<div id="kq"></div>';
-    const luu = (btn, them) => { const map = {}, ngay = {}; nd.querySelectorAll('[data-thang]').forEach(s2 => { map[s2.dataset.thang] = +s2.value; }); nd.querySelectorAll('[data-ngay]').forEach(x => { ngay[x.dataset.ngay] = x.value; });
-      return chay(btn, () => api('dt_luu_dot', Object.assign({ hk, map, ngay, ty_le: +$('dt-ty-le').value }, them))); };
+    const luu = (btn, them) => { const map = {}, ngay = {}, mon = {}; nd.querySelectorAll('[data-thang]').forEach(s2 => { map[s2.dataset.thang] = +s2.value; }); nd.querySelectorAll('[data-ngay]').forEach(x => { ngay[x.dataset.ngay] = x.value; });
+      nd.querySelectorAll('[data-mon-dot]').forEach(s2 => { mon[s2.dataset.monDot] = +s2.value; });
+      return chay(btn, () => api('dt_luu_dot', Object.assign({ hk, map, ngay, mon, ty_le: +$('dt-ty-le').value }, them))); };
     $('f-hk').onchange = (e) => { Q.S.hk = e.target.value; dieuHuong(); };
     $('b-luu-dot').onclick = async (e) => { await luu(e.target); toast('Đã lưu cách chia đợt'); dieuHuong(); };
     nd.querySelectorAll('[data-ngay]').forEach(x => { x.onchange = async () => { await luu(null); toast('Đã lưu ngày nộp ' + tenDot(x.dataset.ngay)); }; });

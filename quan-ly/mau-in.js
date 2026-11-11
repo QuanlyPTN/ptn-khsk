@@ -16,7 +16,7 @@
     const tenSheet = caHK ? 'KSK. ' + r.hk : 'KSK. Dot ' + r.dot + ' ' + r.hk;
     const dsDot = (a) => a.length > 1 ? a.slice(0, -1).join(', ') + ' và ' + a[a.length - 1] : a.join('');
     const ghiChu = caHK ? '' : [r.ngay_nop ? 'Nộp Phòng Kế hoạch – Đầu tư ngày ' + r.ngay_nop.split('-').reverse().join('/') : '',
-      r.dot === '1' ? 'Đợt 1: tối thiểu ' + (r.ty_le || 70) + '% nhu cầu cả học kỳ' : 'Nhu cầu cả học kỳ trừ số đã nhận đợt ' + dsDot(Array.from({ length: +r.dot - 1 }, (_, i) => i + 1)),
+      r.dot === '1' ? 'Đợt 1: các môn học trước – tối thiểu ' + (r.ty_le || 70) + '% nhu cầu cả học kỳ của môn' : 'Nhu cầu cả học kỳ trừ số đã nhận đợt ' + dsDot(Array.from({ length: +r.dot - 1 }, (_, i) => i + 1)),
       (r.tam_tinh || []).length ? 'đợt ' + dsDot(r.tam_tinh) + ' chưa có danh sách nhận hàng – tạm trừ số đã dự trù' : ''].filter(Boolean).join(' · ');
     const ngayLap = ngayChu(r.ngay_nop || new Date().toISOString().slice(0, 10)), sl = (x) => x.tru > 0 ? { v: r3(x.sl), f: '=' + r3(x.can) + '-' + r3(x.tru) } : r3(x.sl);
 
