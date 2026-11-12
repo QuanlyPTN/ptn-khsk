@@ -21,7 +21,7 @@
       hd: ['Mỗi môn bắt đầu bằng một dòng ghi "1. TH <tên môn>", "2. TH <tên môn>"… ở cột TÊN BÀI TẬP (cùng dòng với hóa chất đầu tiên).',
         'Các dòng hóa chất của môn: có STT (1, 2, 3…), QUI CÁCH VẬT TƯ, MÃ VT (nếu có), ĐVỊ và SLG/1HS = định mức cho 1 sinh viên.',
         'Lớp học của môn: ghi MÃ SỐ LỚP, MÃ HỌC PHẦN, SĨ SỐ ở các dòng đầu của môn (mỗi lớp một dòng) – không bắt buộc.',
-        'Nhóm (Hóa chất / Dược liệu / Vật tư tiêu hao): chia 3 vùng ngăn bằng MỘT dòng trắng (vùng 1 Hóa chất, vùng 2 Dược liệu, vùng 3 Vật tư tiêu hao; thiếu nhóm nào để 2 dòng trắng liền nhau), STT mỗi vùng từ 1; hoặc ghi tên nhóm ở cột TÊN BÀI TẬP của dòng đầu nhóm. Không chia thì hệ thống tự xếp theo tên / mã VT.',
+        'Nhóm (Hóa chất / Dược liệu / Vật tư tiêu hao): chia 3 vùng ngăn bằng MỘT dòng trắng (vùng 1 Hóa chất, vùng 2 Dược liệu, vùng 3 Vật tư tiêu hao; thiếu nhóm nào để 2 dòng trắng liền nhau), STT mỗi vùng từ 1; hoặc ghi tên nhóm ở cột TÊN BÀI TẬP của dòng đầu nhóm. Nguyên liệu thực phẩm (nhóm thứ 4): ghi nhãn "NGUYÊN LIỆU THỰC PHẨM" ở cột TÊN BÀI TẬP dòng đầu khối, STT bắt đầu lại từ 1. Không chia thì hệ thống tự xếp theo tên / mã VT.',
         'File có thể chỉ gồm một vài môn; định mức của các môn có trong file được thay, biên bản hóa chất của học kỳ tự cập nhật. Không ghi gì dưới dòng "Người lập" / "Trưởng khoa".'],
       vd: [['1. TH dược khoa', '', 'DHDH21A', '420301632901', 20, 1, 'Acid ascorbic', '803', 'TQ', 'Gam', 0.4, '', ''],
         ['', '', 'DHDH21B', '420301632902', 22, 2, 'Cồn 96 độ', '1053', 'TQ', 'Lít', 0.065, '', ''],

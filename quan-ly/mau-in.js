@@ -179,16 +179,18 @@
   // ---------------- Phiếu dự trù hóa chất – vật tư của một môn (bám bố cục biên bản bàn giao hóa chất để đối chiếu) ----------------
   // o = { hk, mon: {ma, ten, ma_hp, bo_mon}, si_so (tổng SV dự kiến), dm: [{nhom, nhom_vt, stt, ten, ma_vt, nsx, dvt, dm, ghi_chu}], ky, them (dòng trống cuối mỗi nhóm) }
   // Định mức tính cho 01 sinh viên trong cả học phần; SL dự trù = ĐM 1 SV × tổng SV (công thức Excel, tự cập nhật khi sửa tổng SV / định mức).
-  // Thứ tự nhóm: 1. Hóa chất · 2. Dược liệu · 3. Vật tư tiêu hao.
-  const NHOM_DT = ['1. HÓA CHẤT', '2. DƯỢC LIỆU', '3. VẬT TƯ TIÊU HAO'];
+  // Thứ tự nhóm (in): 1. Hóa chất · 2. Dược liệu · 3. Nguyên liệu thực phẩm · 4. Vật tư tiêu hao. Mã nhom_dt lưu: 1 HC · 2 DL · 3 VT · 4 NLTP
+  const NHOM_DT = ['1. HÓA CHẤT', '2. DƯỢC LIỆU', '3. NGUYÊN LIỆU THỰC PHẨM', '4. VẬT TƯ TIÊU HAO'];
+  const MA_VE_THU = { 1: 0, 2: 1, 3: 3, 4: 2 }, THU_VE_MA = [1, 2, 4, 3]; // mã nhom_dt ↔ vị trí in
   const VT_TIEU_HAO = /^(bông|gạc|băng|giấy|găng|bao tay|khẩu trang|lame|lamelle|lam kính|đầu côn|đầu típ|tip|ống nghiệm|ống ly tâm|ống đong|túi|bao|màng|que|kim|bơm tiêm|xi lanh|chổi|khăn|nhãn|đĩa petri|hộp|lọ|chai|nút|parafilm|cốc|phễu|pipet|tăm bông|nhiệt kế|viết|bút)/i;
   const LUON_HOA_CHAT = /vaselin|paraf+in/i;
   function nhomDuTru(d) {
-    if (/^[123]$/.test(String(d.nhom_dt || ''))) return +d.nhom_dt - 1; // nhóm đã chỉ định (phiếu, sửa trên web)
+    if (/^[1234]$/.test(String(d.nhom_dt || ''))) return MA_VE_THU[d.nhom_dt]; // nhóm đã chỉ định (phiếu, sửa trên web)
     const ten = String(d.ten || '').trim(), n = String(d.nhom || ''), v = String(d.nhom_vt || '');
     if (v === 'DL' || /dược liệu/i.test(n)) return 1;
+    if (/nguy[eê]n (v[aậ]t )?li[eệ]u th[uự]c ph[aẩ]m/i.test(n)) return 2;
     if (LUON_HOA_CHAT.test(ten)) return 0; // anh Phú chốt 24/10/2026: Vaseline, dầu parafin vào nhóm Hóa chất (danh mục Trường xếp YT)
-    if (/vật tư|tiêu hao|dụng cụ/i.test(n) || VT_TIEU_HAO.test(ten) || (v && v !== 'HO')) return 2;
+    if (/vật tư|tiêu hao|dụng cụ/i.test(n) || VT_TIEU_HAO.test(ten) || (v && v !== 'HO')) return 3;
     return 0;
   }
   function duTruMon(o) {
@@ -215,7 +217,7 @@
         { v: d.ma_vt || (d.ten ? 'Chưa MVT' : ''), can: 'c', vien: 1, co: 10 }, { v: d.nsx || '', can: 'c', vien: 1, co: 10 }, { v: d.dvt || '', can: 'c', vien: 1 },
         { v: dm, can: 'c', vien: 1, b: 1 }, { v: +o.si_so || 0, f: '$C$' + hTong, can: 'c', vien: 1 },
         { v: dm === '' ? '' : r3(dm * (+o.si_so || 0)), f: 'IF(G' + r + '="","",ROUND(G' + r + '*H' + r + ',3))', can: 'c', vien: 1, b: 1 }, { v: d.ghi_chu || '', vien: 1, co: 10 }] }); };
-    const theoNhom = [[], [], []]; (o.dm || []).forEach(d => theoNhom[nhomDuTru(d)].push(d));
+    const theoNhom = [[], [], [], []]; (o.dm || []).forEach(d => theoNhom[nhomDuTru(d)].push(d));
     theoNhom.forEach((ds, k) => {
       hang.push({ cao: 18, o: [{ v: '', vien: 1 }, { v: NHOM_DT[k], cs: 9, b: 1, vien: 1, nen: '#F2F2F2' }] });
       ds.forEach(d => { dongDM(d); soKhoan++; });
@@ -293,5 +295,5 @@
       anh: qr ? [{ dataUrl: qr.dataUrl || qr, cot: 7 + (pxCot(cot[7]) - q - 6) / pxCot(cot[7]), hang: (caoKhung - q) / 2 / 24, rong: q, cao: q, vi_tri: 'top:' + (caoKhung - q) / 2 * 0.75 + 'pt;right:6px' }] : [] };
   }
   function bienBan(r, qr, hs) { return { ten: 'BBBG ' + (r.bb.loai === 'DC' ? 'dung cu ' : 'hoa chat ') + r.bb.id, trang: [r.bb.loai === 'DC' ? bienBanDC(r, qr, hs) : bienBanHC(r, qr)] }; }
-  window.PTN_MAU = { duTru, duTruThang, duTruMon, duTruMonNhieu, nhomDuTru, NHOM_DT, bienBan, bienBanHC, bienBanDC, giayXacNhan };
+  window.PTN_MAU = { duTru, duTruThang, duTruMon, duTruMonNhieu, nhomDuTru, NHOM_DT, THU_VE_MA, bienBan, bienBanHC, bienBanDC, giayXacNhan };
 })();

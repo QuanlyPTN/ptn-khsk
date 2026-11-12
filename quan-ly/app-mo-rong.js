@@ -1740,7 +1740,7 @@
   };
   // Nhập / sửa dự trù của một môn ngay trên web. Môn chưa nộp: điền sẵn từ định mức (/1 SV) và tổng sĩ số theo TKB.
   async function suaDuTruMon(hk, mon) {
-    const r = await api('dtm_ct', { hk, mon }), M = window.PTN_MAU, NH = ['Hóa chất', 'Dược liệu', 'Vật tư tiêu hao'], r3 = (n) => Math.round((+n || 0) * 1000) / 1000;
+    const r = await api('dtm_ct', { hk, mon }), M = window.PTN_MAU, NH = ['Hóa chất', 'Dược liệu', 'Nguyên liệu thực phẩm', 'Vật tư tiêu hao'], r3 = (n) => Math.round((+n || 0) * 1000) / 1000;
     let ds = r.dm.map(d => ({ nhom: M.nhomDuTru(d), ten: d.ten, cong_thuc: d.cong_thuc || '', ma_vt: /^\d+$/.test(d.ma_vt || '') ? d.ma_vt : '', nsx: d.nsx || '', dvt: d.dvt || '', dm: d.dm === '' || d.dm == null ? '' : +d.dm, sl: +d.sl || '', ghi_chu: d.ghi_chu || '' }));
     let ss = +r.si_so || 0, doi = false;
     const box = $('kq'), oN = (i, k, w, kieu) => '<input class="o-sua" data-i="' + i + '" data-k="' + k + '"' + (kieu === 'so' ? ' type="number" step="any" min="0" inputmode="decimal"' : ' type="text"') + (k === 'ten' ? ' list="dt-goi-y"' : k === 'ma_vt' ? ' placeholder="Chưa MVT"' : '') +
@@ -1750,7 +1750,7 @@
     const trungTen = (i) => { const t = tenSo(ds[i].ten); return t ? ds.findIndex((d, j) => j !== i && tenSo(d.ten) === t) : -1; };
     const ve = () => {
       // trong mỗi nhóm: tên A → Z (STT tự đánh), dòng mới chưa có tên ở cuối
-      const thuTu = []; [0, 1, 2].forEach(k => ds.map((d, i) => i).filter(i => ds[i].nhom === k)
+      const thuTu = []; [0, 1, 2, 3].forEach(k => ds.map((d, i) => i).filter(i => ds[i].nhom === k)
         .sort((a, b) => (!ds[a].ten.trim()) - (!ds[b].ten.trim()) || ds[a].ten.trim().localeCompare(ds[b].ten.trim(), 'vi', { sensitivity: 'base' })).forEach(i => thuTu.push(i)));
       let stt = 0;
       box.innerHTML = '<div class="card"><div class="btns" style="justify-content:space-between"><h2 style="margin:0">' + (r.nguon === 'du_tru' ? 'Sửa' : 'Nhập') + ' dự trù: ' + esc(r.mon.ten) + ' – ' + esc(hk) + '</h2>' +
@@ -1759,11 +1759,11 @@
           ' Gõ tên để chọn từ danh mục vật tư (tự điền mã VT, ĐVT, NSX). SL dự trù = ĐM 1 SV × tổng SV; dòng không ghi ĐM thì nhập thẳng SL.</p>' +
         '<label class="f" style="max-width:260px"><span>Tổng số sinh viên (cả học kỳ)</span><input type="number" min="0" id="dt-ss" value="' + ss + '"></label>' +
         '<datalist id="dt-goi-y"></datalist><div class="tbl-wrap"><table class="bb-sua dt-sua"><thead><tr><th>STT</th><th>Tên nguyên liệu – quy cách</th><th>Công thức</th><th>Mã VT</th><th>NSX</th><th>ĐVT</th><th>ĐM 1 SV</th><th class="num">SL dự trù</th><th>Ghi chú</th><th>Nhóm</th><th></th></tr></thead><tbody>' +
-        [0, 1, 2].map(k => '<tr><td colspan="11" class="nhom-dong">' + (k + 1) + '. ' + NH[k].toUpperCase() + ' <button type="button" class="btn o sm" data-them="' + k + '" style="margin-left:10px">+ Thêm dòng</button></td></tr>' +
+        [0, 1, 2, 3].map(k => '<tr><td colspan="11" class="nhom-dong">' + (k + 1) + '. ' + NH[k].toUpperCase() + ' <button type="button" class="btn o sm" data-them="' + k + '" style="margin-left:10px">+ Thêm dòng</button></td></tr>' +
           thuTu.filter(i => ds[i].nhom === k).map(i => '<tr' + (trungTen(i) >= 0 ? ' class="canh-bao" title="Tên trùng với dòng khác"' : '') + '><td>' + (++stt) + '</td><td>' + oN(i, 'ten', '100%') + (trungTen(i) >= 0 ? '<span class="tag t-warn">⚠ trùng tên</span>' : '') + '</td><td>' + oN(i, 'cong_thuc', '76px') + '</td><td>' + oN(i, 'ma_vt', '62px') + '</td><td>' + oN(i, 'nsx', '48px') + '</td><td>' + oN(i, 'dvt', '54px') +
             '</td><td>' + oN(i, 'dm', '66px', 'so') + '</td><td class="num">' + (ds[i].dm === '' ? oN(i, 'sl', '76px', 'so') : '<b data-sl="' + i + '">' + fmt(slCua(ds[i])) + '</b>') + '</td><td>' + oN(i, 'ghi_chu', '110px') +
             '</td><td><select data-i="' + i + '" data-k="nhom">' + NH.map((n, j) => '<option value="' + j + '"' + (j === ds[i].nhom ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></td><td><button type="button" class="btn red sm" data-xoa="' + i + '" title="Xóa dòng">✕</button></td></tr>').join('')).join('') +
-        '</tbody></table></div><p class="note">' + ds.filter(d => d.ten).length + ' dòng · ' + [0, 1, 2].map(k => NH[k].toLowerCase() + ': ' + ds.filter(d => d.nhom === k && d.ten).length).join(' · ') + '</p></div>';
+        '</tbody></table></div><p class="note">' + ds.filter(d => d.ten).length + ' dòng · ' + [0, 1, 2, 3].map(k => NH[k].toLowerCase() + ': ' + ds.filter(d => d.nhom === k && d.ten).length).join(' · ') + '</p></div>';
       const bang = box.querySelector('table');
       bang.addEventListener('input', (e) => { const el = e.target, i = el.dataset.i, k = el.dataset.k; if (i === undefined || k === 'nhom') return; doi = true;
         ds[i][k] = el.type === 'number' ? (el.value === '' ? '' : +el.value) : el.value;
@@ -1780,8 +1780,8 @@
       box.querySelectorAll('[data-xoa]').forEach(b => { b.onclick = () => { ds.splice(+b.dataset.xoa, 1); doi = true; ve(); }; });
       $('dt-ss').oninput = (e) => { ss = +e.target.value || 0; doi = true; box.querySelectorAll('[data-sl]').forEach(b => { b.textContent = fmt(slCua(ds[+b.dataset.sl])); }); };
       $('dt-bo').onclick = () => { if (doi && !confirm('Bỏ các thay đổi chưa lưu?')) return; box.innerHTML = ''; };
-      const dongIn = () => { const t = []; [0, 1, 2].forEach(k => ds.forEach(d => { if (d.nhom === k && String(d.ten).trim()) t.push(d); }));
-        return t.map((d, i) => ({ stt: i + 1, nhom: NH[d.nhom], nhom_dt: String(d.nhom + 1), ten: String(d.ten).trim(), cong_thuc: d.cong_thuc, ma_vt: d.ma_vt, nsx: d.nsx, dvt: d.dvt, dm: d.dm, sl: slCua(d), ghi_chu: d.ghi_chu })); };
+      const dongIn = () => { const t = []; [0, 1, 2, 3].forEach(k => ds.forEach(d => { if (d.nhom === k && String(d.ten).trim()) t.push(d); }));
+        return t.map((d, i) => ({ stt: i + 1, nhom: NH[d.nhom], nhom_dt: String(M.THU_VE_MA[d.nhom]), ten: String(d.ten).trim(), cong_thuc: d.cong_thuc, ma_vt: d.ma_vt, nsx: d.nsx, dvt: d.dvt, dm: d.dm, sl: slCua(d), ghi_chu: d.ghi_chu })); };
       $('dt-phieu').onclick = () => window.PTN_IN.xemTruoc(M.duTruMonNhieu([{ hk, mon: r.mon, si_so: ss, dm: dongIn() }], window.PTN_KY, hk));
       $('dt-luu').onclick = (e) => chay(e.target, async () => {
         if (ds.some((d, i) => trungTen(i) >= 0) && !confirm('Có hóa chất trùng tên trong danh sách (dòng ⚠ trùng tên). Vẫn lưu?')) return;
@@ -1813,7 +1813,7 @@
     // đoán môn: trùng mã học phần, rồi trùng tên (bỏ "TH")
     const doan = (m) => (mons.find(x => m.mon && x.ma === m.mon) || mons.find(x => m.ma_hp.some(h => String(x.ma_hp || '').indexOf(h) >= 0)) || mons.find(x => chuan(x.ten) === chuan(m.ten)) || {}).ma || '';
     Q.hopFileExcel('Tải file dự trù của môn', 'Chọn file dự trù theo mẫu kế hoạch vật tư (khối môn "1. TH …" hoặc tên môn ở cột TÊN BÀI TẬP, cột QUI CÁCH VẬT TƯ, MÃ VT, ĐVỊ, SLG/1HS, SLG). File có thể gồm <b>một hay nhiều môn</b>; dự trù cũ của các môn trong file được thay. ' +
-      '<br><b>Nhóm (Hóa chất · Dược liệu · Vật tư tiêu hao):</b> nên dùng <b>Phiếu dự trù</b> do hệ thống in (nút "📄 Phiếu dự trù…") – ghi dưới đúng tiêu đề "1. HÓA CHẤT / 2. DƯỢC LIỆU / 3. VẬT TƯ TIÊU HAO" thì xếp đúng 100%. ' +
+      '<br><b>Nhóm (Hóa chất · Dược liệu · Nguyên liệu thực phẩm · Vật tư tiêu hao):</b> nên dùng <b>Phiếu dự trù</b> do hệ thống in (nút "📄 Phiếu dự trù…") – ghi dưới đúng tiêu đề "1. HÓA CHẤT / 2. DƯỢC LIỆU / 3. VẬT TƯ TIÊU HAO" thì xếp đúng 100%. ' +
       'Dự trù chia khối theo nhóm: mỗi nhóm một bảng có dòng tiêu đề nhóm ("HÓA CHẤT", "DƯỢC LIỆU", "VẬT TƯ TIÊU HAO") ngay trên dòng tiêu đề cột – thứ tự nhóm tùy ý, mỗi sheet một môn. ' +
       'File kế hoạch vật tư: mỗi môn chia <b>3 vùng ngăn bằng một dòng trắng</b> – vùng 1 Hóa chất · vùng 2 Dược liệu · vùng 3 Vật tư tiêu hao (môn không có nhóm nào thì để 2 dòng trắng liền nhau); ' +
       'hoặc dòng nhãn ở cột đầu (VD "DƯỢC LIỆU"). Không chia vùng / không nhãn thì hệ thống tự xếp theo tên / mã VT. Xếp nhầm: chuyển nhóm từng dòng ở bảng sửa dự trù hoặc định mức của môn. ' +
@@ -1823,7 +1823,7 @@
       const laPhieu = Q.docPhieuDuTru(rows), laNhom = !laPhieu && Q.docDuTruNhom(rows, ten), mau = laPhieu ? 'phieu' : laNhom ? 'nhom' : 'kh';
       const docMau = (n) => { const r2 = n === ten ? rows : docSheet(n); return mau === 'phieu' ? Q.docPhieuDuTru(r2) : Q.docDuTruNhom(r2, n); };
       const kh = mau === 'kh' ? Q.docKeHoachVatTu(rows, { monKhongSo: true }) : sheets.map(n => n === ten ? (laPhieu || laNhom) : docMau(n)).filter(p => p && p.dm.length), tong = kh.reduce((a, m) => a + m.dm.length, 0);
-      const demNhom = (m) => ['Hóa chất', 'Dược liệu', 'Vật tư tiêu hao'].map(n => [n, m.dm.filter(d => d.nhom === n).length]).filter(x => x[1]).map(x => x[0] + ' ' + x[1]).join(' · ');
+      const demNhom = (m) => ['Hóa chất', 'Dược liệu', 'Nguyên liệu thực phẩm', 'Vật tư tiêu hao'].map(n => [n, m.dm.filter(d => d.nhom === n).length]).filter(x => x[1]).map(x => x[0] + ' ' + x[1]).join(' · ');
       const chon = (m, i) => '<select data-i="' + i + '"><option value="">— Bỏ qua —</option>' + mons.map(x => '<option value="' + esc(x.ma) + '"' + (x.ma === doan(m) ? ' selected' : '') + '>' + esc(x.ten) + '</option>').join('') + '</select>';
       $('x-kq').innerHTML = (mau !== 'kh' ? '' : Q.hopFileExcel.chonSheet(ten)) + '<p>' + ({ phieu: 'Phiếu dự trù – ', nhom: 'Dự trù chia theo nhóm (Hóa chất / Dược liệu / Vật tư tiêu hao) – ', kh: 'Kế hoạch vật tư – ' })[mau] + 'đọc được <b>' + kh.length + '</b> môn, <b>' + tong + '</b> dòng dự trù. Kiểm tra cột "Môn trên web" (đã đoán theo mã môn / mã học phần / tên môn).</p>' +
         '<div class="tbl-wrap" style="max-height:300px"><table><thead><tr><th>Môn trong file</th><th class="num">Lớp</th><th class="num">Sĩ số</th><th class="num">Dòng</th><th>Môn trên web</th></tr></thead><tbody>' +

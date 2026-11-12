@@ -875,8 +875,8 @@
       return;
     }
     M('<div class="spin"></div>');
-    const r = await api('ck_dtm_mo', { ma }), p = hoSo(), NH = ['Hóa chất', 'Dược liệu', 'Vật tư tiêu hao'], r3 = (n) => Math.round((+n || 0) * 1000) / 1000;
-    let ds = r.dong.map(d => ({ nhom: Math.max(0, Math.min(2, (+d.nhom_dt || 1) - 1)), ten: d.ten || '', cong_thuc: d.cong_thuc || '', ma_vt: d.ma_vt || '', nsx: d.nsx || '', dvt: d.dvt || '', dm: d.dm === '' || d.dm == null ? '' : +d.dm, sl: +d.sl || '', ghi_chu: d.ghi_chu || '' }));
+    const r = await api('ck_dtm_mo', { ma }), p = hoSo(), NH = ['Hóa chất', 'Dược liệu', 'Nguyên liệu thực phẩm', 'Vật tư tiêu hao'], MA_THU = { 1: 0, 2: 1, 3: 3, 4: 2 }, THU_MA = [1, 2, 4, 3] /* mã nhom_dt ↔ vị trí hiển thị */, r3 = (n) => Math.round((+n || 0) * 1000) / 1000;
+    let ds = r.dong.map(d => ({ nhom: MA_THU[d.nhom_dt] || 0, ten: d.ten || '', cong_thuc: d.cong_thuc || '', ma_vt: d.ma_vt || '', nsx: d.nsx || '', dvt: d.dvt || '', dm: d.dm === '' || d.dm == null ? '' : +d.dm, sl: +d.sl || '', ghi_chu: d.ghi_chu || '' }));
     let ss = +r.si_so || 0, goiY = [], gc = '', camKet = false; // ghi chú, ô xác nhận giữ qua các lần vẽ lại
     const slCua = (d) => d.dm === '' ? (+d.sl || '') : r3(d.dm * ss);
     const dn = r.de_nghi, tt = !dn ? '' : dn.trang_thai === 'Chờ duyệt' ? '<div class="pre">⏳ Bản đề nghị gửi ' + esc(ngayVN(dn.tg)) + ' đang <b>chờ PTN duyệt</b> – bảng dưới là bản đó; gửi lại sẽ thay bản này.</div>'
@@ -915,7 +915,7 @@
       f.onsubmit = async (e) => {
         e.preventDefault();
         // gửi theo thứ tự nhóm (dòng thêm sau của nhóm nào về đúng nhóm đó)
-        const dm = [0, 1, 2].reduce((a, k) => a.concat(ds.filter(d => d.nhom === k)), []).filter(d => String(d.ten).trim()).map(d => ({ nhom_dt: String(d.nhom + 1), ten: String(d.ten).trim(), cong_thuc: d.cong_thuc, ma_vt: d.ma_vt, nsx: d.nsx, dvt: d.dvt, dm: d.dm, sl: slCua(d), ghi_chu: d.ghi_chu }));
+        const dm = [0, 1, 2, 3].reduce((a, k) => a.concat(ds.filter(d => d.nhom === k)), []).filter(d => String(d.ten).trim()).map(d => ({ nhom_dt: String(THU_MA[d.nhom]), ten: String(d.ten).trim(), cong_thuc: d.cong_thuc, ma_vt: d.ma_vt, nsx: d.nsx, dvt: d.dvt, dm: d.dm, sl: slCua(d), ghi_chu: d.ghi_chu }));
         const loi = !dm.length ? 'Chưa có dòng dự trù nào' : !f.querySelector('[name=cam_ket]').checked ? 'Đánh dấu ô xác nhận' : '';
         if (loi) { $('err').textContent = loi; return; }
         $('sb').disabled = true; $('sb').textContent = 'Đang gửi…'; $('err').textContent = '';
