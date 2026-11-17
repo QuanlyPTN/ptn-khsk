@@ -36,6 +36,7 @@
       '<div id="k-ds"></div>';
     $('k-q').oninput = veDS; ['k-tt', 'k-muc', 'k-bm'].forEach(id => { $(id).onchange = veDS; });
     $('k-xuat').onclick = hopXuat;
+    const nx = $('b-xuat-trang'); if (nx) { nx.textContent = '⇩ Xuất file Excel theo mẫu'; nx.onclick = hopXuat; } // nút chung chỉ chép bảng (không công thức)
     if (xl()) {
       $('k-them').onclick = () => hopSua(null);
       $('x-file').onchange = (e) => { const f = e.target.files[0]; if (f) hopNhap(f); };
@@ -219,7 +220,7 @@
   function hopXuat() {
     moHop('<h2>Xuất kế hoạch năm ' + esc(D.nam) + ' theo file mẫu</h2><form id="k-f" class="form-grid">' +
       o('pham_vi', 'Dòng đưa vào file', { select: [['duyet', 'Đã duyệt + Đã mua (gửi P.KHĐT)'], ['tat_ca', 'Tất cả trừ "Không duyệt" (bản nháp tổng hợp)'], ['trong', 'Không dòng nào (file mẫu trống để điền tay)']], full: 1 }) +
-      '<p class="note full">File dựng từ mẫu "KẾ HOẠCH MUA SẮM NĂM" của Trường: giữ khung, định dạng, chữ ký, trang tính Xây dựng và Tool; công thức <b>D = SUM(E:H)</b>, <b>J = I × số lượng</b>, tổng từng mục và <b>Tổng cộng (A+B+C+D+E)</b> viết lại theo số dòng thực tế. Thêm trang tính "Theo doi" (trạng thái, GV đề xuất, hiện có) – không in.</p>' +
+      '<p class="note full">File dựng từ mẫu "KẾ HOẠCH MUA SẮM NĂM" của Trường: giữ khung, định dạng, chữ ký, trang tính Xây dựng và Tool; công thức <b>D = SUM(E:H)</b>, <b>J = I × số lượng</b>, tổng từng mục và <b>Tổng cộng (A+B+C+D+E)</b> viết lại theo số dòng thực tế; mục chưa có thiết bị giữ nguyên các dòng ví dụ ("1 – Chương trình, kế hoạch…", "…") như file mẫu.</p>' +
       '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">⇩ Tải file Excel</button></div></form>', (m) => {
       m.querySelector('#k-f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target); await chay(e.submitter, () => xuatExcel(v.pham_vi)); dongHop(); };
     });
@@ -243,6 +244,12 @@
     const rTB = tim(r => laSo(A(r)) && Number.isInteger(A(r)) && kieuF([r, 4]) && !(ws.getRow(r).getCell(2).fill && ws.getRow(r).getCell(2).fill.fgColor && /FFFF00$/i.test(ws.getRow(r).getCell(2).fill.fgColor.argb || ''))) || tim(r => laSo(A(r)) && kieuF([r, 4]));
     const rCon = tim(r => laSo(A(r)) && !Number.isInteger(A(r))) || rTB, rCha = rCon > 9 && laSo(A(rCon - 1)) ? rCon - 1 : rTB, rCham = tim(r => A(r) === '…') || rTB;
     const M = { l0: mau(rL0), l1: mau(rL1), l2: mau(rL2), tb: mau(rTB), con: mau(rCon), cha: mau(rCha), cham: mau(rCham), tong: mau(rTong) };
+    // dòng ví dụ của file mẫu trong từng mục lá ("1 – Chương trình, kế hoạch…", "…"): mục chưa có thiết bị giữ nguyên; mục có thiết bị giữ dòng "…" cuối mục
+    const MA = {}; D.muc.forEach(m => { MA[m[0]] = m; });
+    const viDu = {}; { let l0 = '', cur = ''; for (let k = 9; k < rTong; k++) { const a = String(A(k) == null ? '' : A(k)).trim(), b = ws.getRow(k).getCell(2).value; let ma = '';
+      if (/^[A-E]$/.test(a)) { l0 = a; ma = a; } else if ((LA_MA.test(a) || /^[IVX]+\.\d+$/.test(a)) && l0) ma = l0 + '.' + a;
+      if (ma) { cur = MA[ma] && MA[ma][4] ? ma : ''; continue; }
+      if (cur && typeof b === 'string' && /…\s*$/.test(b)) { const v = {}; for (let c = 1; c <= 14; c++) v[c] = sao(ws.getRow(k).getCell(c).value); (viDu[cur] = viDu[cur] || []).push({ m: mau(k), v, so: laSo(A(k)) }); } } }
     const chan = []; for (let r = rTong + 1; r <= ws.rowCount; r++) { const row = ws.getRow(r), v = {}; for (let c = 1; c <= 14; c++) v[c] = sao(row.getCell(c).value); chan.push({ m: mau(r), v }); }
     const gopChan = (ws.model.merges || []).filter(g => +/\d+/.exec(g)[0] > rTong).map(g => g.replace(/(\d+)/g, (s) => '#' + (+s - rTong)));
     (ws.model.merges || []).filter(g => +/\d+/.exec(g)[0] >= 9).forEach(g => ws.unMergeCells(g));
@@ -251,7 +258,7 @@
     const tt = phamVi === 'trong' ? [] : phamVi === 'tat_ca' ? ['Chờ duyệt', 'Đã duyệt', 'Đã mua'] : ['Đã duyệt', 'Đã mua'];
     const lay = D.dong.filter(d => tt.indexOf(d.trang_thai) >= 0), coCha = {}; lay.forEach(d => { if (!d.cha) coCha[d.id] = 1; });
     const ds = lay.filter(d => !d.cha || coCha[d.cha]);
-    let r = 9; const kq = { tong: 0 }, theoDoi = [];
+    let r = 9;
     const ghi = (m, v, h) => { const row = ws.getRow(r); for (let c = 1; c <= 14; c++) { const o2 = row.getCell(c); o2.style = sao(m.st[c]) || {}; o2.value = v[c] === undefined || v[c] === '' ? null : v[c]; } row.height = h || m.h; return r++; };
     const F = (f, kq2) => ({ formula: f, result: kq2 });
     // một mục lá: dòng mục + các dòng thiết bị (hoặc dòng "…" nếu chưa có) → trả [dòng mục, kinh phí]
@@ -260,7 +267,7 @@
       l.forEach(d => {
         const laCha = !d.cha && ds.some(x => x.cha === d.id);
         if (d.cha) con++; else { stt++; con = 0; }
-        const so1 = d.cha ? (con < 10 ? parseFloat(stt + '.' + con) : stt + '.' + con) : stt, ly = [d.bo_mon && 'Đơn vị sử dụng: ' + d.bo_mon, d.ly_do].filter(Boolean).join('\n');
+        const so1 = d.cha ? (con < 10 ? parseFloat(stt + '.' + con) : stt + '.' + con) : stt, ly = [d.ly_do, d.bo_mon && 'Đơn vị sử dụng: ' + d.bo_mon].filter(Boolean).join('\n');
         const v = { 1: so1, 2: d.ten, 3: d.dvt, 11: d.yckt, 12: ly, 13: d.thoi_diem, 14: d.trang_thai === 'Đã mua' ? 'đã mua' : '' };
         if (!laCha) {
           const co = NC.map((k, i) => [k, 5 + i]).filter(x => d[x[0]]), cot = co.length === 1 ? 'EFGH'[co[0][1] - 5] : co.length ? 'D' : 'E';
@@ -268,11 +275,12 @@
           v[4] = F('SUM(E' + r + ':H' + r + ')', d.sl); v[9] = d.dinh_muc || ''; v[10] = F('I' + r + '*' + cot + r, d.kinh_phi); tong += d.kinh_phi;
         }
         ghi(d.cha ? M.con : laCha ? M.cha : M.tb, v, caoDong([[d.ten, 26.7], [d.yckt, 27.5], [ly, 15.5]]));
-        theoDoi.push([so1, m[0], d.ten, d.trang_thai, d.bo_mon, d.nguon.map(n => n.gv + ' (' + n.don + ', SL ' + n.sl + ')').join('; '), d.hien_trang ? d.hien_trang.co : '', d.hien_trang ? d.hien_trang.hong : '', d.ghi_chu]);
       });
       const kpk = D.cau_hinh.kp_muc[m[0]];
-      if (!l.length) ghi(M.cham, { 1: '…', 2: '…' });
-      ws.getRow(rm).getCell(10).value = !l.length && kpk ? kpk : F('SUM(J' + dau + ':J' + (r - 1) + ')', l.length ? tong : 0);
+      const vd = viDu[m[0]] || [];
+      (l.length ? vd.filter(x => !x.so) : vd).forEach(x => ghi(x.m, x.v));
+      // mục không có dòng nào trong mẫu (VD III.2 chỉ ghi kinh phí khoán): giữ nguyên, không thêm dòng
+      ws.getRow(rm).getCell(10).value = !l.length && kpk ? kpk : r > dau ? F('SUM(J' + dau + ':J' + (r - 1) + ')', l.length ? tong : 0) : null;
       return [rm, !l.length && kpk ? kpk : tong];
     };
     // mục có mục con: dòng mục + đệ quy; J = tổng J các mục con
@@ -299,12 +307,7 @@
         if (o2.length >= 2 && !/ĐẠI DIỆN|HIỆU TRƯỞNG|KẾ HOẠCH/.test(o2.map(c => c.value).join(' '))) { if (ky.truong_khoa) o2[0].value = ky.truong_khoa; if (ky.hieu_truong) o2[o2.length - 1].value = ky.hieu_truong; break; } }
       w.name = w.name.replace(/\d{4}$/, '') + nam;
     });
-    ws.pageSetup.printArea = 'A1:M' + cuoi; ws.pageSetup.printTitlesRow = '6:8';
-    ws.views = [{ state: 'frozen', xSplit: 0, ySplit: 8, topLeftCell: 'A9', activeCell: 'A9' }];
-    // trang tính theo dõi (không thuộc mẫu của Trường)
-    const td = wb.addWorksheet('Theo doi');
-    td.addRow(['TT', 'Mục', 'Danh mục', 'Trạng thái', 'Đơn vị sử dụng', 'Đề xuất của GV (mã phiếu)', 'Hiện có (cùng tên)', 'Đang hỏng', 'Ghi chú']).font = { bold: true };
-    theoDoi.forEach(x => td.addRow(x)); [6, 10, 50, 14, 24, 50, 12, 10, 30].forEach((w, i) => { td.getColumn(i + 1).width = w; });
+    ws.pageSetup.printArea = 'A1:M' + cuoi; // giữ nguyên như file mẫu: không thêm trang tính, không cố định / lặp dòng tiêu đề
     wb.calcProperties = Object.assign({}, wb.calcProperties, { fullCalcOnLoad: true });
     const buf = await wb.xlsx.writeBuffer(), a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
