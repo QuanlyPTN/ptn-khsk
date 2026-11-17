@@ -5,7 +5,7 @@
 (function () {
   'use strict';
   const Q = window.PTN_QL;
-  const { $, api, chay, trang, moHop, dongHop, o, giaTri, esc, toast, ngayVN, boDau, fmt, coQuyen, napXlsx } = Q;
+  const { $, api, chay, trang, moHop, dongHop, o, giaTri, esc, toast, ngayVN, boDau, fmt, coQuyen, napXlsx, laAdmin } = Q;
   const MAU_TT = { 'Chờ duyệt': 't-info', 'Đã duyệt': 't-ok', 'Đã mua': 't-warn', 'Không duyệt': 't-gray' };
   const tagTT = (t) => '<span class="tag ' + (MAU_TT[t] || 't-gray') + '">' + esc(t) + '</span>';
   const xl = () => coQuyen('ke-hoach-nam', 'xu_ly');
@@ -14,9 +14,10 @@
     const n = parseFloat(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s) ? s.replace(/\./g, '').replace(',', '.') : s.replace(',', '.')); return isNaN(n) ? 0 : n; };
   const tien = (v) => v ? fmt(Math.round(v * 1000) / 1000) : '';
   let D = null; // dữ liệu năm đang xem
+  const tdN = (s, nam) => { s = String(s || '').trim(); return s ? s.replace(/20\d\d/g, nam) : 'Năm ' + nam; }; // thời điểm thực hiện theo năm kế hoạch
 
   async function manKHN(p) {
-    const nam = /^\d{4}$/.test(p[1] || '') ? p[1] : '';
+    const nam = /^\d{4}$/.test(p[1] || '') ? p[1] : '', tabXd = p[2] === 'xd';
     const nd = trang('Danh sách thiết bị dự trù năm', '', '<a href="#/tai-san">Tài sản</a> ›');
     D = await api('khn_ds', nam ? { nam } : {});
     D.leaf = D.muc.filter(m => m[4]);
@@ -29,11 +30,13 @@
         'không phải năm đang nhận đề xuất (năm nhận đề xuất: ' + esc(D.nam_mo) + ')') + '. Số tiền tính theo <b>nghìn đồng</b> như file của Trường.</div>' +
       '<div class="btns" style="margin:10px 0">' + (xl() ? '<button class="btn sm" id="k-them">+ Thêm dòng</button><label class="btn o sm">⇪ Nhập từ file Excel<input type="file" id="x-file" accept=".xlsx,.xls" hidden></label>' : '') +
       '<button class="btn o sm" id="k-xuat">⇩ Xuất file Excel theo mẫu</button>' + (xl() ? '<button class="btn o sm" id="k-chep">⎘ Chép dòng chưa mua từ năm khác</button><button class="btn o sm" id="k-ch">⚙ Hạn nộp – kinh phí khoán</button>' : '') + '</div>' +
-      '<div id="k-tong"></div><div class="tools"><input type="search" id="k-q" placeholder="Tìm tên, yêu cầu kỹ thuật, bộ môn, người đề xuất…"><select id="k-tt"><option value="">Mọi trạng thái</option>' +
+      (D.xd ? '<div class="btns" style="margin:0 0 10px"><a class="btn sm ' + (tabXd ? 'o' : 'chon') + '" href="#/ke-hoach-nam/' + D.nam + '">Mua sắm thiết bị (trang tính Muasam)</a>' +
+        '<a class="btn sm ' + (tabXd ? 'chon' : 'o') + '" href="#/ke-hoach-nam/' + D.nam + '/xd">🔒 Xây dựng – sửa chữa công trình (trang tính Xaydung, chỉ admin)</a></div><div id="k-xd"' + (tabXd ? '' : ' hidden') + '></div>' : '') +
+      '<div id="k-tb"' + (D.xd && tabXd ? ' hidden' : '') + '><div id="k-tong"></div><div class="tools"><input type="search" id="k-q" placeholder="Tìm tên, yêu cầu kỹ thuật, bộ môn, người đề xuất…"><select id="k-tt"><option value="">Mọi trạng thái</option>' +
       D.trang_thai.map(t => '<option>' + t + '</option>').join('') + '</select><select id="k-muc" style="max-width:340px"><option value="">Mọi mục</option>' + D.leaf.map(m => '<option value="' + m[0] + '">' + esc(m[0] + ' – ' + m[3]) + '</option>').join('') + '</select>' +
       '<select id="k-bm"><option value="">Mọi bộ môn</option>' + [...new Set(D.dong.map(d => d.bo_mon).filter(Boolean))].sort().map(b => '<option>' + esc(b) + '</option>').join('') + '</select></div>' +
       (xl() ? '<div class="btns" id="k-chon" style="margin:6px 0" hidden><span class="note" id="k-dem"></span>' + D.trang_thai.map(t => '<button class="btn o sm" data-tt="' + t + '">→ ' + t + '</button>').join('') + '<button class="btn red o sm" id="k-xoa">Xóa dòng đã chọn</button></div>' : '') +
-      '<div id="k-ds"></div>';
+      '<div id="k-ds"></div></div>';
     $('k-q').oninput = veDS; ['k-tt', 'k-muc', 'k-bm'].forEach(id => { $(id).onchange = veDS; });
     $('k-xuat').onclick = hopXuat;
     const nx = $('b-xuat-trang'); if (nx) { nx.textContent = '⇩ Xuất file Excel theo mẫu'; nx.onclick = hopXuat; } // nút chung chỉ chép bảng (không công thức)
@@ -44,9 +47,47 @@
       $('k-chon').querySelectorAll('[data-tt]').forEach(b => { b.onclick = (e) => chay(e.target, async () => { const r = await api('khn_tt', { ids: dangChon(), trang_thai: b.dataset.tt }); toast('Đã chuyển ' + r.n + ' dòng sang "' + b.dataset.tt + '"'); await taiLai(); }); });
       $('k-xoa').onclick = (e) => { const ids = dangChon(); if (!confirm('Xóa ' + ids.length + ' dòng đã chọn (kèm dòng con)?')) return; chay(e.target, async () => { const r = await api('khn_xoa', { ids }); toast('Đã xóa ' + r.n + ' dòng'); await taiLai(); }); };
     }
-    veTong(); veDS();
+    veTong(); veDS(); if (D.xd) veXD();
   }
-  async function taiLai() { const y = window.scrollY; const p = (location.hash.split('/')[2] || ''); D = Object.assign(await api('khn_ds', { nam: D.nam }), {}); D.leaf = D.muc.filter(m => m[4]); veTong(); veDS(); window.scrollTo(0, y); return p; }
+  async function taiLai() { const y = window.scrollY; D = await api('khn_ds', { nam: D.nam }); D.leaf = D.muc.filter(m => m[4]); veTong(); veDS(); if (D.xd) veXD(); window.scrollTo(0, y); }
+
+  // ---------- trang tính Xây dựng: sửa chữa, cải tạo, xây dựng công trình (chỉ admin) ----------
+  function veXD() {
+    const l = D.xd, tong = l.reduce((a, x) => a + x.kinh_phi, 0);
+    let h = '<div class="card note">Trang tính <b>Xaydung</b> của file kế hoạch: danh mục sửa chữa, cải tạo, nâng cấp, mở rộng, xây dựng mới hạng mục công trình. Chỉ admin xem và sửa; giảng viên chỉ đề xuất thiết bị. ' +
+      'Xuất file: mục chưa có hạng mục giữ nguyên dòng ví dụ của mẫu; cột Tổng kinh phí = Khối lượng × Đơn giá.</div>' +
+      '<div class="btns" style="margin:10px 0"><button class="btn sm" id="x-them">+ Thêm hạng mục</button><span class="note">Tổng: <b>' + tien(tong) + '</b> nghìn đồng · ' + l.length + ' hạng mục</span></div>';
+    if (!l.length) h += '<div class="card empty">Chưa có hạng mục xây dựng – sửa chữa năm ' + esc(D.nam) + '. Bấm "+ Thêm hạng mục" hoặc nhập từ file Excel (trang tính Xaydung).</div>';
+    else {
+      h += '<div class="tbl-wrap"><table><thead><tr><th>TT</th><th>Danh mục</th><th>Tên công trình</th><th>Địa điểm</th><th>Mục tiêu</th><th>Sự cần thiết, lý do</th><th>Tiêu chuẩn, định mức</th><th>ĐVT</th><th class="num">Khối lượng</th><th class="num">Đơn giá</th><th class="num">Tổng kinh phí</th><th>Thời điểm</th><th></th></tr></thead><tbody>';
+      D.muc_xd.forEach(m => { const lm = l.filter(x => x.muc === m[0]); if (!lm.length) return;
+        h += '<tr style="background:#F3F6FC"><td colspan="13"><b>' + esc(m[0].replace('#2', '')) + '</b> – ' + esc(m[1]) + ' · <span class="note">' + tien(lm.reduce((a, x) => a + x.kinh_phi, 0)) + ' nghìn đ</span></td></tr>';
+        lm.forEach((x, i) => { h += '<tr><td>' + (i + 1) + '</td>' + ['ten', 'cong_trinh', 'dia_diem', 'muc_tieu', 'ly_do', 'tieu_chuan', 'dvt'].map(k => '<td style="white-space:pre-line;' + ({ ten: 'min-width:240px', muc_tieu: 'min-width:200px', ly_do: 'min-width:180px', tieu_chuan: 'min-width:160px', cong_trinh: 'min-width:140px', dia_diem: 'min-width:110px' }[k] || '') + '">' + esc(x[k]) + '</td>').join('') +
+          '<td class="num">' + fmt(x.khoi_luong) + '</td><td class="num">' + tien(x.don_gia) + '</td><td class="num"><b>' + tien(x.kinh_phi) + '</b></td><td>' + esc(x.thoi_diem) + '</td>' +
+          '<td style="white-space:nowrap"><button class="btn o sm" data-xs="' + esc(x.id) + '" title="Sửa">✎</button><button class="btn o sm" data-xl="' + esc(x.id) + '" title="Lên">↑</button><button class="btn o sm" data-xx="' + esc(x.id) + '" title="Xuống">↓</button><button class="btn red o sm" data-xd="' + esc(x.id) + '" title="Xóa">✕</button></td></tr>'; }); });
+      h += '</tbody></table></div>';
+    }
+    const k = $('k-xd'); k.innerHTML = h;
+    $('x-them').onclick = () => hopXD(null);
+    k.querySelectorAll('[data-xs]').forEach(b => { b.onclick = () => hopXD(l.find(x => x.id === b.dataset.xs)); });
+    k.querySelectorAll('[data-xl],[data-xx]').forEach(b => { b.onclick = (e) => chay(e.target, async () => { await api('khn_xd_doi_cho', { id: b.dataset.xl || b.dataset.xx, huong: b.dataset.xl ? -1 : 1 }); await taiLai(); }); });
+    k.querySelectorAll('[data-xd]').forEach(b => { b.onclick = (e) => { if (!confirm('Xóa hạng mục này?')) return; chay(e.target, async () => { await api('khn_xd_xoa', { ids: [b.dataset.xd] }); toast('Đã xóa'); await taiLai(); }); }; });
+  }
+  function hopXD(x) {
+    x = x || { muc: 'C.VI', dvt: 'Bộ', khoi_luong: 1, thoi_diem: 'Năm ' + D.nam };
+    moHop('<h2>' + (x.id ? 'Sửa hạng mục' : 'Thêm hạng mục xây dựng – sửa chữa năm ' + esc(D.nam)) + '</h2><form id="k-f" class="form-grid">' +
+      o('muc', 'Mục trong trang tính Xaydung', { select: D.muc_xd.map(m => [m[0], m[0].replace('#2', ' (2)') + ' – ' + m[1]]), v: x.muc, full: 1 }) +
+      o('ten', 'Danh mục sửa chữa, cải tạo, nâng cấp, mở rộng, xây dựng mới', { area: 1, v: x.ten, req: 1, full: 1 }) + o('cong_trinh', 'Tên công trình', { v: x.cong_trinh }) + o('dia_diem', 'Địa điểm', { v: x.dia_diem }) +
+      o('muc_tieu', 'Mục tiêu', { area: 1, v: x.muc_tieu, full: 1 }) + o('ly_do', 'Sự cần thiết, lý do thực hiện', { area: 1, v: x.ly_do, full: 1 }) + o('tieu_chuan', 'Tiêu chuẩn, định mức', { area: 1, v: x.tieu_chuan, full: 1 }) +
+      o('dvt', 'Đơn vị tính', { v: x.dvt }) + o('khoi_luong', 'Khối lượng', { type: 'number', v: x.khoi_luong || '', extra: ' min="0" step="any"' }) +
+      o('don_gia', 'Đơn giá (nghìn đồng)', { type: 'number', v: x.don_gia || '', extra: ' min="0" step="any"' }) + '<div class="f"><span>Tổng kinh phí (nghìn đồng)</span><b id="k-kp" style="padding:8px 0">—</b></div>' +
+      o('thoi_diem', 'Thời điểm dự kiến thực hiện', { v: x.thoi_diem }) + o('ghi_chu', 'Ghi chú (không in vào file)', { v: x.ghi_chu }) +
+      '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>', (m) => {
+      const f = m.querySelector('#k-f'), ve = () => { const v = giaTri(f); m.querySelector('#k-kp').textContent = so(v.khoi_luong) && so(v.don_gia) ? tien(so(v.khoi_luong) * so(v.don_gia)) : '—'; };
+      f.oninput = ve; ve(); m.querySelectorAll('textarea').forEach(t => { t.rows = 3; });
+      f.onsubmit = async (e) => { e.preventDefault(); await chay(e.submitter, () => api('khn_xd_luu', { nam: D.nam, d: Object.assign(giaTri(f), { id: x.id || '' }) })); dongHop(); toast('Đã lưu'); await taiLai(); };
+    });
+  }
   const dangChon = () => [...document.querySelectorAll('#k-ds [data-chon]:checked')].map(x => x.dataset.chon);
   const conCua = (id) => D.dong.filter(d => d.cha === id);
   // kinh phí của dòng cha có dòng con = tổng dòng con (file mẫu: dòng cha không ghi số lượng, kinh phí)
@@ -135,7 +176,9 @@
       '<label class="f"><span>Năm đang nhận đề xuất</span><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" name="nam_mo"' + (D.nam === D.nam_mo ? ' checked disabled' : '') + '> Phiếu GV-BS ở trang dùng chung đưa vào năm ' + esc(D.nam) + '</label></label>' +
       '<p class="note full">Kinh phí khoán: mục không kê từng thiết bị (VD "B. Tài sản cố định đặc thù", "III.2 Sửa chữa máy móc") ghi một số tổng (nghìn đồng); mục đã có dòng thì tính theo dòng.</p>' +
       D.leaf.map(m => o('kp_' + m[0], m[0] + ' – ' + m[3], { type: 'number', v: c.kp_muc[m[0]] || '', extra: ' min="0" step="any"' })).join('') +
+      '<p class="note full">Thời điểm thực hiện dự kiến: file xuất luôn ghi theo năm kế hoạch. <button type="button" class="btn o sm" id="k-td">Đổi thời điểm của mọi dòng đang lưu sang năm ' + esc(D.nam) + '</button></p>' +
       '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>', (m) => {
+      m.querySelector('#k-td').onclick = (e) => chay(e.target, async () => { const r = await api('khn_td', { nam: D.nam }); toast('Đã đổi ' + r.n + ' dòng sang năm ' + D.nam); dongHop(); await taiLai(); });
       m.querySelector('#k-f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target), kpm = {}; D.leaf.forEach(x => { if (so(v['kp_' + x[0]])) kpm[x[0]] = so(v['kp_' + x[0]]); });
         await chay(e.submitter, () => api('khn_cau_hinh', { nam: D.nam, han: v.han, kp_muc: kpm, nam_mo: v.nam_mo ? 1 : 0 })); dongHop(); toast('Đã lưu'); Q.dieuHuong(); };
     });
@@ -189,26 +232,44 @@
       dong.push(Object.assign({ muc: cur, la_con: !Number.isInteger(sTT) ? 1 : 0, ten: b, dvt: String(r[2]).trim(), dinh_muc: so(r[8]), yckt: String(r[10] || '').trim(),
         bo_mon: bm, ly_do: L.filter(x => !/^\s*đơn vị sử dụng\s*:/i.test(x)).join('\n').trim(), thoi_diem: String(r[12] || '').trim(), trang_thai: /đã mua/i.test(String(r[13] || '')) ? 'Đã mua' : 'Đã duyệt' }, sl));
     }
-    return { ten, dong, kp, loi };
+    return { ten, dong, kp, loi, xd: docXaydung(XLSX, wb) };
+  }
+  // trang tính Xaydung: hạng mục có TT là số và danh mục không phải dòng ví dụ "…"; mục theo dòng A / B / C và số La Mã (XII thứ hai → C.XII#2)
+  function docXaydung(XLSX, wb) {
+    const ten = wb.SheetNames.find(n => /^xay\s*dung/i.test(boDau(n))); if (!ten) return [];
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[ten], { header: 1, raw: true, defval: '' }), ds = [], gap = {};
+    const hd = rows.findIndex(r => String(r[0]).trim() === 'TT'); if (hd < 0) return [];
+    let l0 = '', cur = '';
+    for (let i = hd + 1; i < rows.length; i++) {
+      const r = rows[i], a = String(r[0]).trim(), b = String(r[1]).trim();
+      if (/tong cong/.test(boDau(b))) break;
+      let ma = ''; if (/^[A-E]$/.test(a)) { l0 = a; ma = a; } else if (/^[IVX]+$/.test(a) && l0) ma = l0 + '.' + a;
+      if (ma) { gap[ma] = (gap[ma] || 0) + 1; cur = gap[ma] > 1 ? ma + '#' + gap[ma] : ma; continue; }
+      if (!cur || !b || /…\s*$/.test(b) || !(typeof r[0] === 'number' || /^\d+$/.test(a))) continue;
+      ds.push({ muc: cur, ten: b, cong_trinh: String(r[2]).trim(), dia_diem: String(r[3]).trim(), muc_tieu: String(r[4]).trim(), ly_do: String(r[5]).trim(), tieu_chuan: String(r[6]).trim(),
+        dvt: String(r[7]).trim(), khoi_luong: so(r[8]), don_gia: so(r[9]), thoi_diem: String(r[11]).trim() });
+    }
+    return ds;
   }
   async function hopNhap(f) {
     try {
       const XLSX = await napXlsx(), wb = XLSX.read(await f.arrayBuffer(), { type: 'array' }), r = docFileKHN(XLSX, wb);
-      if (!r.dong.length) throw new Error('Không đọc được dòng thiết bị nào trong file');
+      if (!laAdmin()) r.xd = []; // trang tính Xây dựng: chỉ admin
+      if (!r.dong.length && !r.xd.length) throw new Error('Không đọc được dòng thiết bị nào trong file');
       const theoMuc = {}; r.dong.forEach(d => { theoMuc[d.muc] = theoMuc[d.muc] || [0, 0]; theoMuc[d.muc][0]++; theoMuc[d.muc][1] += (d.bo_sung + d.thay_moi + d.sua_chua + d.nang_cap) * d.dinh_muc; });
       const daCo = D.dong.length;
       moHop('<h2>Nhập kế hoạch năm từ file</h2><p class="note">' + esc(f.name) + ' · trang tính <b>' + esc(r.ten) + '</b> · <b>' + r.dong.length + '</b> dòng (' + r.dong.filter(d => d.la_con).length + ' dòng con)' +
-        (Object.keys(r.kp).length ? ' · kinh phí khoán: ' + Object.keys(r.kp).map(k => k + ' ' + tien(r.kp[k])).join(', ') : '') + (r.loi ? ' · <b>' + r.loi + ' mục lạ</b> xếp vào mục gần nhất' : '') + '</p>' +
+        (Object.keys(r.kp).length ? ' · kinh phí khoán: ' + Object.keys(r.kp).map(k => k + ' ' + tien(r.kp[k])).join(', ') : '') + (r.loi ? ' · <b>' + r.loi + ' mục lạ</b> xếp vào mục gần nhất' : '') + (r.xd.length ? ' · trang tính Xaydung: <b>' + r.xd.length + '</b> hạng mục xây dựng – sửa chữa' : '') + '</p>' +
         '<div class="tbl-wrap"><table><thead><tr><th>Mục</th><th class="num">Số dòng</th><th class="num">Kinh phí (nghìn đ)</th></tr></thead><tbody>' +
         Object.keys(theoMuc).map(k => '<tr><td><b>' + esc(k) + '</b> ' + esc((D.muc.find(m => m[0] === k) || [])[3] || '') + '</td><td class="num">' + theoMuc[k][0] + '</td><td class="num">' + tien(theoMuc[k][1]) + '</td></tr>').join('') + '</tbody></table></div>' +
         '<form id="k-f" class="form-grid">' + o('nam', 'Nhập vào năm', { select: D.cac_nam.concat([String(+D.cac_nam[D.cac_nam.length - 1] + 1)]).filter((x, i, a) => a.indexOf(x) === i), v: (/(20\d\d)/.exec(f.name) || [])[1] && D.cac_nam.indexOf(/(20\d\d)/.exec(f.name)[1]) >= 0 ? /(20\d\d)/.exec(f.name)[1] : D.nam }) +
         o('cach', 'Cách nhập', { select: [['them', 'Thêm vào danh sách đang có'], ['thay', 'Thay toàn bộ danh sách của năm (xóa dòng cũ)']], v: daCo ? 'them' : 'thay' }) +
-        '<p class="note full">Dòng nhập từ file có trạng thái "Đã duyệt" (cột N ghi "đã mua" → "Đã mua"). "Đơn vị sử dụng: …" ở cột lý do được tách thành bộ môn. Lần nhập ghi vào <b>Lịch sử tải file</b> (thu hồi được, lưu file gốc).</p>' +
+        '<p class="note full">Dòng nhập từ file có trạng thái "Đã duyệt" (cột N ghi "đã mua" → "Đã mua"). "Đơn vị sử dụng: …" ở cột lý do được tách thành bộ môn. Thời điểm thực hiện đổi theo năm nhập vào. Lần nhập ghi vào <b>Lịch sử tải file</b> (thu hồi được, lưu file gốc).</p>' +
         '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Nhập ' + r.dong.length + ' dòng</button></div></form>', (m) => {
         m.querySelector('#k-f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target);
           if (v.cach === 'thay' && !confirm('Xóa toàn bộ danh sách năm ' + v.nam + ' rồi nhập lại từ file?')) return;
-          const k = await chay(e.submitter, () => api('khn_nhap', { nam: v.nam, thay: v.cach === 'thay' ? 1 : 0, dong: r.dong, kp_muc: r.kp, tep: f.name }));
-          dongHop(); toast('Đã nhập ' + k.n + ' dòng' + (k.xoa ? ', thay ' + k.xoa + ' dòng cũ' : '')); location.hash = '#/ke-hoach-nam/' + k.nam; Q.dieuHuong(); };
+          const k = await chay(e.submitter, () => api('khn_nhap', { nam: v.nam, thay: v.cach === 'thay' ? 1 : 0, dong: r.dong, xd: r.xd, kp_muc: r.kp, tep: f.name }));
+          dongHop(); toast('Đã nhập ' + k.n + ' dòng' + (k.xd ? ' + ' + k.xd + ' hạng mục xây dựng' : '') + (k.xoa ? ', thay ' + k.xoa + ' dòng cũ' : '')); location.hash = '#/ke-hoach-nam/' + k.nam; Q.dieuHuong(); };
       });
     } catch (err) { toast(err.message, true); }
     const x = $('x-file'); if (x) x.value = '';
@@ -268,7 +329,7 @@
         const laCha = !d.cha && ds.some(x => x.cha === d.id);
         if (d.cha) con++; else { stt++; con = 0; }
         const so1 = d.cha ? (con < 10 ? parseFloat(stt + '.' + con) : stt + '.' + con) : stt, ly = [d.ly_do, d.bo_mon && 'Đơn vị sử dụng: ' + d.bo_mon].filter(Boolean).join('\n');
-        const v = { 1: so1, 2: d.ten, 3: d.dvt, 11: d.yckt, 12: ly, 13: d.thoi_diem, 14: d.trang_thai === 'Đã mua' ? 'đã mua' : '' };
+        const v = { 1: so1, 2: d.ten, 3: d.dvt, 11: d.yckt, 12: ly, 13: tdN(d.thoi_diem, nam), 14: d.trang_thai === 'Đã mua' ? 'đã mua' : '' };
         if (!laCha) {
           const co = NC.map((k, i) => [k, 5 + i]).filter(x => d[x[0]]), cot = co.length === 1 ? 'EFGH'[co[0][1] - 5] : co.length ? 'D' : 'E';
           NC.forEach((k, i) => { v[5 + i] = d[k] || ''; });
@@ -297,6 +358,7 @@
     gopChan.forEach(g => ws.mergeCells(g.replace(/#(\d+)/g, (s, n) => String(rT + +n))));
     const cuoi = r - 1;
     for (let k = r; k <= cuoiCu; k++) { const row = ws.getRow(k); for (let c = 1; c <= 14; c++) { const o2 = row.getCell(c); o2.value = null; o2.style = {}; } row.height = undefined; }
+    const wx = wb.worksheets.find(w => /^xay\s*dung/i.test(boDau(w.name))); if (wx) dungXaydung(wx, nam);
     // tiêu đề, đơn vị, năm, người ký (cả trang tính xây dựng)
     wb.worksheets.forEach(w => {
       if (/^tool/i.test(w.name)) return;
@@ -308,12 +370,65 @@
       w.name = w.name.replace(/\d{4}$/, '') + nam;
     });
     ws.pageSetup.printArea = 'A1:M' + cuoi; // giữ nguyên như file mẫu: không thêm trang tính, không cố định / lặp dòng tiêu đề
+    // ExcelJS ghi <pageSetUpPr> trước <outlinePr> trong <sheetPr> (sai thứ tự) → Excel báo "We found a problem…": bỏ outlinePr (không dùng nhóm dòng)
+    wb.worksheets.forEach(w => { if (w.properties) delete w.properties.outlineProperties; });
     wb.calcProperties = Object.assign({}, wb.calcProperties, { fullCalcOnLoad: true });
     const buf = await wb.xlsx.writeBuffer(), a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
     a.download = 'KE HOACH MUA SAM NAM ' + nam + (phamVi === 'trong' ? ' (mau trong)' : phamVi === 'tat_ca' ? ' (tong hop)' : '') + '.xlsx';
     document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
     toast('Đã tạo file: ' + ds.length + ' dòng');
+  }
+
+  // trang tính Xaydung: dựng lại theo khung mẫu (mục A, B, C – I … XIV); mục chưa có hạng mục giữ dòng ví dụ của mẫu; K = I × J; mục = SUM; C = tổng mục con; Tổng cộng = A + B + C
+  function dungXaydung(ws, nam) {
+    const A = (r) => ws.getRow(r).getCell(1).value, B = (r) => ws.getRow(r).getCell(2).value, N = 13;
+    const mau = (r) => { const row = ws.getRow(r), st = {}; for (let c = 1; c <= N; c++) st[c] = sao(row.getCell(c).style); return { st, h: row.height }; };
+    const giaTriDong = (r) => { const v = {}; for (let c = 1; c <= N; c++) v[c] = sao(ws.getRow(r).getCell(c).value); return v; };
+    let rTong = 0; for (let r = 8; r <= ws.rowCount; r++) if (/tong cong/.test(boDau(B(r)))) { rTong = r; break; }
+    if (!rTong) return;
+    const muc = [], gap = {}; let l0 = '', cur = null, rMau = 0;
+    for (let r = 8; r < rTong; r++) {
+      const a = String(A(r) == null ? '' : A(r)).trim(), b = B(r); let ma = '';
+      if (/^[A-E]$/.test(a)) { l0 = a; ma = a; } else if (/^[IVX]+$/.test(a) && l0) ma = l0 + '.' + a;
+      if (ma) { gap[ma] = (gap[ma] || 0) + 1; cur = { ma: gap[ma] > 1 ? ma + '#' + gap[ma] : ma, m: mau(r), v: giaTriDong(r), vd: [] }; muc.push(cur); continue; }
+      if (!cur) continue;
+      if (typeof b === 'string' && /…\s*$/.test(b)) cur.vd.push({ r, m: mau(r), v: giaTriDong(r), so: typeof A(r) === 'number' });
+      else if (typeof A(r) === 'number' && b && !rMau) rMau = r;
+    }
+    const goc = (ma) => ma.replace(/#\d+$/, ''), laCha = (m) => muc.some(x => goc(x.ma).indexOf(goc(m.ma) + '.') === 0);
+    const mHM = rMau ? mau(rMau) : (muc.find(m => m.vd.some(x => x.so)) || { vd: [{ m: muc[0].m }] }).vd.find(x => x.so || 1).m, mTong = mau(rTong);
+    const vTong = giaTriDong(rTong), chan = []; for (let r = rTong + 1; r <= ws.rowCount; r++) chan.push({ m: mau(r), v: giaTriDong(r) });
+    const gopChan = (ws.model.merges || []).filter(g => +/\d+/.exec(g)[0] > rTong).map(g => g.replace(/(\d+)/g, (x) => '#' + (+x - rTong)));
+    (ws.model.merges || []).filter(g => +/\d+/.exec(g)[0] >= 8).forEach(g => ws.unMergeCells(g));
+    const cuoiCu = ws.rowCount, ds = D.xd || [], F = (f, kq) => ({ formula: f, result: kq });
+    let r = 8;
+    const ghi = (m, v, h) => { const row = ws.getRow(r); for (let c = 1; c <= N; c++) { const o2 = row.getCell(c); o2.style = sao(m.st[c]) || {}; o2.value = v[c] === undefined || v[c] === '' ? null : v[c]; } row.height = h || m.h; return r++; };
+    // công thức của dòng ví dụ (VD =I10*J10) trỏ theo dòng mới
+    const doiDong = (v, cu, moi) => { const o2 = {}; Object.keys(v).forEach(c => { const x = v[c]; o2[c] = x && x.formula ? { formula: x.formula.replace(new RegExp('([A-Z]+)' + cu + '(?!\\d)', 'g'), '$1' + moi) } : x; }); return o2; };
+    const kq = {};
+    muc.forEach(m => {
+      const v = Object.assign({}, m.v); delete v[11]; const rm = ghi(m.m, v), dau = r; let tong = 0;
+      if (!laCha(m)) {
+        ds.filter(x => x.muc === m.ma).forEach((x, i) => {
+          ghi(mHM, { 1: i + 1, 2: x.ten, 3: x.cong_trinh, 4: x.dia_diem, 5: x.muc_tieu, 6: x.ly_do, 7: x.tieu_chuan, 8: x.dvt, 9: x.khoi_luong || '', 10: x.don_gia || '', 11: F('I' + r + '*J' + r, x.kinh_phi), 12: tdN(x.thoi_diem, nam) },
+            caoDong([[x.ten, 20], [x.muc_tieu, 18.8], [x.ly_do, 15.8], [x.tieu_chuan, 11.7], [x.cong_trinh, 12.5]]));
+          tong += x.kinh_phi;
+        });
+        (r > dau ? m.vd.filter(x => !x.so) : m.vd).forEach(x => ghi(x.m, doiDong(x.v, x.r, r)));
+        ws.getRow(rm).getCell(11).value = r > dau ? F('SUM(K' + dau + ':K' + (r - 1) + ')', tong) : null;
+      }
+      kq[m.ma] = { r: rm, t: tong };
+    });
+    muc.filter(laCha).forEach(m => { const con = muc.filter(x => goc(x.ma).indexOf(goc(m.ma) + '.') === 0), t = con.reduce((a, x) => a + kq[x.ma].t, 0);
+      kq[m.ma].t = t; ws.getRow(kq[m.ma].r).getCell(11).value = F(con.map(x => 'K' + kq[x.ma].r).join('+'), t); });
+    const dinh = muc.filter(m => m.ma.indexOf('.') < 0), vt = Object.assign({}, vTong); delete vt[11];
+    const rT = ghi(mTong, vt); ws.getRow(rT).getCell(11).value = F(dinh.map(m => 'K' + kq[m.ma].r).join('+'), dinh.reduce((a, m) => a + kq[m.ma].t, 0));
+    chan.forEach(c => ghi(c.m, c.v));
+    gopChan.forEach(g => ws.mergeCells(g.replace(/#(\d+)/g, (x, n) => String(rT + +n))));
+    const cuoi = r - 1;
+    for (let k = r; k <= cuoiCu; k++) { const row = ws.getRow(k); for (let c = 1; c <= N; c++) { const o2 = row.getCell(c); o2.value = null; o2.style = {}; } row.height = undefined; }
+    ws.pageSetup.printArea = 'A1:L' + cuoi;
   }
 
   Object.assign(Q.TUYEN, { 'ke-hoach-nam': manKHN });
