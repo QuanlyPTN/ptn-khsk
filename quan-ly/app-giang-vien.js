@@ -53,17 +53,18 @@
     const kv = [['Giảng viên', [d.ho_ten, d.ma_so].filter(Boolean).join(' – ')], ['Bộ môn', d.bo_mon], ['Liên hệ', [d.sdt, d.email].filter(Boolean).join(' · ')],
       ['Loại giấy báo', n.chieu ? (n.chieu === 'vao' ? 'Mang tài sản VÀO cơ quan' : 'Mang tài sản RA KHỎI cơ quan') : ''], ['Phòng', d.phong],
       [bh ? 'Ngày phát hiện sự cố' : d.qr === 'GV-TS' ? 'Ngày mang tài sản' : 'Từ ngày', ngayVN(d.tu_ngay)], ['Đến ngày', ngayVN(d.den_ngay)],
-      ['Lý do / nội dung', n.ly_do], ['Giấy báo mang vào đã lập', n.ma_vao], ['Diễn biến sự cố', n.dien_bien], ['Đề xuất hướng xử lý', n.de_xuat], ['Ý kiến PTN', n.y_kien], ['Kết quả', n.ket_qua],
+      ['Năm kế hoạch', n.nam], ['Đơn vị sử dụng', n.nam ? n.bo_mon : ''], ['Lý do / nội dung', n.ly_do], ['Giấy báo mang vào đã lập', n.ma_vao], ['Diễn biến sự cố', n.dien_bien], ['Đề xuất hướng xử lý', n.de_xuat], ['Ý kiến PTN', n.y_kien], ['Kết quả', n.ket_qua],
       ['Hướng xử lý', n.huong_xu_ly ? n.huong_xu_ly + (n.huong_khac ? ' – ' + n.huong_khac : '') : ''], ['Người sửa chữa', n.nguoi_sua],
       ['Tiếp nhận / duyệt', n.tiep_nhan ? n.tiep_nhan.nguoi + ' · ' + ngayVN(n.tiep_nhan.tg) : ''], [bg ? 'Bàn giao' : 'Hoàn tất', n.hoan_tat ? n.hoan_tat.nguoi + ' · ' + ngayVN(n.hoan_tat.tg) : '']].filter(x => x[1]);
-    const cot = { ten: 'Tên', ma: 'Mã / ID', dvt: 'ĐVT', sl: 'SL', tinh_trang: 'Tình trạng', ghi_chu: 'Ghi chú', nguoi_giao: 'Người giao', nguoi_nhan: 'Người nhận' }, coCot = Object.keys(cot).filter(k => (n.tb || []).some(x => x[k]));
+    const NC = { bo_sung: 'Bổ sung', thay_moi: 'Thay mới', sua_chua: 'Sửa chữa', nang_cap: 'Cải tạo, nâng cấp' };
+    const cot = { ten: 'Tên', ma: 'Mã / ID', dvt: 'ĐVT', nhu_cau: 'Nhu cầu', sl: 'SL', don_gia: 'Đơn giá dự kiến (nghìn đ)', yckt: 'Yêu cầu kỹ thuật', ly_do: 'Lý do', thoi_diem: 'Thời điểm', tinh_trang: 'Tình trạng', ghi_chu: 'Ghi chú', nguoi_giao: 'Người giao', nguoi_nhan: 'Người nhận' }, coCot = Object.keys(cot).filter(k => (n.tb || []).some(x => x[k]));
     let h = (vt >= 0 && dsId.length > 1 ? '<div class="nav-ds" style="float:right"><button class="btn o sm" data-nav="' + esc(dsId[vt - 1] || '') + '"' + (vt ? '' : ' disabled') + '>‹ Trước</button><span class="note">' + (vt + 1) + ' / ' + dsId.length + '</span><button class="btn o sm" data-nav="' + esc(dsId[vt + 1] || '') + '"' + (vt < dsId.length - 1 ? '' : ' disabled') + '>Tiếp ›</button></div>' : '') +
       '<h2>' + esc(d.qr) + ' · ' + esc(d.id) + ' ' + tagTT(d.trang_thai) + '</h2><p class="note">' + esc(G.LOAI[d.qr].ten) + ' · gửi ' + ngayVN(d.tg) + (d.ma_may === 'QL' ? ' · cán bộ lập thay' : ' · mã máy ' + esc(d.ma_may)) + '</p>' +
       '<div class="btns" style="margin-bottom:8px"><button class="btn o sm" id="b-in-gv">🖨 ' + esc(window.PTN_DON_QR.TEN[d.qr]) + ' – xem trước, in / Word</button></div>' +
       (d.ly_do ? '<p class="err">Lý do từ chối: ' + esc(d.ly_do) + '</p>' : '') +
       '<dl class="kv">' + kv.map(x => '<dt>' + esc(x[0]) + '</dt><dd style="white-space:pre-line">' + esc(x[1]) + '</dd>').join('') + '</dl>' +
       '<h2 style="margin-top:12px">' + (d.qr === 'GV-TS' ? 'Danh mục tài sản' : 'Thiết bị') + '</h2><div class="tbl-wrap"><table><thead><tr><th>STT</th>' + coCot.map(k => '<th>' + cot[k] + '</th>').join('') + '</tr></thead><tbody>' +
-      (n.tb || []).map((x, i) => '<tr><td>' + (i + 1) + '</td>' + coCot.map(k => '<td' + (k === 'sl' ? ' class="num"' : '') + '>' + (k === 'ten' && x.tb ? '<a href="#/tai-san/' + esc(x.tb) + '">' + esc(x.ten) + '</a>' : esc(k === 'sl' ? fmt(x.sl) : x[k] || '')) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>';
+      (n.tb || []).map((x, i) => '<tr><td>' + (i + 1) + '</td>' + coCot.map(k => '<td' + (k === 'sl' || k === 'don_gia' ? ' class="num"' : k === 'yckt' || k === 'ly_do' ? ' style="white-space:pre-line"' : '') + '>' + (k === 'ten' && x.tb ? '<a href="#/tai-san/' + esc(x.tb) + '">' + esc(x.ten) + '</a>' : esc(k === 'sl' || k === 'don_gia' ? fmt(x[k]) : k === 'nhu_cau' ? NC[x[k]] || '' : x[k] || '')) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>';
     if (xl && !xong(d)) {
       const choDuyet = d.trang_thai === 'Chờ duyệt';
       h += '<h2 style="margin-top:12px">Xử lý</h2><div id="xl">' + (bh ? '<div class="form-grid">' + Q.o('ket_qua', 'Kết quả kiểm tra', { v: n.ket_qua || '', full: 1 }) +

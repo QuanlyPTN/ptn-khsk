@@ -12,7 +12,7 @@
   const LOAI = {
     'GV-BH': { ten: 'Báo hỏng thiết bị', mo_ta: 'Báo thiết bị hư hỏng, sự cố về Phòng thí nghiệm', mau: 'Bieu-mau-bao-hong-thiet-bi.docx' },
     'GV-SC': { ten: 'Phiếu đề nghị sửa chữa thiết bị', mo_ta: 'Đề nghị BLĐ Khoa, TBM, PTN kiểm tra – sửa chữa', mau: 'Phieu-de-nghi-sua-chua-thiet-bi.docx' },
-    'GV-BS': { ten: 'Phiếu đề nghị bổ sung thiết bị', mo_ta: 'Bổ sung thiết bị phục vụ giảng dạy thực hành', mau: 'Phieu-de-nghi-bo-sung-thiet-bi.docx' },
+    'GV-BS': { ten: 'Kế hoạch năm – dự trù thiết bị', mo_ta: 'Đề xuất thiết bị đưa vào kế hoạch mua sắm năm của Khoa (tự vào danh sách dự trù năm)', mau: 'Phieu-de-nghi-du-tru-thiet-bi-ke-hoach-nam.docx' },
     'GV-BG': { ten: 'Biên bản bàn giao thiết bị cho giảng viên', mo_ta: 'PTN bàn giao thiết bị cho giảng viên sử dụng', mau: 'Bien-ban-ban-giao-thiet-bi-PTN-cho-giang-vien.docx', ngung: 1 }, // ngừng lập mới (anh Phú bỏ 25/10/2026) – giữ để xem / in phiếu cũ
     'GV-TS': { ten: 'Giấy báo mang tài sản vào / ra cơ quan', mo_ta: 'Mẫu của Trường – TCHC mẫu số 28', mau: 'Giay-bao-mang-tai-san-vao-ra-co-quan_TCHC-mau-28.docx',
       to_trinh: 'Phieu-de-nghi-giai-quyet-cong-viec_mang-tai-san-ra.docx' } // mang tài sản ra: kèm phiếu đề nghị giải quyết công việc (tờ trình BGH)
@@ -21,19 +21,23 @@
   const COT = {
     'GV-BH': [['ten', 'Tên thiết bị *'], ['ma', 'Mã số / số serial'], ['sl', 'Số lượng *'], ['tinh_trang', 'Mô tả tình trạng hư hỏng / sự cố']],
     'GV-SC': [['ten', 'Tên thiết bị *'], ['sl', 'Số lượng *'], ['tinh_trang', 'Tình trạng hỏng'], ['ghi_chu', 'Ghi chú']],
-    'GV-BS': [['ten', 'Tên thiết bị *'], ['sl', 'Số lượng *'], ['tinh_trang', 'Tình trạng bàn giao'], ['ghi_chu', 'Ghi chú']],
+    // kế hoạch năm: cột theo file mẫu P.KHĐT (danh mục, đơn vị, nhu cầu [bổ sung / thay mới / sửa chữa / nâng cấp], số lượng, định mức nghìn đồng, yêu cầu kỹ thuật, lý do, thời điểm)
+    'GV-BS': [['ten', 'Tên thiết bị *'], ['dvt', 'ĐVT (Cái, Bộ…)'], ['nhu_cau', 'Nhu cầu'], ['sl', 'Số lượng *'], ['don_gia', 'Đơn giá dự kiến (nghìn đồng)'],
+      ['yckt', 'Yêu cầu kỹ thuật: hãng, model, xuất xứ, thông số chính…'], ['ly_do', 'Sự cần thiết, lý do (môn học, đề tài sử dụng…)'], ['thoi_diem', 'Thời điểm dự kiến (VD: T3.2027)']],
     'GV-BG': [['ten', 'Tên thiết bị *'], ['ma', 'Mã số / số serial'], ['dvt', 'ĐVT'], ['sl', 'Số lượng *'], ['tinh_trang', 'Tình trạng lúc bàn giao'], ['ghi_chu', 'Ghi chú']],
     'GV-TS': [['ten', 'Danh mục (tên tài sản) *'], ['ma', 'ID (mã tài sản)'], ['sl', 'Số lượng *']] // vào: người nhận = người lập phiếu (in sẵn), người giao viết tay; ra: người giao = người lập phiếu, người nhận viết tay
   };
   // phiếu theo một phòng: danh mục chọn nhanh chỉ hiện thiết bị của phòng đã chọn
   const THEO_PHONG = { 'GV-BH': 1, 'GV-SC': 1 };
+  const NHU_CAU = [['bo_sung', 'Bổ sung'], ['thay_moi', 'Thay mới'], ['sua_chua', 'Sửa chữa'], ['nang_cap', 'Cải tạo, nâng cấp']];
+  const SO = { sl: 1, don_gia: 1 }; // ô nhập số
 
   // ---------------- (1) Khung nhập liệu ----------------
   const CSS = '.pg-f{margin-bottom:12px}.pg-t{display:block;font-weight:600;margin-bottom:5px}.pg-t i{color:#B42318;font-style:normal}.pg-h{color:#5B6478;font-size:12.5px;margin:-2px 0 6px}' +
     '.pg-hai{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.pg input[type=text],.pg input[type=number],.pg input[type=date],.pg select,.pg textarea{width:100%;box-sizing:border-box;margin:0}' +
     '.pg-sec{font-weight:700;margin:18px 0 8px;font-size:13.5px;text-transform:uppercase;letter-spacing:.5px;color:#2E333D}' +
     '.pg-dong{position:relative;border:1px solid #E3E7EF;border-radius:12px;padding:10px 34px 2px 10px;margin-bottom:8px;background:#FAFBFE;display:grid;grid-template-columns:1fr 1fr;gap:0 8px}' +
-    '.pg-dong>input{margin:0 0 8px}.pg-dong>[data-k=ten],.pg-dong>[data-k=tinh_trang]{grid-column:1/-1}@media(min-width:760px){.pg-dong{grid-template-columns:repeat(4,1fr)}.pg-dong>[data-k=tinh_trang]{grid-column:span 2}}.pg-x{position:absolute;top:6px;right:6px;border:0;background:none;font-size:20px;line-height:1;color:#B42318;cursor:pointer}' +
+    '.pg-dong>input{margin:0 0 8px}.pg-dong>select,.pg-dong>textarea{margin:0 0 8px;width:100%;box-sizing:border-box}.pg-o{display:block;margin:0 0 8px;min-width:0}.pg-o>span{display:block;font-size:12.5px;color:#5B6478;margin:0 0 3px}.pg-o>input,.pg-o>select,.pg-o>textarea{width:100%;box-sizing:border-box;margin:0}.pg-dong>.pg-o[data-c=ten],.pg-dong>.pg-o[data-c=yckt],.pg-dong>.pg-o[data-c=ly_do]{grid-column:1/-1}.pg-dong>[data-k=ten],.pg-dong>[data-k=tinh_trang],.pg-dong>[data-k=yckt],.pg-dong>[data-k=ly_do]{grid-column:1/-1}@media(min-width:760px){.pg-dong{grid-template-columns:repeat(4,1fr)}.pg-dong>[data-k=tinh_trang]{grid-column:span 2}}.pg-x{position:absolute;top:6px;right:6px;border:0;background:none;font-size:20px;line-height:1;color:#B42318;cursor:pointer}' +
     '.pg-chon{display:flex;gap:8px;align-items:center}.pg-chon select{flex:1;min-width:0}.pg-nut{background:none;border:0;color:#1E4FC2;text-decoration:underline;cursor:pointer;padding:6px 0;font:inherit;font-size:14.5px;white-space:nowrap}' +
     '.pg-r{display:flex;gap:10px;flex-wrap:wrap}.pg-r label{display:flex;gap:8px;align-items:center;border:1px solid #D3D9E5;border-radius:10px;padding:9px 12px;cursor:pointer;font-weight:400;background:#fff}' +
     '.pg-r input{width:18px;height:18px;margin:0}.pg-ghi{border:1px solid #F2D58A;background:#FFF8E1;color:#5C4300;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:14px;line-height:1.45}.pg-ghi a{color:#1E4FC2}@media(max-width:600px){.pg-hai{grid-template-columns:1fr}}';
@@ -55,7 +59,13 @@
     h += sec(qr === 'GV-TS' ? 'Thông tin giấy báo' : 'Nội dung');
     if (qr === 'GV-BH') h += hai(chonPhong('Phòng thực hành'), o('ngay', 'Ngày phát hiện sự cố', 1, { type: 'date', v: homNay() }));
     if (qr === 'GV-SC') h += chonPhong('Phòng có thiết bị hỏng') + o('ly_do', 'Tóm tắt nội dung đề nghị (nếu cần)', 0, { area: 1 });
-    if (qr === 'GV-BS') h += chonPhong('Phòng cần bổ sung thiết bị') + o('ly_do', 'Lý do / nội dung cần bổ sung (nếu cần)', 0, { area: 1 });
+    if (qr === 'GV-BS') { const k = dm.khn || {}, nam = +k.nam || new Date().getFullYear() + 1;
+      h += (k.han ? '<div class="pg-ghi">Kế hoạch năm <b>' + nam + '</b> · hạn nộp đề xuất <b>' + k.han.split('-').reverse().join('/') + '</b>' + (k.dong ? ' – <b>đã hết hạn</b>, liên hệ Phòng thí nghiệm.' : '.') + '</div>' : '') +
+        hai(truong('Năm kế hoạch', '<select name="nam">' + [nam, nam + 1].map(n => '<option>' + n + '</option>').join('') + '</select>', 1),
+          o('don_vi_sd', 'Đơn vị sử dụng (bộ môn)', 0, { v: opt.bo_mon || '', ph: 'VD: BM Dược, BM Dinh dưỡng' })) +
+        truong('Phòng đặt thiết bị (nếu có)', '<select name="phong"><option value="">– Không chọn –</option>' + dsPhong.map(p => '<option value="' + esc(p.ma) + '">' + esc(p.ma + ' – ' + p.ten) + '</option>').join('') + '</select>') +
+        o('ly_do', 'Nội dung chung của đề xuất (nếu cần)', 0, { area: 1 }) +
+        '<div class="pg-h">Mỗi thiết bị một khung. <b>Nhu cầu</b>: Bổ sung (thêm mới), Thay mới (thay máy cũ hỏng), Sửa chữa, Cải tạo – nâng cấp. Đơn giá tính theo <b>nghìn đồng</b> như file kế hoạch của Trường (VD: 40.000 = 40 triệu đồng).</div>'; }
     if (qr === 'GV-BG') h += chonPhong('Phòng sử dụng') + hai(o('tu_ngay', 'Sử dụng từ ngày', 1, { type: 'date', v: homNay() }), o('den_ngay', 'Đến ngày (dự kiến)', 0, { type: 'date' }));
     if (qr === 'GV-TS') h += truong('Loại giấy báo', '<div class="pg-r"><label><input type="radio" name="chieu" value="vao"> Mang tài sản <b>VÀO</b> cơ quan</label><label><input type="radio" name="chieu" value="ra"> Mang tài sản <b>RA KHỎI</b> cơ quan</label></div>', 1) +
       o('ngay', 'Ngày mang tài sản', 1, { type: 'date', v: homNay() }) + o('ly_do', 'Lý do', 1, { area: 1 }) +
@@ -72,11 +82,17 @@
     const ds = hop.querySelector('[data-pg=ds]'), chon = hop.querySelector('[data-pg=chon]'), phong = hop.querySelector('[name=phong]');
     const themDong = (x) => {
       x = x || {}; const r = document.createElement('div'); r.className = 'pg-dong'; if (x.tb) r.dataset.tb = x.tb;
-      r.innerHTML = COT[qr].map(([k, ph]) => '<input type="' + (k === 'sl' ? 'number' : 'text') + '" data-k="' + k + '"' + (k === 'sl' ? ' min="0" step="any" inputmode="decimal"' : '') +
-        ' placeholder="' + esc(ph) + '" value="' + esc(x[k] == null ? '' : x[k]) + '" autocomplete="off">').join('') + '<button type="button" class="pg-x" title="Bỏ dòng này">×</button>';
+      const v = (k) => esc(x[k] == null ? '' : x[k]);
+      // phiếu kế hoạch năm nhiều ô số: mỗi ô có nhãn nhỏ phía trên (chữ gợi ý mất khi đã nhập)
+      const NHAN = qr === 'GV-BS' ? { ten: 'Tên thiết bị *', dvt: 'Đơn vị tính', nhu_cau: 'Nhu cầu', sl: 'Số lượng *', don_gia: 'Đơn giá (nghìn đồng)', yckt: 'Yêu cầu kỹ thuật', ly_do: 'Sự cần thiết, lý do', thoi_diem: 'Thời điểm dự kiến' } : null;
+      const boc = (k, h) => NHAN ? '<label class="pg-o" data-c="' + k + '"><span>' + NHAN[k] + '</span>' + h + '</label>' : h;
+      r.innerHTML = COT[qr].map(([k, ph]) => boc(k, k === 'nhu_cau' ? '<select data-k="nhu_cau" title="Nhu cầu">' + NHU_CAU.map(([m, t]) => '<option value="' + m + '"' + (x.nhu_cau === m ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>'
+        : k === 'yckt' ? '<textarea data-k="yckt" rows="2" placeholder="' + esc(ph) + '">' + v(k) + '</textarea>'
+        : '<input type="' + (SO[k] ? 'number' : 'text') + '" data-k="' + k + '"' + (SO[k] ? ' min="0" step="any" inputmode="decimal"' : '') +
+          ' placeholder="' + esc(ph) + '" value="' + v(k) + '" autocomplete="off">')).join('') + '<button type="button" class="pg-x" title="Bỏ dòng này">×</button>';
       r.querySelector('.pg-x').onclick = () => { r.remove(); if (!ds.children.length) themDong(); };
       // dòng trống đầu tiên đang chờ nhập → dùng luôn cho thiết bị chọn từ danh mục
-      const trong = ds.children.length === 1 && ![...ds.children[0].querySelectorAll('input')].some(i => i.value.trim()) ? ds.children[0] : null;
+      const trong = ds.children.length === 1 && ![...ds.children[0].querySelectorAll('input,textarea')].some(i => i.value.trim()) ? ds.children[0] : null;
       if (x.ten && trong) trong.replaceWith(r); else ds.appendChild(r);
       return r;
     };
@@ -86,7 +102,7 @@
         l.map(t => '<option value="' + esc(t.id) + '">' + esc(t.ten + (t.ma_ts ? ' (' + t.ma_ts + ')' : '') + (p ? '' : ' · ' + (t.phong || '—'))) + '</option>').join(''); };
     if (chon) { veChon(); if (phong) phong.addEventListener('change', veChon);
       hop.querySelector('[data-pg=them-dm]').onclick = () => { const t = dsTB.find(x => x.id === chon.value); if (!t) return;
-        themDong({ tb: t.id, ten: t.ten, ma: t.ma_ts || '', sl: 1, dvt: qr === 'GV-BG' ? 'Cái' : '' }); chon.value = ''; }; }
+        themDong({ tb: t.id, ten: t.ten, ma: t.ma_ts || '', sl: 1, dvt: qr === 'GV-BG' || qr === 'GV-BS' ? 'Cái' : '' }); chon.value = ''; }; }
     hop.querySelector('[data-pg=them]').onclick = () => themDong();
     themDong();
     // giấy báo ra: hiện ghi chú tờ trình BGH + ô giấy báo vào đã lập
@@ -102,13 +118,13 @@
     if (v.chieu !== 'ra') delete v.ma_vao;
     const d = Object.assign(v, { tb });
     const thieuSL = tb.find(x => !(+x.sl > 0));
-    const loi = ng && !ng.ho_ten ? 'Nhập họ tên giảng viên' : qr !== 'GV-TS' && !v.phong ? 'Chọn phòng' : qr === 'GV-TS' && !v.chieu ? 'Chọn loại giấy báo: mang tài sản vào hay ra khỏi cơ quan' :
+    const loi = ng && !ng.ho_ten ? 'Nhập họ tên giảng viên' : qr !== 'GV-TS' && qr !== 'GV-BS' && !v.phong ? 'Chọn phòng' : qr === 'GV-TS' && !v.chieu ? 'Chọn loại giấy báo: mang tài sản vào hay ra khỏi cơ quan' :
       (qr === 'GV-BH' || qr === 'GV-TS') && !v.ngay ? 'Chọn ngày' : qr === 'GV-BG' && !v.tu_ngay ? 'Chọn ngày bắt đầu sử dụng' : qr === 'GV-TS' && !v.ly_do ? 'Nhập lý do' : v.chieu === 'ra' && !v.ma_vao ? 'Ghi giấy báo mang tài sản VÀO đã lập trước đó (mã phiếu hoặc ngày)' :
       !tb.length ? 'Nhập ít nhất một thiết bị (tên và số lượng)' : thieuSL ? 'Nhập số lượng cho "' + thieuSL.ten + '"' : '';
     return { d, ng, loi };
   }
   // tóm tắt một dòng (danh sách phiếu)
-  const tomTat = (d) => [d.nd.chieu ? (d.nd.chieu === 'vao' ? 'Mang VÀO cơ quan' : 'Mang RA khỏi cơ quan') : '', d.phong && 'Phòng ' + d.phong,
+  const tomTat = (d) => [d.nd.chieu ? (d.nd.chieu === 'vao' ? 'Mang VÀO cơ quan' : 'Mang RA khỏi cơ quan') : '', d.nd.nam && 'Kế hoạch năm ' + d.nd.nam, d.phong && 'Phòng ' + d.phong,
     (d.nd.tb || []).map(x => x.ten + ' – SL ' + soVN(x.sl)).join('; '), d.nd.ly_do].filter(Boolean).join(' · ');
 
   // ---------------- (2) Mẫu in A4 + Word ----------------
@@ -155,8 +171,27 @@
         P([R('Ghi chú: ', { i: 1 }), 'Văn bản gửi trực tiếp đến: ', R('Bộ phận quản lý Phòng thí nghiệm (gửi trực tuyến)', { b: 1 }), ' ngày ', R(ngay(d.tg), { b: 1 }), '.'], { al: 'both' })]); };
     const SC = deNghi('PHIẾU ĐỀ NGHỊ SỬA THIẾT BỊ', (d) => ['Hiện nay, thiết bị tại phòng ', GT(d.phong, 8), ' bị hỏng không hoạt động được, giảng viên quản lý phòng kính đề nghị BLĐ Khoa, TBM và PTN cho kiểm tra và sửa chữa theo danh mục dưới đây.'],
       'Tình trạng hỏng', 'Kính trình BLĐ, TBM và PTN xem xét và giải quyết.', 'Ý KIẾN PHỤ TRÁCH PTN');
-    const BS = deNghi('PHIẾU ĐỀ NGHỊ BỔ SUNG THIẾT BỊ', (d) => ['Hiện nay, phòng ', GT(d.phong, 8), ' cần bổ sung thiết bị phục vụ cho việc giảng dạy thực hành theo danh sách sau:'],
-      'Tình trạng bàn giao', 'Kính trình BLĐ, phụ trách PTN xem xét và giải quyết.', 'PHỤ TRÁCH PTN');
+    // kế hoạch năm – dự trù thiết bị: cột theo file kế hoạch mua sắm năm của Trường (đơn giá, thành tiền: nghìn đồng)
+    const NC_TEN = { bo_sung: 'Bổ sung', thay_moi: 'Thay mới', sua_chua: 'Sửa chữa', nang_cap: 'Cải tạo, nâng cấp' };
+    const BS = (d) => { const n = d.nd, tn = n.tiep_nhan, tb = n.tb || [], nam = n.nam || '20……', gt = { al: 'both', ind: { firstLine: 567 } };
+      const tien = (x) => (+x.sl || 0) * (+x.don_gia || 0), tong = tb.reduce((a, x) => a + tien(x), 0);
+      return [{ hd: 1 }, P(R(dongNgay(d.tg), { i: 1 }), { al: 'right' }), KHOANG].concat(tieuDe('PHIẾU ĐỀ NGHỊ DỰ TRÙ THIẾT BỊ', 'KẾ HOẠCH MUA SẮM NĂM ' + nam), [
+        P([R('Kính gửi: ', { i: 1 }), 'Ban lãnh đạo Khoa Khoa học Sức khỏe;'], { ind: { left: 1134 } }), P('Trưởng bộ môn, Phòng Thí nghiệm.', { ind: { left: 2268 } }), KHOANG,
+        muc('1. Thông tin người đề nghị:'),
+        P(['Họ và tên: ', GT(d.ho_ten, 16), '   Bộ môn: ', GT(d.bo_mon, 11)]),
+        P(['Đơn vị sử dụng: ', GT(n.bo_mon, 15), '   Phòng đặt thiết bị: ', GT(d.phong, 7)]),
+        muc('2. Nội dung đề nghị:'),
+        P(['Để phục vụ giảng dạy thực hành, nghiên cứu khoa học trong năm ', R(String(nam), { b: 1 }), ', kính đề nghị Ban lãnh đạo Khoa xem xét, đưa các thiết bị sau vào kế hoạch mua sắm năm ', R(String(nam), { b: 1 }), ' của Khoa:'], gt)],
+        n.ly_do ? [P(['Nội dung: ', R(n.ly_do, { b: 1 })], gt)] : [], [
+        bangDu([500, 2900, 650, 900, 550, 1050, 1100, 1421], ['TT', 'Danh mục – yêu cầu kỹ thuật', 'ĐVT', 'Nhu cầu', 'SL', 'Đơn giá dự kiến (nghìn đồng)', 'Thành tiền (nghìn đồng)', 'Sự cần thiết, lý do – thời điểm'],
+          tb.map((x, i) => [i + 1, x.ten + (x.yckt ? '\n' + x.yckt : ''), x.dvt || '', NC_TEN[x.nhu_cau] || 'Bổ sung', soVN(x.sl), soVN(x.don_gia), x.don_gia ? soVN(tien(x)) : '',
+            [x.ly_do, x.thoi_diem && 'Thời điểm: ' + x.thoi_diem].filter(Boolean).join('\n')]).concat(tb.length && tong ? [['', 'Tổng cộng', '', '', '', '', soVN(tong), '']] : []), 4),
+        P('Kính trình Ban lãnh đạo Khoa, Phòng Thí nghiệm xem xét, tổng hợp vào kế hoạch mua sắm năm ' + nam + '.', gt), P('Trân trọng cảm ơn./.', gt),
+        muc('3. Họ tên và chữ ký:'), ky([['GV ĐỀ NGHỊ', d.ho_ten], 'TRƯỞNG BỘ MÔN'], 3), KHOANG],
+        n.y_kien ? [P([R('Ý kiến phụ trách PTN: ', { i: 1 }), R(n.y_kien, { b: 1 })], { al: 'both' })] : [], [
+        ky([['PHỤ TRÁCH PTN', tn && tn.nguoi], 'BLĐ KHOA'], 3),
+        d.tg ? P([R('Ghi chú: ', { i: 1 }), 'Đề xuất gửi trực tuyến ngày ', R(ngay(d.tg), { b: 1 }), ', đã tự động tổng hợp vào ', R('Danh sách thiết bị dự trù năm ' + nam, { b: 1 }), ' của Phòng thí nghiệm.'], { al: 'both' })
+          : P([R('Ghi chú: ', { i: 1 }), 'Nộp phiếu về Phòng thí nghiệm, hoặc gửi trực tuyến tại trang dùng chung của PTN (mục ', R('GV-BS – Kế hoạch năm – dự trù thiết bị', { b: 1 }), ').'], { al: 'both' })]); };
 
     // bám "Biên bản bàn giao thiết bị PTN cho giảng viên" – ngày, bên giao điền khi PTN xác nhận bàn giao
     const LUU_Y = ['Bên nhận có trách nhiệm kiểm tra tình trạng thiết bị ngay khi nhận bàn giao; nếu phát hiện hư hỏng, thiếu phụ kiện phải báo ngay cho Phòng thí nghiệm để xác nhận trước khi ký biên bản.',
@@ -208,7 +243,7 @@
     const TS = (d) => d.nd.chieu === 'ra' ? { trang: [TO_TRINH(d), GIAY(d)] } : GIAY(d);
 
     const Q = window.PTN_DON_QR;
-    Q.them('GV-BH', 'Biểu mẫu báo hỏng thiết bị', BH); Q.them('GV-SC', 'Phiếu đề nghị sửa chữa thiết bị', SC); Q.them('GV-BS', 'Phiếu đề nghị bổ sung thiết bị', BS);
+    Q.them('GV-BH', 'Biểu mẫu báo hỏng thiết bị', BH); Q.them('GV-SC', 'Phiếu đề nghị sửa chữa thiết bị', SC); Q.them('GV-BS', 'Phiếu đề nghị dự trù thiết bị – kế hoạch năm', BS);
     Q.them('GV-BG', 'Biên bản bàn giao thiết bị cho giảng viên', BG); Q.them('GV-TS', 'Giấy báo mang tài sản vào / ra cơ quan', TS);
   }
   window.PTN_PHIEU_GV = { LOAI, ve, doc, tomTat };

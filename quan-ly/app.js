@@ -65,7 +65,7 @@
     return r;
   }
   // tên file vừa chọn ở hộp tải file (ô #x-file) → gửi kèm lệnh nhập để ghi vào Lịch sử tải file
-  const LENH_TAI_FILE = /^(lop_nhap|dm_nhap|vt_nhap|dtm_nhap|dt_nhap_cap|kho_nhap_ds|tb_nhap)$/;
+  const LENH_TAI_FILE = /^(lop_nhap|dm_nhap|vt_nhap|dtm_nhap|dt_nhap_cap|kho_nhap_ds|tb_nhap|khn_nhap)$/;
   document.addEventListener('change', (e) => { if (e.target && e.target.id === 'x-file' && e.target.files && e.target.files[0]) { S.tepFiles = [...e.target.files]; S.tepTai = S.tepFiles.map(f => f.name).join(', ').slice(0, 150); } });
   async function goiMayChu(act, data) {
     const body = Object.assign({ act, tk: S.tk }, data || {});
@@ -233,7 +233,7 @@
   // ---------------- Khung trang ----------------
   const MENU = [
     ['tong-quan', '◧', 'Hôm nay'], ['don', '✉', 'Đơn đăng ký QR1 – QR8'], ['de-tai', '✎', 'Hồ sơ đề tài KLTN – NCKH'], ['nguoi-dung', '☺', 'Người dùng trang dùng chung'], ['thong-bao', '🔔', 'Thông báo'], ['phong', '▦', 'Phòng thí nghiệm'], ['lich-phong-th', '▦', 'Lịch phòng thực hành'], ['tai-san', '⚙', 'Tài sản'],
-    ['kiem-dinh', '✓', 'Kiểm định – bảo dưỡng'], ['hoa-chat', '⚗', 'Hóa chất – vật tư'], ['kho', '▣', 'Kho hóa chất D11.01'], ['kho-dl', '❀', 'Kho dược liệu D11'],
+    ['kiem-dinh', '✓', 'Kiểm định – bảo dưỡng'], ['ke-hoach-nam', '☑', 'Kế hoạch năm – dự trù TB'], ['hoa-chat', '⚗', 'Hóa chất – vật tư'], ['kho', '▣', 'Kho hóa chất D11.01'], ['kho-dl', '❀', 'Kho dược liệu D11'],
     ['bien-ban', '▤', 'Biên bản bàn giao'], ['bao-cao', '▥', 'Báo cáo – thống kê'], ['so', '☷', 'Sổ theo dõi – in ấn'], ['bieu-mau', '⎙', 'Biểu mẫu PTN'],
     ['giang-vien', '☺', 'Giảng viên'], ['lich-su-tai', '↺', 'Lịch sử tải file'], ['cai-dat', '⚑', 'Cài đặt – mã QR tổng', 1], ['can-bo', '☺', 'Cán bộ', 1], ['nhat-ky', '☰', 'Nhật ký', 1], ['tai-khoan', '⚿', 'Tài khoản']
   ];
@@ -950,7 +950,7 @@
     ['Đơn KLTN – luận văn (Phụ lục 1, Quy định PTN 2026)', [['PL1A_Don-de-nghi-muon-dung-cu_KLTN_luan-van.docx', 'Phụ lục 1A – Đơn đề nghị mượn dụng cụ'], ['PL1B_Don-de-nghi-muon-phong-thi-nghiem_KLTN_luan-van.docx', 'Phụ lục 1B – Đơn đề nghị mượn phòng thí nghiệm'], ['PL1C_Don-de-nghi-muon-thiet-bi_KLTN_luan-van.docx', 'Phụ lục 1C – Đơn đề nghị mượn thiết bị']]],
     ['Đơn NCKH (Phụ lục 2)', [['PL2A_Don-de-nghi-muon-dung-cu_NCKH.docx', 'Phụ lục 2A – Đơn đề nghị mượn dụng cụ'], ['PL2B_Don-de-nghi-muon-phong-thi-nghiem_NCKH.docx', 'Phụ lục 2B – Đơn đề nghị mượn phòng thí nghiệm'], ['PL2C_Don-de-nghi-muon-thiet-bi_NCKH.docx', 'Phụ lục 2C – Đơn đề nghị mượn thiết bị']]],
     ['Sinh viên ngoài đơn vị (Phụ lục 3)', [['PL3_Don-dang-ky-su-dung-PTN_SV-ngoai-don-vi.docx', 'Phụ lục 3 – Đơn đăng ký sử dụng phòng thí nghiệm']]],
-    ['Giảng viên – thiết bị', [['Don-de-nghi-muon-thiet-bi-dai-ngay_GV_Mau-QR2.docx', 'Đơn đề nghị mượn thiết bị dài ngày (mẫu QR2)'], ['Bieu-mau-bao-hong-thiet-bi.docx', 'Biểu mẫu báo hỏng thiết bị'], ['Phieu-de-nghi-sua-chua-thiet-bi.docx', 'Phiếu đề nghị sửa chữa thiết bị'], ['Phieu-de-nghi-bo-sung-thiet-bi.docx', 'Phiếu đề nghị bổ sung thiết bị'], ['Bien-ban-ban-giao-thiet-bi-PTN-cho-giang-vien.docx', 'Biên bản bàn giao thiết bị cho giảng viên'], ['Giay-bao-mang-tai-san-vao-ra-co-quan_TCHC-mau-28.docx', 'Giấy báo mang tài sản vào / ra cơ quan (mẫu của Trường – TCHC mẫu số 28)'], ['Phieu-de-nghi-giai-quyet-cong-viec_mang-tai-san-ra.docx', 'Phiếu đề nghị giải quyết công việc (tờ trình BGH) – kèm giấy báo mang tài sản ra']]]
+    ['Giảng viên – thiết bị', [['Don-de-nghi-muon-thiet-bi-dai-ngay_GV_Mau-QR2.docx', 'Đơn đề nghị mượn thiết bị dài ngày (mẫu QR2)'], ['Bieu-mau-bao-hong-thiet-bi.docx', 'Biểu mẫu báo hỏng thiết bị'], ['Phieu-de-nghi-sua-chua-thiet-bi.docx', 'Phiếu đề nghị sửa chữa thiết bị'], ['Phieu-de-nghi-du-tru-thiet-bi-ke-hoach-nam.docx', 'Phiếu đề nghị dự trù thiết bị – kế hoạch năm'], ['Bien-ban-ban-giao-thiet-bi-PTN-cho-giang-vien.docx', 'Biên bản bàn giao thiết bị cho giảng viên'], ['Giay-bao-mang-tai-san-vao-ra-co-quan_TCHC-mau-28.docx', 'Giấy báo mang tài sản vào / ra cơ quan (mẫu của Trường – TCHC mẫu số 28)'], ['Phieu-de-nghi-giai-quyet-cong-viec_mang-tai-san-ra.docx', 'Phiếu đề nghị giải quyết công việc (tờ trình BGH) – kèm giấy báo mang tài sản ra']]]
   ];
   function manBieuMau() {
     const nd = trang('Biểu mẫu PTN');

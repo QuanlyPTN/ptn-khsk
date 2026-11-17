@@ -43,7 +43,7 @@
     ['Đơn KLTN – luận văn (Phụ lục 1)', [['PL1A_Don-de-nghi-muon-dung-cu_KLTN_luan-van.docx', 'Phụ lục 1A – Đơn đề nghị mượn dụng cụ'], ['PL1B_Don-de-nghi-muon-phong-thi-nghiem_KLTN_luan-van.docx', 'Phụ lục 1B – Đơn đề nghị mượn phòng thí nghiệm'], ['PL1C_Don-de-nghi-muon-thiet-bi_KLTN_luan-van.docx', 'Phụ lục 1C – Đơn đề nghị mượn thiết bị']]],
     ['Đơn NCKH (Phụ lục 2)', [['PL2A_Don-de-nghi-muon-dung-cu_NCKH.docx', 'Phụ lục 2A – Đơn đề nghị mượn dụng cụ'], ['PL2B_Don-de-nghi-muon-phong-thi-nghiem_NCKH.docx', 'Phụ lục 2B – Đơn đề nghị mượn phòng thí nghiệm'], ['PL2C_Don-de-nghi-muon-thiet-bi_NCKH.docx', 'Phụ lục 2C – Đơn đề nghị mượn thiết bị']]],
     ['Sinh viên ngoài đơn vị (Phụ lục 3)', [['PL3_Don-dang-ky-su-dung-PTN_SV-ngoai-don-vi.docx', 'Phụ lục 3 – Đơn đăng ký sử dụng phòng thí nghiệm']]],
-    ['Giảng viên – thiết bị', [['Don-de-nghi-muon-thiet-bi-dai-ngay_GV_Mau-QR2.docx', 'Đơn đề nghị mượn thiết bị dài ngày (mẫu QR2)'], ['Bieu-mau-bao-hong-thiet-bi.docx', 'Biểu mẫu báo hỏng thiết bị'], ['Phieu-de-nghi-sua-chua-thiet-bi.docx', 'Phiếu đề nghị sửa chữa thiết bị'], ['Phieu-de-nghi-bo-sung-thiet-bi.docx', 'Phiếu đề nghị bổ sung thiết bị'], ['Bien-ban-ban-giao-thiet-bi-PTN-cho-giang-vien.docx', 'Biên bản bàn giao thiết bị PTN cho giảng viên'], ['Giay-bao-mang-tai-san-vao-ra-co-quan_TCHC-mau-28.docx', 'Giấy báo mang tài sản vào / ra cơ quan (mẫu của Trường – TCHC mẫu số 28)'], ['Phieu-de-nghi-giai-quyet-cong-viec_mang-tai-san-ra.docx', 'Phiếu đề nghị giải quyết công việc (tờ trình BGH) – kèm giấy báo mang tài sản ra']]]
+    ['Giảng viên – thiết bị', [['Don-de-nghi-muon-thiet-bi-dai-ngay_GV_Mau-QR2.docx', 'Đơn đề nghị mượn thiết bị dài ngày (mẫu QR2)'], ['Bieu-mau-bao-hong-thiet-bi.docx', 'Biểu mẫu báo hỏng thiết bị'], ['Phieu-de-nghi-sua-chua-thiet-bi.docx', 'Phiếu đề nghị sửa chữa thiết bị'], ['Phieu-de-nghi-du-tru-thiet-bi-ke-hoach-nam.docx', 'Phiếu đề nghị dự trù thiết bị – kế hoạch năm'], ['Bien-ban-ban-giao-thiet-bi-PTN-cho-giang-vien.docx', 'Biên bản bàn giao thiết bị PTN cho giảng viên'], ['Giay-bao-mang-tai-san-vao-ra-co-quan_TCHC-mau-28.docx', 'Giấy báo mang tài sản vào / ra cơ quan (mẫu của Trường – TCHC mẫu số 28)'], ['Phieu-de-nghi-giai-quyet-cong-viec_mang-tai-san-ra.docx', 'Phiếu đề nghị giải quyết công việc (tờ trình BGH) – kèm giấy báo mang tài sản ra']]]
   ];
 
   // ---------------- Tiện ích ----------------
@@ -607,7 +607,7 @@
       (p.doi_tuong === 'Giảng viên' ? '' : '<div class="warn">Biểu mẫu dành cho giảng viên. Nếu bạn là giảng viên, sửa "Đối tượng" trong thông tin cá nhân.</div>') +
       '<form class="card" id="f" autocomplete="off"><div id="pg"></div><label class="opt"><input type="checkbox" name="cam_ket"><span>Tôi xác nhận thông tin trên là đúng.</span></label>' +
       '<div id="err" class="err"></div><button class="btn" id="sb">Gửi phiếu</button></form><p class="note">Cần bản trống để in viết tay: <a href="bieu-mau/' + esc(L.mau) + '" download>tải mẫu Word</a>.</p>');
-    GV().ve($('pg'), qr, { dm: /^GV-(BH|SC)$/.test(qr) && S.dm.tb_tat_ca ? Object.assign({}, S.dm, { thiet_bi: S.dm.tb_tat_ca }) : S.dm });
+    GV().ve($('pg'), qr, { dm: /^GV-(BH|SC|BS)$/.test(qr) && S.dm.tb_tat_ca ? Object.assign({}, S.dm, { thiet_bi: S.dm.tb_tat_ca }) : S.dm, bo_mon: p.bo_mon ? (/^(BM|Bộ môn)\b/i.test(p.bo_mon) ? p.bo_mon : 'BM ' + p.bo_mon) : '' });
     danhDau($('f'));
     $('f').onsubmit = async (e) => {
       e.preventDefault();
