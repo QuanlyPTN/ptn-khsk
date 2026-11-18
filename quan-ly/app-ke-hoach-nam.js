@@ -6,7 +6,8 @@
   'use strict';
   const Q = window.PTN_QL;
   const { $, api, chay, trang, moHop, dongHop, o, giaTri, esc, toast, ngayVN, boDau, fmt, coQuyen, napXlsx, laAdmin } = Q;
-  const MAU_TT = { 'Chờ duyệt': 't-info', 'Đã duyệt': 't-ok', 'Đã mua': 't-warn', 'Không duyệt': 't-gray' };
+  const MAU_TT = { 'Chờ duyệt': 't-warn', 'Đã duyệt': 't-info', 'Mua một phần': 't-warn', 'Đã mua': 't-ok', 'Ngừng mua': 't-gray', 'Không duyệt': 't-gray' };
+  const TT_TAY = ['Chờ duyệt', 'Đã duyệt', 'Đã mua', 'Không duyệt']; // chọn tay / hàng loạt; "Mua một phần", "Ngừng mua" ghi ở nút 🛒 Mua
   const tagTT = (t) => '<span class="tag ' + (MAU_TT[t] || 't-gray') + '">' + esc(t) + '</span>';
   const xl = () => coQuyen('ke-hoach-nam', 'xu_ly');
   const NC = ['bo_sung', 'thay_moi', 'sua_chua', 'nang_cap'];
@@ -29,16 +30,16 @@
       (mo ? 'đang nhận đề xuất từ giảng viên (phiếu <b>GV-BS – Kế hoạch năm – dự trù thiết bị</b> ở trang dùng chung tự vào danh sách, trạng thái "Chờ duyệt")' + (c.han ? ' · hạn nộp <b>' + ngayVN(c.han) + '</b>' + (c.han < Q.homNay() ? ' <span class="tag t-gray">đã hết hạn</span>' : '') : ' · chưa đặt hạn nộp') :
         'không phải năm đang nhận đề xuất (năm nhận đề xuất: ' + esc(D.nam_mo) + ')') + '. Số tiền tính theo <b>nghìn đồng</b> như file của Trường.</div>' +
       '<div class="btns" style="margin:10px 0">' + (xl() ? '<button class="btn sm" id="k-them">+ Thêm dòng</button><label class="btn o sm">⇪ Nhập từ file Excel<input type="file" id="x-file" accept=".xlsx,.xls" hidden></label>' : '') +
-      '<button class="btn o sm" id="k-xuat">⇩ Xuất file Excel theo mẫu</button>' + (xl() ? '<button class="btn o sm" id="k-chep">⎘ Chép dòng chưa mua từ năm khác</button><button class="btn o sm" id="k-ch">⚙ Hạn nộp – kinh phí khoán</button>' : '') + '</div>' +
+      '<button class="btn o sm" id="k-xuat">⇩ Xuất file Excel theo mẫu</button><button class="btn o sm" id="k-bc">📊 Báo cáo thực hiện</button>' + (xl() ? '<button class="btn o sm" id="k-chep">⎘ Chép dòng chưa mua từ năm khác</button><button class="btn o sm" id="k-ch">⚙ Hạn nộp – kinh phí khoán</button>' : '') + '</div>' +
       (D.xd ? '<div class="btns" style="margin:0 0 10px"><a class="btn sm ' + (tabXd ? 'o' : 'chon') + '" href="#/ke-hoach-nam/' + D.nam + '">Mua sắm thiết bị (trang tính Muasam)</a>' +
         '<a class="btn sm ' + (tabXd ? 'chon' : 'o') + '" href="#/ke-hoach-nam/' + D.nam + '/xd">🔒 Xây dựng – sửa chữa công trình (trang tính Xaydung, chỉ admin)</a></div><div id="k-xd"' + (tabXd ? '' : ' hidden') + '></div>' : '') +
       '<div id="k-tb"' + (D.xd && tabXd ? ' hidden' : '') + '><div id="k-tong"></div><div class="tools"><input type="search" id="k-q" placeholder="Tìm tên, yêu cầu kỹ thuật, bộ môn, người đề xuất…"><select id="k-tt"><option value="">Mọi trạng thái</option>' +
       D.trang_thai.map(t => '<option>' + t + '</option>').join('') + '</select><select id="k-muc" style="max-width:340px"><option value="">Mọi mục</option>' + D.leaf.map(m => '<option value="' + m[0] + '">' + esc(m[0] + ' – ' + m[3]) + '</option>').join('') + '</select>' +
       '<select id="k-bm"><option value="">Mọi bộ môn</option>' + [...new Set(D.dong.map(d => d.bo_mon).filter(Boolean))].sort().map(b => '<option>' + esc(b) + '</option>').join('') + '</select></div>' +
-      (xl() ? '<div class="btns" id="k-chon" style="margin:6px 0" hidden><span class="note" id="k-dem"></span>' + D.trang_thai.map(t => '<button class="btn o sm" data-tt="' + t + '">→ ' + t + '</button>').join('') + '<button class="btn red o sm" id="k-xoa">Xóa dòng đã chọn</button></div>' : '') +
+      (xl() ? '<div class="btns" id="k-chon" style="margin:6px 0" hidden><span class="note" id="k-dem"></span>' + TT_TAY.map(t => '<button class="btn o sm" data-tt="' + t + '">→ ' + t + '</button>').join('') + '<button class="btn red o sm" id="k-xoa">Xóa dòng đã chọn</button></div>' : '') +
       '<div id="k-ds"></div></div>';
     $('k-q').oninput = veDS; ['k-tt', 'k-muc', 'k-bm'].forEach(id => { $(id).onchange = veDS; });
-    $('k-xuat').onclick = hopXuat;
+    $('k-xuat').onclick = hopXuat; $('k-bc').onclick = hopBaoCao;
     const nx = $('b-xuat-trang'); if (nx) { nx.textContent = '⇩ Xuất file Excel theo mẫu'; nx.onclick = hopXuat; } // nút chung chỉ chép bảng (không công thức)
     if (xl()) {
       $('k-them').onclick = () => hopSua(null);
@@ -97,13 +98,13 @@
   function veTong() {
     const dem = {}; D.trang_thai.forEach(t => { dem[t] = D.dong.filter(d => !d.cha && d.trang_thai === t); });
     const conLai = D.dong.filter(d => d.trang_thai !== 'Không duyệt'), theoMuc = D.leaf.map(m => {
-      const l = conLai.filter(d => d.muc === m[0]), k = D.cau_hinh.kp_muc[m[0]] || 0; return [m, l.filter(d => !d.cha).length, l.length ? tinhTong(l) : k, !l.length && k]; }).filter(x => x[1] || x[2]);
+      const l = conLai.filter(d => d.muc === m[0]), k = D.cau_hinh.kp_muc[m[0]] || 0; return [m, l.filter(d => !d.cha).length, l.length ? tinhTong(l) : k, !l.length && k, l.reduce((a, d) => a + d.kp_mua, 0)]; }).filter(x => x[1] || x[2]);
     const bm = {}; conLai.filter(d => !d.cha).forEach(d => { const k = d.bo_mon || '(chưa ghi bộ môn)'; bm[k] = bm[k] || [0, 0]; bm[k][0]++; bm[k][1] += kp(d); });
     const tong = theoMuc.reduce((a, x) => a + x[2], 0);
     $('k-tong').innerHTML = '<div class="grid g2"><div class="card"><h2>Tổng theo mục (trừ dòng không duyệt)</h2><div class="btns" style="margin-bottom:8px">' +
-      D.trang_thai.map(t => tagTT(t) + ' <b>' + dem[t].length + '</b>').join(' &nbsp; ') + '</div><div class="tbl-wrap"><table><thead><tr><th>Mục</th><th class="num">Số dòng</th><th class="num">Kinh phí (nghìn đ)</th></tr></thead><tbody>' +
-      theoMuc.map(x => '<tr><td><b>' + esc(x[0][0]) + '</b> ' + esc(x[0][3]) + '</td><td class="num">' + (x[1] || '—') + '</td><td class="num">' + tien(x[2]) + (x[3] ? ' <span class="note">khoán</span>' : '') + '</td></tr>').join('') +
-      '<tr><td><b>Tổng cộng</b></td><td></td><td class="num"><b>' + tien(tong) + '</b></td></tr></tbody></table></div></div>' +
+      D.trang_thai.map(t => tagTT(t) + ' <b>' + dem[t].length + '</b>').join(' &nbsp; ') + '</div><div class="tbl-wrap"><table><thead><tr><th>Mục</th><th class="num">Số dòng</th><th class="num">Kinh phí (nghìn đ)</th><th class="num">Đã mua (thực tế)</th></tr></thead><tbody>' +
+      theoMuc.map(x => '<tr><td><b>' + esc(x[0][0]) + '</b> ' + esc(x[0][3]) + '</td><td class="num">' + (x[1] || '—') + '</td><td class="num">' + tien(x[2]) + (x[3] ? ' <span class="note">khoán</span>' : '') + '</td><td class="num">' + tien(x[4]) + '</td></tr>').join('') +
+      '<tr><td><b>Tổng cộng</b></td><td></td><td class="num"><b>' + tien(tong) + '</b></td><td class="num"><b>' + tien(theoMuc.reduce((a, x) => a + x[4], 0)) + '</b></td></tr></tbody></table></div></div>' +
       '<div class="card"><h2>Tổng theo bộ môn</h2><div class="tbl-wrap"><table><thead><tr><th>Đơn vị sử dụng</th><th class="num">Số dòng</th><th class="num">Kinh phí (nghìn đ)</th></tr></thead><tbody>' +
       Object.keys(bm).sort().map(k => '<tr><td>' + esc(k) + '</td><td class="num">' + bm[k][0] + '</td><td class="num">' + tien(bm[k][1]) + '</td></tr>').join('') + '</tbody></table></div></div></div>';
   }
@@ -126,14 +127,15 @@
         const ht = d.hien_trang || { co: 0, hong: 0 }, laCha = !d.cha && conCua(d.id).length;
         h += '<tr' + (d.trang_thai === 'Không duyệt' ? ' style="opacity:.55"' : '') + '>' + (xl() ? '<td><input type="checkbox" data-chon="' + esc(d.id) + '"></td>' : '') +
           '<td>' + (d.cha ? stt + '.' + con : stt) + '</td><td style="max-width:340px' + (d.cha ? ';padding-left:22px' : '') + '"><b>' + esc(d.ten) + '</b>' + (d.yckt ? '<div class="note" style="white-space:pre-line;max-height:5.6em;overflow:hidden" title="' + esc(d.yckt) + '">' + esc(d.yckt) + '</div>' : '') + '</td>' +
-          '<td>' + esc(d.dvt) + '</td><td>' + NC.filter(k => d[k]).map(k => esc(D.nhu_cau[k])).join(', ') + '</td><td class="num">' + (laCha ? '' : fmt(d.sl)) + '</td><td class="num">' + (laCha ? '' : tien(d.dinh_muc)) + '</td>' +
+          '<td>' + esc(d.dvt) + '</td><td>' + NC.filter(k => d[k]).map(k => esc(D.nhu_cau[k])).join(', ') + '</td><td class="num">' + (laCha ? '' : fmt(d.sl) + (d.sl_mua ? '<div class="note" title="Đã mua / kế hoạch">mua ' + fmt(d.sl_mua) + '/' + fmt(d.sl) + '</div>' : '')) + '</td><td class="num">' + (laCha ? '' : tien(d.dinh_muc)) + '</td>' +
           '<td class="num"><b>' + tien(kp(d)) + '</b></td><td style="max-width:220px;white-space:pre-line">' + esc([d.bo_mon, d.ly_do].filter(Boolean).join('\n')) + '</td><td>' + esc(d.thoi_diem) + '</td>' +
           '<td>' + (ht.co ? '<span title="Thiết bị cùng tên trong Tài sản">' + ht.co + ' cái</span>' + (ht.hong ? ' · <b style="color:#B42318">' + ht.hong + ' hỏng</b>' : '') : '<span class="note">—</span>') + '</td>' +
-          '<td>' + tagTT(d.trang_thai) + (d.tb_moi.length ? '<div class="note">Đã tạo ' + d.tb_moi.length + ' TB</div>' : '') + '</td>' +
+          '<td>' + tagTT(d.trang_thai) + (d.ngung ? '<div class="note">' + esc(d.ngung) + '</div>' : '') + (d.tb_moi.length ? '<div class="note">Đã tạo ' + d.tb_moi.length + ' TB</div>' : '') + '</td>' +
           '<td class="note">' + d.nguon.map(n => '<a href="#/giang-vien/' + esc(n.don) + '">' + esc(n.don) + '</a> ' + esc(n.gv) + ' · ' + fmt(n.sl)).join('<br>') + '</td>' +
           (xl() ? '<td style="white-space:nowrap"><button class="btn o sm" data-sua="' + esc(d.id) + '" title="Sửa">✎</button><button class="btn o sm" data-len="' + esc(d.id) + '" title="Lên">↑</button><button class="btn o sm" data-xuong="' + esc(d.id) + '" title="Xuống">↓</button>' +
             (d.cha ? '' : '<button class="btn o sm" data-con="' + esc(d.id) + '" title="Thêm dòng con (hạng mục của thiết bị đồng bộ)">+ con</button>') +
-            (d.trang_thai === 'Đã mua' && !laCha ? '<button class="btn o sm" data-tb="' + esc(d.id) + '" title="Tạo hồ sơ thiết bị trong Tài sản">→ Tài sản</button>' : '') + '</td>' : '') + '</tr>';
+            (!laCha && ['Chờ duyệt', 'Không duyệt'].indexOf(d.trang_thai) < 0 ? '<button class="btn o sm" data-mua="' + esc(d.id) + '" title="Ghi nhận mua (từng lần: ngày, số lượng, đơn giá thực tế), ngừng mua phần còn thiếu">🛒 Mua</button>' : '') +
+            (!laCha && Math.floor(d.sl_mua) > d.tb_moi.length ? '<button class="btn o sm" data-tb="' + esc(d.id) + '" title="Tạo hồ sơ thiết bị trong Tài sản cho số đã mua">→ Tài sản</button>' : '') + '</td>' : '') + '</tr>';
       });
     });
     $('k-ds').innerHTML = h + '</tbody></table></div>';
@@ -145,6 +147,7 @@
     ds.querySelectorAll('[data-con]').forEach(b => { b.onclick = () => hopSua(null, b.dataset.con); });
     ds.querySelectorAll('[data-len],[data-xuong]').forEach(b => { b.onclick = (e) => chay(e.target, async () => { await api('khn_doi_cho', { id: b.dataset.len || b.dataset.xuong, huong: b.dataset.len ? -1 : 1 }); await taiLai(); }); });
     ds.querySelectorAll('[data-tb]').forEach(b => { b.onclick = () => hopTaoTB(D.dong.find(d => d.id === b.dataset.tb)); });
+    ds.querySelectorAll('[data-mua]').forEach(b => { b.onclick = () => hopMua(D.dong.find(d => d.id === b.dataset.mua)); });
   }
 
   // ---------- thêm / sửa một dòng ----------
@@ -152,7 +155,7 @@
     const c = cha ? D.dong.find(x => x.id === cha) : null, x = d || { muc: c ? c.muc : '', trang_thai: 'Đã duyệt', dvt: 'Cái', thoi_diem: 'Năm ' + D.nam };
     moHop('<h2>' + (d ? 'Sửa dòng' : c ? 'Thêm dòng con của "' + esc(c.ten) + '"' : 'Thêm thiết bị dự trù năm ' + esc(D.nam)) + '</h2><form id="k-f" class="form-grid">' +
       (c || (d && d.cha) ? '' : o('muc', 'Mục trong file kế hoạch', { select: [['', '— Tự gợi ý theo đơn giá / nhu cầu —']].concat(D.leaf.map(m => [m[0], m[0] + ' – ' + m[3]])), v: x.muc, full: 1 })) +
-      o('ten', 'Danh mục (tên thiết bị)', { v: x.ten, req: 1, full: 1 }) + o('dvt', 'Đơn vị', { v: x.dvt }) + o('trang_thai', 'Trạng thái', { select: D.trang_thai, v: x.trang_thai }) +
+      o('ten', 'Danh mục (tên thiết bị)', { v: x.ten, req: 1, full: 1 }) + o('dvt', 'Đơn vị', { v: x.dvt }) + o('trang_thai', 'Trạng thái', { select: TT_TAY.concat(TT_TAY.indexOf(x.trang_thai) < 0 ? [x.trang_thai] : []), v: x.trang_thai }) +
       NC.map(k => o(k, 'SL ' + D.nhu_cau[k].toLowerCase(), { type: 'number', v: x[k] || '', extra: ' min="0" step="any"' })).join('') +
       o('dinh_muc', 'Định mức (nghìn đồng / đơn vị)', { type: 'number', v: x.dinh_muc || '', extra: ' min="0" step="any"', help: '40000 = 40 triệu đồng' }) + '<div class="f"><span>Kinh phí (nghìn đồng)</span><b id="k-kp" style="padding:8px 0">—</b></div>' +
       o('yckt', 'Yêu cầu kỹ thuật', { area: 1, v: x.yckt, full: 1 }) + o('bo_mon', 'Đơn vị sử dụng (bộ môn)', { v: x.bo_mon, ph: 'BM Dược, BM Dinh dưỡng' }) + o('thoi_diem', 'Thời điểm thực hiện dự kiến', { v: x.thoi_diem }) +
@@ -187,14 +190,76 @@
     const khac = D.cac_nam.filter(n => n !== D.nam);
     if (!khac.length) return toast('Chưa có năm nào khác để chép', true);
     moHop('<h2>Chép dòng chưa mua sang năm ' + esc(D.nam) + '</h2><form id="k-f" class="form-grid">' + o('tu', 'Chép từ năm', { select: khac.slice().reverse(), full: 1 }) +
-      '<p class="note full">Chép các dòng chưa mua (bỏ dòng "Đã mua", "Không duyệt"), kèm dòng con; trạng thái về "Chờ duyệt". Dòng đã có cùng tên trong năm ' + esc(D.nam) + ' thì bỏ qua.</p>' +
+      '<p class="note full">Chép các dòng chưa mua đủ (bỏ dòng "Đã mua", "Ngừng mua", "Không duyệt"), kèm dòng con; dòng "Mua một phần" chỉ chép số còn thiếu; trạng thái về "Chờ duyệt". Dòng đã có cùng tên trong năm ' + esc(D.nam) + ' thì bỏ qua.</p>' +
       '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Chép</button></div></form>', (m) => {
       m.querySelector('#k-f').onsubmit = async (e) => { e.preventDefault(); const r = await chay(e.submitter, () => api('khn_chep', { tu: giaTri(e.target).tu, den: D.nam })); dongHop(); toast('Đã chép ' + r.n + ' dòng'); await taiLai(); };
     });
   }
+  // ghi nhận mua: lịch sử từng lần mua, thêm lần mua, ngừng mua phần còn thiếu
+  function hopMua(d) {
+    const ve = () => moHop('<h2>🛒 ' + esc(d.ten.split('\n')[0]) + '</h2><p>Kế hoạch <b>' + fmt(d.sl) + ' ' + esc(d.dvt) + '</b> × ' + tien(d.dinh_muc) + ' = ' + tien(d.kinh_phi) + ' nghìn đ · đã mua <b>' + fmt(d.sl_mua) + '</b> · còn <b>' + fmt(d.con_lai) + '</b> · ' + tagTT(d.trang_thai) +
+      (d.ngung ? ' – ' + esc(d.ngung) : '') + '</p>' +
+      (d.mua.length ? '<div class="tbl-wrap"><table><thead><tr><th>Ngày</th><th class="num">SL</th><th class="num">Đơn giá thực tế</th><th class="num">Thành tiền</th><th>Ghi chú</th><th>Người ghi</th><th></th></tr></thead><tbody>' +
+        d.mua.map(m => '<tr><td>' + (m.ngay ? ngayVN(m.ngay) : '—') + '</td><td class="num">' + fmt(m.sl) + '</td><td class="num">' + (m.don_gia ? tien(m.don_gia) : '<span class="note">theo định mức</span>') + '</td><td class="num">' + tien(m.sl * (m.don_gia || d.dinh_muc)) + '</td>' +
+          '<td>' + esc(m.ghi_chu) + '</td><td>' + esc(m.nguoi) + '</td><td><button type="button" class="btn red o sm" data-xm="' + esc(m.id) + '" title="Xóa lần mua ghi nhầm">✕</button></td></tr>').join('') + '</tbody></table></div>' : '<p class="note">Chưa ghi nhận lần mua nào.</p>') +
+      (d.con_lai > 0 && d.trang_thai !== 'Ngừng mua' ? '<h3 style="margin:14px 0 6px">Ghi nhận lần mua</h3><form id="k-f" class="form-grid">' + o('sl', 'Số lượng mua lần này (còn ' + fmt(d.con_lai) + ')', { type: 'number', v: d.con_lai, extra: ' min="0" step="any" max="' + d.con_lai + '"', req: 1 }) +
+        o('ngay', 'Ngày mua / nhận', { type: 'date', v: Q.homNay() }) + o('don_gia', 'Đơn giá thực tế (nghìn đồng, trống = theo định mức)', { type: 'number', v: '', extra: ' min="0" step="any"' }) + o('ghi_chu', 'Ghi chú (số hợp đồng, nhà cung cấp…)', { v: '' }) +
+        '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Đóng</button><button class="btn">Ghi nhận mua</button></div></form>' : '') +
+      (d.con_lai > 0 ? (d.trang_thai === 'Ngừng mua' ? '<p style="margin-top:12px"><button type="button" class="btn o sm" id="k-bo-ngung">Bỏ "Ngừng mua" (mua tiếp phần còn thiếu)</button></p>'
+        : '<p class="note" style="margin-top:12px">Không mua phần còn thiếu nữa? <button type="button" class="btn o sm" id="k-ngung">Ngừng mua ' + fmt(d.con_lai) + ' còn lại…</button></p>') : '') +
+      (d.con_lai > 0 && d.trang_thai !== 'Ngừng mua' ? '' : '<div class="modal-foot"><button type="button" class="btn o" data-dong>Đóng</button></div>'), (m) => {
+      const xong = async (r, tb) => { toast(tb); await taiLai(); d = D.dong.find(x => x.id === d.id) || Object.assign(d, r); ve(); };
+      const f = m.querySelector('#k-f');
+      if (f) f.onsubmit = async (e) => { e.preventDefault(); const v = giaTri(f); const r = await chay(e.submitter, () => api('khn_mua', { id: d.id, sl: v.sl, ngay: v.ngay, don_gia: v.don_gia, ghi_chu: v.ghi_chu })); await xong(r, 'Đã ghi nhận mua ' + v.sl); };
+      m.querySelectorAll('[data-xm]').forEach(b => { b.onclick = (e) => { if (!confirm('Xóa lần mua này?')) return; chay(e.target, async () => xong(await api('khn_mua_xoa', { id: d.id, mua: b.dataset.xm }), 'Đã xóa lần mua')); }; });
+      if (m.querySelector('#k-ngung')) m.querySelector('#k-ngung').onclick = (e) => { const ly = prompt('Lý do ngừng mua ' + fmt(d.con_lai) + ' ' + d.dvt + ' còn lại (VD: đã đủ dùng, hết kinh phí, chuyển sang năm sau):'); if (!ly) return;
+        chay(e.target, async () => xong(await api('khn_ngung', { id: d.id, ly_do: ly }), 'Đã ngừng mua phần còn thiếu')); };
+      if (m.querySelector('#k-bo-ngung')) m.querySelector('#k-bo-ngung').onclick = (e) => chay(e.target, async () => xong(await api('khn_ngung', { id: d.id, bo: 1 }), 'Đã bỏ ngừng mua'));
+    });
+    ve();
+  }
+  // báo cáo thực hiện cuối năm: kế hoạch – đã mua – còn thiếu – ngừng mua theo mục, bộ môn; dòng chưa mua đủ; tải Excel
+  const TT_BC = ['Đã duyệt', 'Mua một phần', 'Đã mua', 'Ngừng mua'];
+  function bangThucHien() {
+    const l = D.dong.filter(d => !D.dong.some(x => x.cha === d.id) && TT_BC.indexOf(d.trang_thai) >= 0), bmOf = (d) => d.bo_mon || '(chưa ghi bộ môn)';
+    const cong = (ds) => ds.reduce((a, d) => [a[0] + d.kinh_phi, a[1] + d.kp_mua, a[2] + (d.trang_thai === 'Ngừng mua' ? 0 : d.con_lai * d.dinh_muc), a[3] + (d.trang_thai === 'Ngừng mua' ? d.con_lai * d.dinh_muc : 0)], [0, 0, 0, 0]);
+    const nhom = (ten, loc) => [ten, cong(l.filter(loc)), l.filter(loc).length];
+    return { l, tong: cong(l), thieu: l.filter(d => d.con_lai > 0),
+      muc: D.leaf.map(m => nhom(m[0] + ' – ' + m[3], d => d.muc === m[0])).filter(x => x[2]),
+      bm: [...new Set(l.map(bmOf))].sort().map(b => nhom(b, d => bmOf(d) === b)) };
+  }
+  function hopBaoCao() {
+    const b = bangThucHien(), dau = '<tr><th></th><th class="num">Số dòng</th><th class="num">Kế hoạch</th><th class="num">Đã mua (thực tế)</th><th class="num">Còn thiếu</th><th class="num">Ngừng mua</th></tr>';
+    const hang = (x, dam) => '<tr><td>' + (dam ? '<b>' + esc(x[0]) + '</b>' : esc(x[0])) + '</td><td class="num">' + x[2] + '</td>' + x[1].map(v => '<td class="num">' + tien(v) + '</td>').join('') + '</tr>';
+    moHop('<h2>📊 Báo cáo thực hiện kế hoạch năm ' + esc(D.nam) + '</h2><p class="note">Tính các dòng đã duyệt (Đã duyệt, Mua một phần, Đã mua, Ngừng mua). Kinh phí nghìn đồng; "Đã mua" theo đơn giá thực tế (không ghi thì theo định mức); "Còn thiếu", "Ngừng mua" theo định mức.</p>' +
+      '<h3>Theo mục</h3><div class="tbl-wrap"><table><thead>' + dau + '</thead><tbody>' + b.muc.map(x => hang(x)).join('') + hang(['Tổng cộng', b.tong, b.l.length], 1) + '</tbody></table></div>' +
+      '<h3 style="margin-top:12px">Theo bộ môn</h3><div class="tbl-wrap"><table><thead>' + dau + '</thead><tbody>' + b.bm.map(x => hang(x)).join('') + '</tbody></table></div>' +
+      '<h3 style="margin-top:12px">Dòng chưa mua đủ (' + b.thieu.length + ')</h3><div class="tbl-wrap"><table><thead><tr><th>Mục</th><th>Danh mục</th><th class="num">Kế hoạch</th><th class="num">Đã mua</th><th class="num">Còn thiếu</th><th>Trạng thái</th></tr></thead><tbody>' +
+      b.thieu.map(d => '<tr><td>' + esc(d.muc) + '</td><td>' + esc(d.ten.split('\n')[0]) + '</td><td class="num">' + fmt(d.sl) + '</td><td class="num">' + fmt(d.sl_mua) + '</td><td class="num">' + fmt(d.con_lai) + '</td><td>' + tagTT(d.trang_thai) + (d.ngung ? ' ' + esc(d.ngung) : '') + '</td></tr>').join('') + '</tbody></table></div>' +
+      '<div class="modal-foot"><button type="button" class="btn o" data-dong>Đóng</button><button type="button" class="btn" id="k-bc-xls">⇩ Tải Excel báo cáo</button></div>', (m) => {
+      m.querySelector('#k-bc-xls').onclick = (e) => chay(e.target, () => taiBaoCao(b));
+    });
+  }
+  async function taiBaoCao(b) {
+    const ExcelJS = await napExcelJS(), wb = new ExcelJS.Workbook(), dam = { bold: true }, rong = (ws, w) => w.forEach((x, i) => { ws.getColumn(i + 1).width = x; });
+    const t1 = wb.addWorksheet('Tong hop'), dau = ['', 'Số dòng', 'Kế hoạch', 'Đã mua (thực tế)', 'Còn thiếu', 'Ngừng mua'];
+    t1.addRow(['BÁO CÁO THỰC HIỆN KẾ HOẠCH MUA SẮM NĂM ' + D.nam + ' – ' + String(D.don_vi || '').toUpperCase()]).font = dam; t1.addRow(['Đơn vị tính: nghìn đồng']); t1.addRow([]);
+    t1.addRow(['THEO MỤC']).font = dam; t1.addRow(dau).font = dam; b.muc.forEach(x => t1.addRow([x[0], x[2]].concat(x[1])));
+    t1.addRow(['Tổng cộng', b.l.length].concat(b.tong)).font = dam; t1.addRow([]);
+    t1.addRow(['THEO BỘ MÔN']).font = dam; t1.addRow(dau).font = dam; b.bm.forEach(x => t1.addRow([x[0], x[2]].concat(x[1])));
+    rong(t1, [60, 10, 16, 18, 14, 14]); [3, 4, 5, 6].forEach(i => { t1.getColumn(i).numFmt = '#,##0'; });
+    const t2 = wb.addWorksheet('Chi tiet');
+    t2.addRow(['Mục', 'Danh mục', 'ĐVT', 'SL kế hoạch', 'SL đã mua', 'Còn thiếu', 'Định mức', 'Kinh phí kế hoạch', 'Kinh phí đã mua', 'Trạng thái', 'Lý do ngừng', 'Đơn vị sử dụng', 'Các lần mua (ngày – SL – đơn giá – ghi chú)']).font = dam;
+    b.l.forEach(d => t2.addRow([d.muc, d.ten.split('\n')[0], d.dvt, d.sl, d.sl_mua, d.con_lai, d.dinh_muc, d.kinh_phi, d.kp_mua, d.trang_thai, d.ngung || '', d.bo_mon,
+      d.mua.map(m => [m.ngay ? ngayVN(m.ngay) : '', m.sl, m.don_gia || 'định mức', m.ghi_chu].filter(x => x !== '').join(' – ')).join('\n')]));
+    rong(t2, [9, 50, 7, 10, 10, 10, 12, 16, 16, 14, 24, 26, 50]); t2.getColumn(13).alignment = { wrapText: true, vertical: 'top' }; [7, 8, 9].forEach(i => { t2.getColumn(i).numFmt = '#,##0'; });
+    const buf = await wb.xlsx.writeBuffer(), a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); a.download = 'BAO CAO THUC HIEN KE HOACH NAM ' + D.nam + '.xlsx';
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  }
   function hopTaoTB(d) {
     moHop('<h2>Đưa "' + esc(d.ten) + '" vào Tài sản</h2><form id="k-f" class="form-grid">' + o('phong', 'Phòng đặt thiết bị', { select: [['', '— Chưa xếp phòng (kho PTN) —']].concat(D.phong.map(p => [p.ma, p.ma + ' – ' + p.ten])) }) +
-      o('so', 'Số hồ sơ thiết bị tạo (mỗi cái một hồ sơ, tối đa 50)', { type: 'number', v: Math.min(50, d.sl || 1), extra: ' min="1" max="50"' }) +
+      o('so', 'Số hồ sơ thiết bị tạo (đã mua ' + fmt(d.sl_mua) + ', đã tạo ' + d.tb_moi.length + ')', { type: 'number', v: Math.min(50, Math.floor(d.sl_mua) - d.tb_moi.length), extra: ' min="1" max="' + Math.min(50, Math.floor(d.sl_mua) - d.tb_moi.length) + '"' }) +
       '<p class="note full">Mỗi hồ sơ: tên (kèm #1, #2… nếu nhiều cái), nguồn vốn "Mua sắm năm ' + esc(d.nam) + '", nguyên giá theo định mức, thông số theo yêu cầu kỹ thuật. Sửa thêm mã tài sản, serial trong mục Tài sản.' +
       (d.tb_moi.length ? ' <b>Dòng này đã tạo ' + d.tb_moi.length + ' hồ sơ.</b>' : '') + '</p><div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Tạo thiết bị</button></div></form>', (m) => {
       m.querySelector('#k-f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target); const r = await chay(e.submitter, () => api('khn_tao_tb', { id: d.id, phong: v.phong, so: v.so }));
@@ -280,7 +345,7 @@
   const napExcelJS = () => window.ExcelJS ? Promise.resolve(window.ExcelJS) : new Promise((ok, loi) => { const s = document.createElement('script'); s.src = EXCELJS; s.onload = () => ok(window.ExcelJS); s.onerror = () => loi(new Error('Không tải được thư viện Excel (cần mạng)')); document.head.appendChild(s); });
   function hopXuat() {
     moHop('<h2>Xuất kế hoạch năm ' + esc(D.nam) + ' theo file mẫu</h2><form id="k-f" class="form-grid">' +
-      o('pham_vi', 'Dòng đưa vào file', { select: [['duyet', 'Đã duyệt + Đã mua (gửi P.KHĐT)'], ['tat_ca', 'Tất cả trừ "Không duyệt" (bản nháp tổng hợp)'], ['trong', 'Không dòng nào (file mẫu trống để điền tay)']], full: 1 }) +
+      o('pham_vi', 'Dòng đưa vào file', { select: [['duyet', 'Đã duyệt (kể cả đã mua, mua một phần) – gửi P.KHĐT'], ['tat_ca', 'Tất cả trừ "Không duyệt" (bản nháp tổng hợp)'], ['trong', 'Không dòng nào (file mẫu trống để điền tay)']], full: 1 }) +
       '<p class="note full">File dựng từ mẫu "KẾ HOẠCH MUA SẮM NĂM" của Trường: giữ khung, định dạng, chữ ký, trang tính Xây dựng và Tool; công thức <b>D = SUM(E:H)</b>, <b>J = I × số lượng</b>, tổng từng mục và <b>Tổng cộng (A+B+C+D+E)</b> viết lại theo số dòng thực tế; mục chưa có thiết bị giữ nguyên các dòng ví dụ ("1 – Chương trình, kế hoạch…", "…") như file mẫu.</p>' +
       '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">⇩ Tải file Excel</button></div></form>', (m) => {
       m.querySelector('#k-f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target); await chay(e.submitter, () => xuatExcel(v.pham_vi)); dongHop(); };
@@ -316,7 +381,7 @@
     (ws.model.merges || []).filter(g => +/\d+/.exec(g)[0] >= 9).forEach(g => ws.unMergeCells(g));
     const cuoiCu = ws.rowCount; // ghi đè từ dòng 9; dòng cũ còn thừa phía dưới xóa sạch sau khi ghi
     // --- dòng đưa vào file ---
-    const tt = phamVi === 'trong' ? [] : phamVi === 'tat_ca' ? ['Chờ duyệt', 'Đã duyệt', 'Đã mua'] : ['Đã duyệt', 'Đã mua'];
+    const tt = phamVi === 'trong' ? [] : phamVi === 'tat_ca' ? ['Chờ duyệt', 'Đã duyệt', 'Mua một phần', 'Đã mua', 'Ngừng mua'] : ['Đã duyệt', 'Mua một phần', 'Đã mua', 'Ngừng mua'];
     const lay = D.dong.filter(d => tt.indexOf(d.trang_thai) >= 0), coCha = {}; lay.forEach(d => { if (!d.cha) coCha[d.id] = 1; });
     const ds = lay.filter(d => !d.cha || coCha[d.cha]);
     let r = 9;
@@ -329,7 +394,7 @@
         const laCha = !d.cha && ds.some(x => x.cha === d.id);
         if (d.cha) con++; else { stt++; con = 0; }
         const so1 = d.cha ? (con < 10 ? parseFloat(stt + '.' + con) : stt + '.' + con) : stt, ly = [d.ly_do, d.bo_mon && 'Đơn vị sử dụng: ' + d.bo_mon].filter(Boolean).join('\n');
-        const v = { 1: so1, 2: d.ten, 3: d.dvt, 11: d.yckt, 12: ly, 13: tdN(d.thoi_diem, nam), 14: d.trang_thai === 'Đã mua' ? 'đã mua' : '' };
+        const v = { 1: so1, 2: d.ten, 3: d.dvt, 11: d.yckt, 12: ly, 13: tdN(d.thoi_diem, nam), 14: d.trang_thai === 'Đã mua' ? 'đã mua' : d.sl_mua ? 'đã mua ' + fmt(d.sl_mua) + '/' + fmt(d.sl) : '' }; // cột N (ngoài vùng in): theo dõi
         if (!laCha) {
           const co = NC.map((k, i) => [k, 5 + i]).filter(x => d[x[0]]), cot = co.length === 1 ? 'EFGH'[co[0][1] - 5] : co.length ? 'D' : 'E';
           NC.forEach((k, i) => { v[5 + i] = d[k] || ''; });
