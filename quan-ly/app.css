@@ -340,6 +340,8 @@ tr.nb td { background: #FFF4C2; }
 .bat-tb { margin: 6px 14px; padding: 8px 10px; border-radius: 10px; border: 1px dashed rgba(242, 199, 102, .7); background: rgba(255, 255, 255, .08); color: #FCE7A8; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; text-align: left; }
 /* Tủ sắt hành lang */
 .locker.giu { background: #FFF4D6; }
+.hl-tu { border-top: 1px dashed var(--line, #E2E6EE); margin-top: 10px; padding-top: 8px; }
+.hl-tu .lockers { margin-top: 6px; }
 .hl-chon { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
 .hl-chon .on { background: var(--mn); color: #fff; }
 /* Lịch & việc của tôi */

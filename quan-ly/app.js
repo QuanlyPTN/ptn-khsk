@@ -1046,7 +1046,7 @@
     $('b-them-tb').onclick = () => hopThietBi(null, ma);
   }
   function hopTu(t) {
-    moHop('<h2>Tủ ' + esc(t.so) + ' – ' + (/^HL-/.test(t.phong) ? 'tủ sắt hành lang ' + esc(t.phong.slice(3)) : 'phòng ' + esc(t.phong)) + '</h2><form id="f">' +
+    moHop('<h2>' + (/^HL-/.test(t.phong) ? 'Ô ' + esc(t.so) + ' – ' + esc(t.phong.replace(/^HL-(.+)-(\d+)$/, 'HL $1 – Tủ $2')) : 'Tủ ' + esc(t.so) + ' – phòng ' + esc(t.phong)) + '</h2><form id="f">' +
       o('trang_thai', 'Trạng thái', { select: S.dm.trang_thai_tu, v: t.trang_thai }) +
       '<div id="tu-dung"><div class="form-grid">' + o('nguoi', 'Người sử dụng (họ tên – MSSV/nhóm)', { v: t.nguoi, req: 1, full: 1 }) + o('sdt', 'Điện thoại', { v: t.sdt }) +
       o('tu_ngay', 'Từ ngày', { type: 'date', v: t.tu_ngay || homNay() }) + o('han', 'Hạn trả', { type: 'date', v: t.han }) + '</div></div>' +

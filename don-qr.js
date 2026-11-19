@@ -26,7 +26,7 @@
   const cuoi = (d, dsKy, trong) => [P(R(ngayKy(d), { i: 1 }), { al: 'right' }), ky(dsKy, trong == null ? 3 : trong)];
   // bảng thiết bị của đơn: tb_ct (chi tiết) hoặc ten_tb
   // tủ của đơn QR6: "tủ số 05 (phòng D11.02), tủ số 07 (phòng D11.03)"
-  const tuDon = (d) => { const ps = String(d.phong || '').split(/\s*,\s*/); return String(d.tu || '').split(/\s*,\s*/).filter(Boolean).map((so, i) => 'tủ số ' + so + ' (phòng ' + (ps[i] || ps[0]) + ')').join(', ') || 'tủ số ……… tại phòng ………'; };
+  const tuDon = (d) => { const ps = String(d.phong || '').split(/\s*,\s*/); return String(d.tu || '').split(/\s*,\s*/).filter(Boolean).map((so, i) => /^HL-/.test(ps[i] || ps[0]) ? 'ô số ' + so + ' (tủ sắt hành lang ' + (ps[i] || ps[0]).replace(/^HL-(.+)-(\d+)$/, '$1 – Tủ $2') + ')' : 'tủ số ' + so + ' (phòng ' + (ps[i] || ps[0]) + ')').join(', ') || 'tủ số ……… tại phòng ………'; };
   // thiết bị gõ tay ngoài danh sách (QR2) đã nằm cuối ten_tb; tb_ct chỉ có thiết bị trong danh mục
   const dsTB = (d) => {
     const nd = d.nd || {}, khac = (nd.tb_khac_ds || []).map(x => ({ ten: x.ten + (x.ghi_chu ? ' (' + x.ghi_chu + ')' : ''), sl: x.sl, tinh_trang: x.tinh_trang, ngoai: 1 }));
