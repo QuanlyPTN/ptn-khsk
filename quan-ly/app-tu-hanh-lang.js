@@ -1,10 +1,10 @@
 /* Trang quản lý – "Tủ sắt hành lang" (#/tu-hl[/mã khu]): khu (HL F4 – F7, HL T3…) → tủ sắt (Tủ 1, Tủ 2…) → ô (01, 02…, mỗi tủ đánh lại từ 01).
-   Sơ đồ ô từng tủ, thêm khu / tủ sắt / ô, giao – trả – báo hỏng ô (hộp tủ dùng chung với trang phòng), ô có đơn QR6 chờ duyệt, in mã QR dán ở từng tủ sắt
-   (quét → QR6 chọn sẵn tủ), giới hạn đăng ký (admin). Máy chủ: apps-script/26_TuHanhLang.gs; mỗi ô là một dòng bảng TU (phong = mã tủ sắt HL-F4-1). */
+   Sơ đồ ô từng tủ, thêm khu / tủ sắt / ô, ghi chú tủ, giao – trả – báo hỏng ô (hộp tủ dùng chung với trang phòng), ô có đơn QR6 chờ duyệt,
+   giới hạn đăng ký (admin). Máy chủ: apps-script/26_TuHanhLang.gs; mỗi ô là một dòng bảng TU (phong = mã tủ sắt HL-F4-1). */
 (function () {
   'use strict';
   const Q = window.PTN_QL;
-  const { $, api, chay, trang, moHop, dongHop, o, giaTri, esc, toast, ngayVN, laAdmin, coQuyen, dieuHuong, napQR, trangCongKhai } = Q;
+  const { $, api, chay, trang, moHop, dongHop, o, giaTri, esc, toast, ngayVN, laAdmin, coQuyen, dieuHuong } = Q;
   const tenNgan = (ma) => String(ma).replace(/^HL-/, 'HL ');
   const tenTu = (ma) => String(ma).replace(/^HL-(.+)-(\d+)$/, 'HL $1 – Tủ $2');
   // khu đang bung (nhớ trên máy này): mặc định thu gọn hết, mở theo liên kết #/tu-hl/<mã khu>
@@ -14,8 +14,7 @@
 
   async function manTuHL(p) {
     const xl = coQuyen('phong', 'xu_ly');
-    const nd = trang('Tủ sắt hành lang', (xl ? '<button class="btn sm" id="hl-them">+ Thêm khu tủ</button>' : '') + '<button class="btn o sm" id="hl-qr">🖨 In mã QR các tủ</button>' +
-      (laAdmin() ? '<button class="btn o sm" id="hl-gh">Giới hạn đăng ký</button>' : ''), '<a href="#/phong">Phòng thí nghiệm</a> ›');
+    const nd = trang('Tủ sắt hành lang', (xl ? '<button class="btn sm" id="hl-them">+ Thêm khu tủ</button>' : '') + (laAdmin() ? '<button class="btn o sm" id="hl-gh">Giới hạn đăng ký</button>' : ''), '<a href="#/phong">Phòng thí nghiệm</a> ›');
     const r = await api('khu_tu_ds'), hn = r.hom_nay, cd = r.cho_duyet || [];
     const oCua = (k) => [].concat(...k.tu_sat.map(t => t.o)), dem = (ds, f) => ds.filter(f).length;
     const oHtml = (t) => { const g = cd.find(x => x.phong === t.phong && x.so === t.so);
@@ -37,8 +36,7 @@
         return '<details class="card hl-khu" id="khu-' + esc(k.ma) + '" data-khu="' + esc(k.ma) + '"' + (mo.indexOf(k.ma) >= 0 ? ' open' : '') + '><summary><h2 style="margin:0">' + esc(k.ten) + ' <span class="note">(' + esc(tenNgan(k.ma)) + ')</span></h2>' +
           '<div class="note">' + esc([k.vi_tri, k.ghi_chu].filter(Boolean).join(' · ')) + '</div><div class="note">' + k.tu_sat.length + ' tủ sắt · ' + ds.length + ' ô · ' + dem(ds, t => t.trang_thai === 'Trống') + ' trống · ' + dem(ds, t => t.trang_thai === 'Đang dùng') + ' đang dùng' +
           (dem(ds, t => t.trang_thai === 'Hỏng') ? ' · ' + dem(ds, t => t.trang_thai === 'Hỏng') + ' hỏng' : '') + (qh ? ' · <b style="color:var(--bad)">' + qh + ' quá hạn trả</b>' : '') + '</div></summary>' +
-          '<div class="btns" style="margin-top:8px">' + (xl ? '<button class="btn o sm" data-them-tu-sat="' + esc(k.ma) + '">+ Thêm tủ sắt</button><button class="btn o sm" data-sua-khu="' + esc(k.ma) + '">Sửa khu</button>' : '') +
-          (k.tu_sat.length ? '<button class="btn o sm" data-qr-khu="' + esc(k.ma) + '">QR</button>' : '') + '</div>' +
+          '<div class="btns" style="margin-top:8px">' + (xl ? '<button class="btn o sm" data-them-tu-sat="' + esc(k.ma) + '">+ Thêm tủ sắt</button><button class="btn o sm" data-sua-khu="' + esc(k.ma) + '">Sửa khu</button>' : '') + '</div>' +
           (k.tu_sat.length ? k.tu_sat.map(t => '<div class="hl-tu"><div class="btns" style="justify-content:space-between"><b>Tủ ' + t.so + '</b>' + (t.ghi_chu ? ' <span class="hl-gc">' + esc(t.ghi_chu) + '</span>' : '') + ' <span class="note">' + t.o.length + ' ô · ' + dem(t.o, x => x.trang_thai === 'Trống') + ' trống</span>' +
             (xl ? '<span class="btns" style="margin-left:auto"><button class="btn o sm" data-gc-tu="' + esc(t.ma) + '">✎ Ghi chú</button><button class="btn o sm" data-them-o="' + esc(t.ma) + '">+ Thêm ô</button><button class="btn o sm red" data-xoa-tu="' + esc(t.ma) + '">Xóa tủ</button></span>' : '') + '</div>' +
             '<div class="lockers">' + oTu(t) + '</div></div>').join('')
@@ -67,9 +65,7 @@
       if (!confirm('Xóa ' + tenTu(t.ma) + ' cùng ' + t.o.length + ' ô? (chỉ xóa được khi mọi ô đang trống)')) return;
       await chay(e.target, () => api('khu_tu_xoa_tu', { ma: t.ma })); toast('Đã xóa ' + tenTu(t.ma)); dieuHuong(); }; });
     nd.querySelectorAll('[data-sua-khu]').forEach(b => { b.onclick = () => hopKhu(khu(b.dataset.suaKhu)); });
-    nd.querySelectorAll('[data-qr-khu]').forEach(b => { b.onclick = (e) => chay(e.target, () => inQR([khu(b.dataset.qrKhu)], r.gioi_han)); });
     if ($('hl-them')) $('hl-them').onclick = () => hopKhu(null);
-    $('hl-qr').onclick = (e) => chay(e.target, () => inQR(r.khu, r.gioi_han));
     if ($('hl-gh')) $('hl-gh').onclick = () => {
       moHop('<h2>Giới hạn đăng ký tủ sắt hành lang</h2><form id="f" class="form-grid">' + o('nguoi', 'Số ô tối đa / người (0 = không giới hạn)', { type: 'number', v: r.gioi_han.nguoi }) +
         o('nhom', 'Số ô tối đa / nhóm đề tài (0 = không giới hạn)', { type: 'number', v: r.gioi_han.nhom }) +
@@ -98,20 +94,6 @@
       if (!confirm('Xóa ' + k.ten + ' cùng ' + k.tu_sat.length + ' tủ sắt? (chỉ xóa được khi mọi ô đang trống)')) return;
       await chay(e.target, () => api('khu_tu_xoa', { ma: k.ma })); dongHop(); toast('Đã xóa khu ' + k.ma); location.hash = '#/tu-hl';
     };
-  }
-
-  // mã QR từng tủ sắt: quét → trang dùng chung, QR6 chọn sẵn tủ; in A4 mỗi tủ một ô để dán lên tủ
-  async function inQR(dsKhu, gh) {
-    const QR = await napQR(), goc = trangCongKhai();
-    const o2 = [].concat(...dsKhu.map(k => k.tu_sat.map(t => { const q = QR(0, 'M'); q.addData(goc + '#/QR6/' + t.ma); q.make();
-      return '<div class="o"><div class="t">TỦ SẮT HÀNH LANG ' + esc(k.ma.slice(3)) + ' – TỦ ' + t.so + '</div><div class="v">' + (t.ghi_chu ? '<b>' + esc(t.ghi_chu) + '</b> · ' : '') + esc(k.vi_tri || '') + ' · ' + t.o.length + ' ô</div>' + q.createSvgTag({ cellSize: 5, margin: 2 }) +
-        '<div class="h">Quét mã để đăng ký mượn ô tủ (QR6)</div><div class="n">' + (gh && gh.nguoi ? 'Mỗi người tối đa ' + gh.nguoi + ' ô · ' : '') + 'trả ô, chìa khóa đúng hạn</div></div>'; }))).join('');
-    if (!o2) { toast('Chưa có tủ sắt nào để in mã', true); return; }
-    const w = window.open('', '_blank'); if (!w) { toast('Trình duyệt chặn cửa sổ in – cho phép cửa sổ bật lên', true); return; }
-    w.document.write('<!doctype html><meta charset="utf-8"><title>Mã QR tủ sắt hành lang</title><style>@page{size:A4;margin:12mm}body{font-family:"Times New Roman",serif;margin:0}' +
-      '.g{display:grid;grid-template-columns:1fr 1fr;gap:10mm}.o{border:1.5px solid #000;border-radius:4mm;padding:6mm;text-align:center;break-inside:avoid}.t{font-size:22px;font-weight:bold}.v{font-size:14px;margin-bottom:3mm}' +
-      '.o svg{width:55mm;height:55mm}.h{font-size:16px;font-weight:bold;margin-top:2mm}.n{font-size:12.5px}</style><div class="g">' + o2 + '</div>');
-    w.document.close(); setTimeout(() => w.print(), 500);
   }
 
   Q.TUYEN['tu-hl'] = manTuHL;
