@@ -79,15 +79,16 @@
   function hopKhu(k) {
     const moi = !k; k = k || {};
     moHop('<h2>' + (moi ? 'Thêm khu tủ sắt hành lang' : 'Sửa ' + esc(k.ten)) + '</h2><form id="f"><div class="form-grid">' +
-      o('ma', 'Mã khu (tòa + tầng)', { v: moi ? '' : tenNgan(k.ma), req: 1, ph: 'VD: HL F8', extra: moi ? '' : ' readonly', help: moi ? 'Ghi "HL" + tòa + tầng, VD HL F8, HL T4' : '' }) +
+      o('ma', 'Mã khu (tòa + tầng)', { v: moi ? '' : tenNgan(k.ma), req: 1, ph: 'VD: HL F8', help: moi ? 'Ghi "HL" + tòa + tầng, VD HL F8, HL T4' : 'Đổi mã: tủ sắt, ô, đơn QR6, ghi chú tủ chuyển theo mã mới' }) +
       (moi ? o('so_tu', 'Số tủ sắt', { type: 'number', v: 2, help: 'Tủ 1, Tủ 2, …; thêm sau được' }) + o('so_o', 'Số ô mỗi tủ', { type: 'number', v: 12, help: 'Ô 01, 02, … (mỗi tủ đánh lại từ 01)' }) : '') +
       o('ten', 'Tên khu', { v: k.ten, full: 1, ph: 'Trống = "Tủ sắt hành lang <mã>"' }) + o('vi_tri', 'Vị trí', { v: k.vi_tri, full: 1, ph: 'VD: Hành lang tầng 4 – nhà F, cạnh thang máy' }) +
       o('ghi_chu', 'Ghi chú', { v: k.ghi_chu, full: 1 }) + '</div>' +
       '<div class="modal-foot">' + (!moi && laAdmin() ? '<button type="button" class="btn red o" id="b-xoa-khu" style="margin-right:auto">Xóa khu</button>' : '') +
       '<button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>');
     $('f').onsubmit = async (e) => {
-      e.preventDefault(); const v = giaTri(e.target); if (!moi) v.ma = k.ma;
-      const x = await chay(e.submitter, () => api('khu_tu_luu', { moi, khu: v, so_tu: v.so_tu, so_o: v.so_o }));
+      e.preventDefault(); const v = giaTri(e.target), maMoi = v.ma; if (!moi) v.ma = k.ma;
+      if (!moi && maMoi.replace(/\W/g, '').toUpperCase() !== k.ma.replace(/\W/g, '') && !confirm('Đổi mã khu ' + tenNgan(k.ma) + ' thành "' + maMoi + '"? Tủ sắt, ô, đơn QR6 của khu chuyển theo mã mới.')) return;
+      const x = await chay(e.submitter, () => api('khu_tu_luu', { moi, khu: v, ma_moi: moi ? '' : maMoi, so_tu: v.so_tu, so_o: v.so_o }));
       dongHop(); toast('Đã lưu ' + x.ten); location.hash = '#/tu-hl/' + x.ma; dieuHuong();
     };
     if ($('b-xoa-khu')) $('b-xoa-khu').onclick = async (e) => {
