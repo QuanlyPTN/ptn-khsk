@@ -141,19 +141,25 @@
   const dsKhuTu = () => tuSatHL().map(t => [t.ma, '<b>' + esc(t.ten) + '</b> – ' + esc(t.khu.ten) + ' <span class="note">(' + (S.dm.tu_trong[t.ma] || []).length + ' ô trống)</span>']);
   // phòng gom theo tòa – tầng (F4, F5… D10): bấm nhóm thì hiện phòng của nhóm; phòng đã chọn ở mọi nhóm vẫn giữ (ô chọn ẩn vẫn nằm trong form)
   const TEN_NHOM_PHONG = {};
-  const nhomPhong = (ma) => { const m = /^([A-Z])0*(\d+)/.exec(ma || ''); return m ? m[1] + m[2] : 'Khác'; };
-  const chonPhongNhom = (nhan, o) => {
-    const nhom = []; S.dm.phong.forEach(p => { const k = nhomPhong(p.ma); let g = nhom.find(x => x.k === k); if (!g) nhom.push(g = { k, ds: [] }); g.ds.push(p); });
-    return truong(nhan, '<div class="nhom-phong">' + nhom.map(g => '<button type="button" class="np" data-np="' + esc(g.k) + '">' + esc(TEN_NHOM_PHONG[g.k] || g.k) + '<b class="np-so"></b></button>').join('') + '</div>' +
-      '<div class="h" id="np-goi-y">Bấm tòa – tầng để hiện các phòng.</div>' +
-      nhom.map(g => '<div class="np-ds hide" data-np-ds="' + esc(g.k) + '">' + g.ds.map(p => '<label class="opt"><input type="checkbox" name="phong" value="' + esc(p.ma) + '" data-nhieu="1"><span><b>' + esc(p.ma) + '</b> – ' + esc(p.ten) + '</span></label>').join('') + '</div>').join('') +
+  // tủ sắt hành lang HL-F4-2 thuộc tầng F4 (cùng nhóm với phòng F4.xx)
+  const nhomPhong = (ma) => { const m = /^(?:HL-)?([A-Z])0*(\d+)/.exec(ma || ''); return m ? m[1] + m[2] : 'Khác'; };
+  const tenChon = (ma) => /^HL-/.test(ma) ? ma.replace(/^HL-(.+)-(\d+)$/, 'HL $1 – Tủ $2') : ma;
+  // them: mục thêm vào nhóm tầng (QR6: tủ sắt hành lang [{ma, html}]); chonSan: mã chọn sẵn – bung đúng tầng
+  const chonPhongNhom = (nhan, o, them, chonSan) => {
+    const nhom = [], vao = (k, x) => { let g = nhom.find(y => y.k === k); if (!g) nhom.push(g = { k, ds: [] }); g.ds.push(x); };
+    S.dm.phong.forEach(p => vao(nhomPhong(p.ma), { ma: p.ma, html: '<b>' + esc(p.ma) + '</b> – ' + esc(p.ten) }));
+    (them || []).forEach(x => vao(nhomPhong(x.ma), x));
+    const moSan = chonSan ? nhomPhong(chonSan) : '';
+    return truong(nhan, '<div class="nhom-phong">' + nhom.map(g => '<button type="button" class="np' + (g.k === moSan ? ' on' : '') + '" data-np="' + esc(g.k) + '">' + esc(TEN_NHOM_PHONG[g.k] || g.k) + (g.ds.some(x => /^HL-/.test(x.ma)) ? ' <small>🗄</small>' : '') + '<b class="np-so"></b></button>').join('') + '</div>' +
+      '<div class="h' + (moSan ? ' hide' : '') + '" id="np-goi-y">Bấm tòa – tầng để hiện các phòng' + ((them || []).length ? ' và tủ sắt hành lang (🗄)' : '') + '; bấm lại để thu gọn.</div>' +
+      nhom.map(g => '<div class="np-ds' + (g.k === moSan ? '' : ' hide') + '" data-np-ds="' + esc(g.k) + '">' + g.ds.map(p => '<label class="opt"><input type="checkbox" name="phong" value="' + esc(p.ma) + '" data-nhieu="1"' + (p.ma === chonSan ? ' checked' : '') + '><span>' + p.html + '</span></label>').join('') + '</div>').join('') +
       '<div class="note" id="np-chon"></div>', o);
   };
   function ganNhomPhong(form) {
     if (!form.querySelector('[data-np]')) return;
     const dem = () => { const chon = [...form.querySelectorAll('[name=phong]:checked')].map(i => i.value);
       form.querySelectorAll('[data-np]').forEach(b => { const n = chon.filter(m => nhomPhong(m) === b.dataset.np).length; b.querySelector('.np-so').textContent = n || ''; });
-      $('np-chon').innerHTML = chon.length ? 'Đã chọn: <b>' + chon.map(esc).join(', ') + '</b>' : ''; };
+      $('np-chon').innerHTML = chon.length ? 'Đã chọn: <b>' + chon.map(m => esc(tenChon(m))).join(', ') + '</b>' : ''; };
     form.querySelectorAll('[data-np]').forEach(b => { b.onclick = () => { const mo = !b.classList.contains('on');
       form.querySelectorAll('[data-np]').forEach(x => x.classList.toggle('on', mo && x === b));
       form.querySelectorAll('[data-np-ds]').forEach(d => d.classList.toggle('hide', !(mo && d.dataset.npDs === b.dataset.np)));
@@ -437,7 +443,7 @@
           chon('tinh_trang_truoc', 'Tình trạng thiết bị trước khi sử dụng', ['Bình thường', 'Bất thường'], { v: 'Bình thường' }) + nhap('ghi_chu', 'Ghi chú / bất thường (nếu có)') + chonHS;
         break;
       case 'QR6':
-        f = chon('phong', 'Phòng / khu tủ sắt hành lang đề nghị sử dụng tủ (chọn được nhiều – mỗi nơi một tủ)', dsPhong().concat(dsKhuTu()), { nhieu: 1, req: 1, v: chonSan ? [chonTuSat(chonSan)] : undefined }) + '<div id="o-tu"></div>' +
+        f = chonPhongNhom('Phòng / tủ sắt hành lang đề nghị sử dụng (chọn được nhiều – mỗi nơi một tủ / ô)', { req: 1 }, dsKhuTu().map(x => ({ ma: x[0], html: '🗄 ' + x[1] })), chonSan ? chonTuSat(chonSan) : '') + '<div id="o-tu"></div>' +
           ((S.dm.khu_tu || []).length && S.dm.tu_hl_gh && S.dm.tu_hl_gh.nguoi ? '<div class="note" style="margin:-6px 0 12px">Tủ sắt hành lang mượn theo ô: mỗi người tối đa ' + S.dm.tu_hl_gh.nguoi + ' ô' + (S.dm.tu_hl_gh.nhom ? ', mỗi nhóm đề tài tối đa ' + S.dm.tu_hl_gh.nhom + ' ô' : '') + '.</div>' : '') +
           ((S.dm.khu_tu || []).length && !gv ? '<div class="note" style="margin:-6px 0 12px">' + (ds.length ? 'Tủ sắt hành lang mượn cho nhóm đề tài: chọn hồ sơ ở ô "Thuộc hồ sơ đề tài" bên dưới (hạn trả không quá ngày kết thúc đề tài).' : '⚠ Tủ sắt hành lang chỉ cho sinh viên có hồ sơ đề tài QR7 đã được PTN duyệt – bạn chưa có hồ sơ nào.') + '</div>' : '') +
           '<div class="hai">' + nhap('tu_ngay', 'Ngày bắt đầu', { type: 'date', v: homNay(), req: 1 }) + nhap('den_ngay', 'Ngày dự kiến trả tủ', { type: 'date', req: 1 }) + '</div>' +
