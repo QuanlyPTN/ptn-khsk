@@ -168,6 +168,7 @@
     'can-bo': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
     'nguoi-dung': '<rect x="7" y="2" width="10" height="20" rx="2"/><circle cx="12" cy="9" r="2.2"/><path d="M9 15c.6-1.4 1.6-2 3-2s2.4.6 3 2M11 18.5h2"/>',
     'nhat-ky': '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>',
+    'tu-hl': '<rect x="3" y="3" width="8" height="18" rx="1"/><rect x="13" y="3" width="8" height="18" rx="1"/><path d="M9 10v3M15 10v3"/>',
     'lich-viec': '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/><path d="m9 15 2 2 4-4"/>',
     'tai-khoan': '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
     'menu': '<path d="M4 6h16M4 12h16M4 18h16"/>', 'thoat': '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
@@ -233,7 +234,7 @@
 
   // ---------------- Khung trang ----------------
   const MENU = [
-    ['tong-quan', '◧', 'Hôm nay'], ['lich-viec', '◷', 'Lịch & việc của tôi'], ['don', '✉', 'Đơn đăng ký QR1 – QR8'], ['de-tai', '✎', 'Hồ sơ đề tài KLTN – NCKH'], ['nguoi-dung', '☺', 'Người dùng trang dùng chung'], ['thong-bao', '🔔', 'Thông báo'], ['phong', '▦', 'Phòng thí nghiệm'], ['lich-phong-th', '▦', 'Lịch phòng thực hành'], ['tai-san', '⚙', 'Tài sản'],
+    ['tong-quan', '◧', 'Hôm nay'], ['lich-viec', '◷', 'Lịch & việc của tôi'], ['don', '✉', 'Đơn đăng ký QR1 – QR8'], ['de-tai', '✎', 'Hồ sơ đề tài KLTN – NCKH'], ['nguoi-dung', '☺', 'Người dùng trang dùng chung'], ['thong-bao', '🔔', 'Thông báo'], ['phong', '▦', 'Phòng thí nghiệm'], ['lich-phong-th', '▦', 'Lịch phòng thực hành'], ['tu-hl', '▦', 'Tủ sắt hành lang'], ['tai-san', '⚙', 'Tài sản'],
     ['kiem-dinh', '✓', 'Kiểm định – bảo dưỡng'], ['ke-hoach-nam', '☑', 'Kế hoạch năm – dự trù TB'], ['hoa-chat', '⚗', 'Hóa chất – vật tư'], ['kho', '▣', 'Kho hóa chất D11.01'], ['kho-dl', '❀', 'Kho dược liệu D11'],
     ['bien-ban', '▤', 'Biên bản bàn giao'], ['bao-cao', '▥', 'Báo cáo – thống kê'], ['so', '☷', 'Sổ theo dõi – in ấn'], ['bieu-mau', '⎙', 'Biểu mẫu PTN'],
     ['giang-vien', '☺', 'Giảng viên'], ['lich-su-tai', '↺', 'Lịch sử tải file'], ['cai-dat', '⚑', 'Cài đặt – mã QR tổng', 1], ['can-bo', '☺', 'Cán bộ', 1], ['nhat-ky', '☰', 'Nhật ký', 1], ['tai-khoan', '⚿', 'Tài khoản']
@@ -255,7 +256,7 @@
     return q[muc] || '';
   }
   function coQuyen(muc, md) { const v = quyen(muc); return md === 'xu_ly' ? v === 'xu_ly' : !!v; }
-  const MUC_TRANG = { 'ts-tong-quan': 'tai-san', 'lich-phong-th': 'phong', 'ban-giao-tb': 'tai-san' }; // trang con → mục phân quyền
+  const MUC_TRANG = { 'tu-hl': 'phong', 'ts-tong-quan': 'tai-san', 'lich-phong-th': 'phong', 'ban-giao-tb': 'tai-san' }; // trang con → mục phân quyền
   function khung() {
     document.body.classList.add('in');
     const n = S.toi.nguoi;
@@ -1020,6 +1021,7 @@
     };
   }
   async function manPhong(ma) {
+    if (/^HL-/.test(ma)) { location.replace('#/tu-hl/' + encodeURIComponent(ma)); return; } // khu tủ sắt hành lang (liên kết "tủ quá hạn")
     const nd = trang('Phòng ' + esc(ma), (laAdmin() ? '<button class="btn o sm" id="b-sua-phong">Sửa thông tin phòng</button>' : '') + '<button class="btn sm" id="b-them-tb">+ Thêm thiết bị vào phòng</button>',
       '<a href="#/phong">Phòng thí nghiệm</a> ›');
     const r = await api('phong_ct', { ma }), p = r.phong, hn = homNay();
@@ -1044,7 +1046,7 @@
     $('b-them-tb').onclick = () => hopThietBi(null, ma);
   }
   function hopTu(t) {
-    moHop('<h2>Tủ ' + esc(t.so) + ' – phòng ' + esc(t.phong) + '</h2><form id="f">' +
+    moHop('<h2>Tủ ' + esc(t.so) + ' – ' + (/^HL-/.test(t.phong) ? 'tủ sắt hành lang ' + esc(t.phong.slice(3)) : 'phòng ' + esc(t.phong)) + '</h2><form id="f">' +
       o('trang_thai', 'Trạng thái', { select: S.dm.trang_thai_tu, v: t.trang_thai }) +
       '<div id="tu-dung"><div class="form-grid">' + o('nguoi', 'Người sử dụng (họ tên – MSSV/nhóm)', { v: t.nguoi, req: 1, full: 1 }) + o('sdt', 'Điện thoại', { v: t.sdt }) +
       o('tu_ngay', 'Từ ngày', { type: 'date', v: t.tu_ngay || homNay() }) + o('han', 'Hạn trả', { type: 'date', v: t.han }) + '</div></div>' +
@@ -1629,6 +1631,6 @@
   function trangCongKhai() { return location.href.split('#')[0].replace(/[?].*$/, '').replace(/quan-ly\/(index\.html|chay-thu\.html)?$/, ''); }
   // dùng chung cho app-mo-rong.js
   window.PTN_QL = { S, $, api, chay, trang, moHop, dongHop, o, giaTri, esc, toast, ngayVN, homNay, congNgay, boDau, tien, fmt, tag, hanTag, laAdmin, quyen, coQuyen, dieuHuong, napXlsx, napQR,
-    guiTep, taiVe, docB64, dsPhongChon, phongTen, capNhatDanhMuc, lienKet, trangCongKhai, MENU, TUYEN, DEMO, ganDieuHuong, hopDonVaoBB, nhapFileHC, nhapFileDC, icon, docKeHoachVatTu, docPhieuDuTru, docDuTruNhom, hopFileExcel, ganGoiYVT };
+    hopTu, guiTep, taiVe, docB64, dsPhongChon, phongTen, capNhatDanhMuc, lienKet, trangCongKhai, MENU, TUYEN, DEMO, ganDieuHuong, hopDonVaoBB, nhapFileHC, nhapFileDC, icon, docKeHoachVatTu, docPhieuDuTru, docDuTruNhom, hopFileExcel, ganGoiYVT };
   document.addEventListener('DOMContentLoaded', batDau);
 })();

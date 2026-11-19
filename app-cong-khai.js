@@ -136,6 +136,8 @@
   const MON_TAY = '__tay'; // QR3: chọn "Môn khác – nhập thủ công"
   const PHONG_TB_QR2 = 'D11.01'; // QR2: chỉ cho mượn thiết bị đặt tại phòng này
   const dsPhong = () => S.dm.phong.map(p => [p.ma, '<b>' + esc(p.ma) + '</b> – ' + esc(p.ten)]);
+  // khu tủ sắt hành lang (QR6, QR7): "HL F4 – Tủ sắt hành lang F4 (3 trống)"
+  const dsKhuTu = () => (S.dm.khu_tu || []).filter(k => +k.so_tu > 0).map(k => [k.ma, '<b>' + esc(k.ma.replace(/^HL-/, 'HL ')) + '</b> – ' + esc(k.ten) + ' <span class="note">(' + (S.dm.tu_trong[k.ma] || []).length + ' tủ trống)</span>']);
   // phòng gom theo tòa – tầng (F4, F5… D10): bấm nhóm thì hiện phòng của nhóm; phòng đã chọn ở mọi nhóm vẫn giữ (ô chọn ẩn vẫn nằm trong form)
   const TEN_NHOM_PHONG = {};
   const nhomPhong = (ma) => { const m = /^([A-Z])0*(\d+)/.exec(ma || ''); return m ? m[1] + m[2] : 'Khác'; };
@@ -382,7 +384,7 @@
   }
 
   // ---------------- Biểu mẫu QR1 – QR8 ----------------
-  async function trangQR(qr) {
+  async function trangQR(qr, chonSan) {
     $('hb').classList.remove('hide'); nutLui(true);
     M('<div class="spin"></div>');
     await danhMuc();
@@ -432,7 +434,9 @@
           chon('tinh_trang_truoc', 'Tình trạng thiết bị trước khi sử dụng', ['Bình thường', 'Bất thường'], { v: 'Bình thường' }) + nhap('ghi_chu', 'Ghi chú / bất thường (nếu có)') + chonHS;
         break;
       case 'QR6':
-        f = chon('phong', 'Phòng đề nghị sử dụng tủ (chọn được nhiều phòng – mỗi phòng một tủ)', dsPhong(), { nhieu: 1, req: 1 }) + '<div id="o-tu"></div>' +
+        f = chon('phong', 'Phòng / khu tủ sắt hành lang đề nghị sử dụng tủ (chọn được nhiều – mỗi nơi một tủ)', dsPhong().concat(dsKhuTu()), { nhieu: 1, req: 1, v: chonSan ? [chonSan] : undefined }) + '<div id="o-tu"></div>' +
+          ((S.dm.khu_tu || []).length && S.dm.tu_hl_gh && S.dm.tu_hl_gh.nguoi ? '<div class="note" style="margin:-6px 0 12px">Tủ sắt hành lang: mỗi người tối đa ' + S.dm.tu_hl_gh.nguoi + ' tủ' + (S.dm.tu_hl_gh.nhom ? ', mỗi nhóm đề tài tối đa ' + S.dm.tu_hl_gh.nhom + ' tủ' : '') + '.</div>' : '') +
+          ((S.dm.khu_tu || []).length && !gv ? '<div class="note" style="margin:-6px 0 12px">' + (ds.length ? 'Tủ sắt hành lang mượn cho nhóm đề tài: chọn hồ sơ ở ô "Thuộc hồ sơ đề tài" bên dưới (hạn trả không quá ngày kết thúc đề tài).' : '⚠ Tủ sắt hành lang chỉ cho sinh viên có hồ sơ đề tài QR7 đã được PTN duyệt – bạn chưa có hồ sơ nào.') + '</div>' : '') +
           '<div class="hai">' + nhap('tu_ngay', 'Ngày bắt đầu', { type: 'date', v: homNay(), req: 1 }) + nhap('den_ngay', 'Ngày dự kiến trả tủ', { type: 'date', req: 1 }) + '</div>' +
           nhap('muc_dich', 'Mục đích sử dụng tủ', { req: 1 }) + nhap('do_dung', 'Đồ dùng cất trong tủ') + nhap('gvhd', 'Giảng viên hướng dẫn') + chonHS;
         break;
@@ -486,9 +490,9 @@
     // mỗi phòng đã chọn một sơ đồ tủ (chọn một tủ trống / phòng)
     const veTu = () => {
       const cu = {}; form.querySelectorAll('[name^="tu_"]:checked').forEach(i => { cu[i.name] = i.value; });
-      $('o-tu').innerHTML = phongChon().map(v => { const ph = S.dm.phong.find(x => x.ma === v); if (!ph) return '';
-        const trong = S.dm.tu_trong[v] || [], n = +ph.so_tu || 20, ten = 'tu_' + v;
-        return truong('Chọn tủ – phòng ' + v + ' (chỉ tủ trống)', '<div class="tu">' + Array.from({ length: n }, (_, i) => { const so = pad(i + 1), ok = trong.indexOf(so) >= 0;
+      $('o-tu').innerHTML = phongChon().map(v => { const khu = (S.dm.khu_tu || []).find(x => x.ma === v), ph = S.dm.phong.find(x => x.ma === v) || khu; if (!ph) return '';
+        const trong = S.dm.tu_trong[v] || [], n = khu ? +ph.so_tu : +ph.so_tu || 20, ten = 'tu_' + v;
+        return truong('Chọn tủ – ' + (khu ? esc(khu.ten) : 'phòng ' + v) + ' (chỉ tủ trống)', '<div class="tu">' + Array.from({ length: n }, (_, i) => { const so = pad(i + 1), ok = trong.indexOf(so) >= 0;
           return '<label class="' + (ok ? '' : 'tat') + '"><input type="radio" name="' + ten + '" value="' + so + '"' + (ok ? '' : ' disabled') + (cu[ten] === so ? ' checked' : '') + '><span>' + so + '</span></label>'; }).join('') + '</div><div class="note">' + trong.length + ' tủ trống / ' + n + '</div>', { req: 1 }); }).join('');
     };
     const veDong = async () => {
@@ -531,6 +535,7 @@
         : bangDong('bang-dong', [], qr === 'QR3' ? 'Hóa chất cần cấp' : 'Dụng cụ cần mượn').replace(/<div class="note">Biên bản chưa có dòng nào – gõ thêm ở dưới.<\/div>/, '')), { req: 1 });
       ganBangDong(form, 'bang-dong');
     }
+    if (qr === 'QR6' && chonSan) veTu(); // mở từ mã QR của khu tủ: hiện sơ đồ tủ ngay
     form.addEventListener('change', (e) => {
       if (e.target.name === 'phong') { if (qr === 'QR6') veTu(); else veTB(); }
       if (qr === 'QR1' && ['phong', 'thiet_bi', 'ngay'].indexOf(e.target.name) >= 0) veKhung();
@@ -582,6 +587,8 @@
       if (qr === 'QR6') { // mỗi phòng một tủ
         d.tu_ds = v.phong.map(p => ({ phong: p, so: v['tu_' + p] || '' })); Object.keys(d).filter(k => /^tu_[A-Z]/.test(k)).forEach(k => delete d[k]);
         const thieuTu = d.tu_ds.find(x => !x.so); if (thieuTu) { $('err').textContent = 'Chọn tủ cho phòng ' + thieuTu.phong; return; }
+        if (!gv && d.tu_ds.some(x => /^HL-/.test(x.phong)) && !ds.length) { $('err').textContent = 'Tủ sắt hành lang chỉ cho sinh viên có hồ sơ đề tài QR7 đã được PTN duyệt'; return; }
+        if (!gv && d.tu_ds.some(x => /^HL-/.test(x.phong)) && !d.hs) d.hs = ds[0].id; // một sinh viên chỉ có một hồ sơ đang thực hiện
       }
       if (qr !== 'QR8') delete d.nhanh; if (qr !== 'QR2') delete d.dung_cho;
       const thieu = !v.cam_ket ? 'Đánh dấu ô cam kết' : (qr === 'QR3' || qr === 'QR8') && !d.dong.length ? 'Nhập số lượng ít nhất một dòng' : '';
@@ -589,6 +596,7 @@
       $('sb').disabled = true; $('sb').textContent = 'Đang gửi…'; $('err').textContent = '';
       try {
         const r = await api('ck_gui_don', { qr, ng: ngGui(), may: may(), d });
+        if (qr === 'QR6') S.dm = null; // tủ vừa đăng ký không còn trống: lần mở form sau nạp lại danh mục tủ
         M('<div class="card msg"><div class="ok">✓</div><h2>Đã gửi ' + qr + '</h2><p>Mã đơn <b>' + esc(r.id) + '</b> · ' + tagTT(r.trang_thai) + '</p><p class="note">' +
           (qr === 'QR5' ? 'Bắt đầu tính giờ sử dụng từ ' + esc(r.tg.slice(11)) + '. Dùng xong, vào <b>Đơn của tôi</b> bấm <b>Kết thúc sử dụng</b>.' : 'Cán bộ PTN sẽ xử lý; theo dõi trạng thái ở <b>Đơn của tôi</b>. Mang theo thẻ SV / CCCD khi nhận đồ.') + '</p>' +
           '<a class="btn" href="#/don-cua-toi">Đơn của tôi</a><a class="btn o" href="#/">Về trang chủ</a></div>');
@@ -782,12 +790,13 @@
     // tủ PTN giao kèm biên bản bàn giao (lớp thực hành / đề tài) – cất hóa chất, dụng cụ; trả tủ khi xong
     const tuG = r.tu_giao || [];
     if (tuG.length) h += '<div class="card"><h3 style="margin:0 0 6px">🗄 Tủ PTN giao cho bạn</h3>' + tuG.map(t => '<div class="dong-don"><span><b>' + esc(t.phong) + ' – tủ ' + esc(t.so) + '</b> · ' + esc(t.cong_dung || '') +
-      '<br><span class="note">Biên bản ' + esc(t.bb) + (t.ten ? ' – ' + esc(t.ten) : '') + (t.han ? ' · hạn trả ' + ngayVN(t.han) : '') + '</span></span></div>').join('') +
+      '<br><span class="note">' + (t.bb ? 'Biên bản ' + esc(t.bb) + (t.ten ? ' – ' + esc(t.ten) : '') : esc(t.ten || '')) + (t.han ? ' · hạn trả ' + ngayVN(t.han) : '') + '</span></span></div>').join('') +
       '<div class="note">Dọn sạch tủ, trả chìa khóa cho PTN khi hết hạn hoặc kết thúc đợt thực hành / đề tài.</div></div>';
     const theHS = (x) => '<div class="card"><div class="dong-don"><b>' + esc(x.id) + '</b>' + tagTT(x.trang_thai) + '</div><div>' + esc(x.ten) + '</div><div class="note">' +
       esc(x.ten_loai + ' · GVHD ' + x.gvhd + ' · ' + x.nhom.length + ' thành viên' + (x.phong ? ' · ' + x.phong : '') + (x.den_ngay ? ' · đến ' + ngayVN(x.den_ngay) : '')) + '</div>' +
       (x.le_phi ? '<div class="note">Lệ phí: ' + esc(x.le_phi) + (x.thu_phi ? ' – <b>đã thu ' + Number(x.thu_phi.so_tien).toLocaleString('vi-VN') + ' đ</b>' : ' – chưa thu') + '</div>' : '') +
-      (x.tep.length ? '<div class="note">Minh chứng: ' + x.tep.map(t => esc(t.ten)).join(', ') + '</div>' : '') + khoiDon(x).replace('<div class="card">', '<div>') +
+      (x.tep.length ? '<div class="note">Minh chứng: ' + x.tep.map(t => esc(t.ten)).join(', ') + '</div>' : '') +
+      ((x.tu_hl_giao || []).length ? '<div class="note">🗄 Tủ sắt hành lang của nhóm: ' + x.tu_hl_giao.map(t => esc(t.phong.replace(/^HL-/, 'HL ')) + ' – tủ ' + esc(t.so) + (t.han ? ' (hạn ' + ngayVN(t.han) + ')' : '')).join(', ') + '</div>' : '') + khoiDon(x).replace('<div class="card">', '<div>') +
       (x.trang_thai === 'Đã đóng' ? '<div class="dong-don"><span>📄 <b>Giấy xác nhận hoàn thành nghĩa vụ trả phòng, thiết bị và dụng cụ</b><br><span class="note">In, nộp GV quản lý phòng ký xác nhận rồi nộp kèm báo cáo</span></span><span><button type="button" class="nho" data-xn="' + esc(x.id) + '">Xem – in</button></span></div>' : '') +
       (['Đã đóng', 'Từ chối'].indexOf(x.trang_thai) < 0 ? '<div class="dong-don">' + (HS_SUA.indexOf(x.trang_thai) >= 0 ? '<a class="lnk" href="#/QR7/' + esc(x.id) + '">Sửa hồ sơ / thêm thành viên</a>' : '<span class="note">🔒 PTN đã duyệt – không sửa được; cần đổi phòng, thiết bị, thành viên hoặc gia hạn: liên hệ PTN</span>') + (x.pl === 2 ? '<label class="lnk">+ Minh chứng<input type="file" data-mc="' + esc(x.id) + '" accept=".pdf,image/*" hidden></label>' : '') + '</div>' : '') + '</div>';
     const dsQR = r.don.filter(d => !/^GV-/.test(d.qr)), dsGV = r.don.filter(d => /^GV-/.test(d.qr));
@@ -945,7 +954,7 @@
     try {
       if (/^QR[1-8]$/.test(p[0])) {
         if (p[0] === 'QR7' && p[1]) { const r = await api('ck_cua_toi', { khoa: may().khoa }), x = r.ho_so.find(h => h.id === p[1]); return x && HS_SUA.indexOf(x.trang_thai) >= 0 ? trangQR7(x) : trangDonCuaToi(); }
-        return await trangQR(p[0]);
+        return await trangQR(p[0], p[1] ? decodeURIComponent(p[1]) : ''); // QR6/HL-F4: mã QR dán ở khu tủ hành lang → chọn sẵn khu
       }
       if (/^GV-(BH|SC|BS|TS)$/.test(p[0])) return await trangGV(p[0]); // GV-BG: đã bỏ (25/10/2026)
       if (p[0] === 'DT') return await trangDTM(p[1]);
