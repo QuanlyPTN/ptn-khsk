@@ -999,11 +999,24 @@
       o('ma', 'Mã phòng', { v: p.ma, req: 1, ph: 'D11.02', extra: moi ? '' : ' readonly' }) + o('so_tu', 'Số tủ', { type: 'number', v: p.so_tu, help: 'Tăng số tủ sẽ tạo thêm tủ; không tự xóa tủ đang có' }) +
       o('ten', 'Tên phòng', { v: p.ten, req: 1, full: 1 }) + o('vi_tri', 'Vị trí', { v: p.vi_tri }) + o('dien_tich', 'Diện tích (m²)', { v: p.dien_tich }) +
       o('phu_trach', 'Cán bộ phụ trách', { v: p.phu_trach, full: 1 }) + o('chuc_nang', 'Chức năng', { v: p.chuc_nang, area: 1, full: 1 }) + o('ghi_chu', 'Ghi chú', { v: p.ghi_chu, full: 1 }) +
-      '</div><div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>');
+      '</div><div class="modal-foot">' + (moi ? '' : '<button type="button" class="btn red o" id="b-xoa-phong">Xóa phòng</button><button type="button" class="btn o" id="b-doi-ma" style="margin-right:auto">Đổi mã phòng</button>') +
+      '<button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>');
     $('f').onsubmit = async (e) => {
       e.preventDefault();
       await chay(e.submitter, () => api('phong_luu', { moi, phong: giaTri(e.target) }));
       S.dm = (await api('toi')).danh_muc; dongHop(); toast('Đã lưu phòng'); dieuHuong();
+    };
+    // mã phòng nhập nhầm: đổi mã (mọi dữ liệu của phòng chuyển theo) hoặc xóa phòng chưa có dữ liệu
+    if ($('b-doi-ma')) $('b-doi-ma').onclick = async (e) => {
+      const ma = (prompt('Mã phòng mới cho ' + p.ma + ' – ' + p.ten + '\n(tủ, thiết bị, lớp thực hành, biên bản, đơn, hồ sơ của phòng sẽ chuyển sang mã mới):', p.ma) || '').trim().toUpperCase();
+      if (!ma || ma === p.ma) return;
+      const r = await chay(e.target, () => api('phong_doi_ma', { cu: p.ma, moi: ma }));
+      S.dm = (await api('toi')).danh_muc; dongHop(); toast('Đã đổi mã ' + p.ma + ' → ' + r.ma); location.hash = '#/phong/' + encodeURIComponent(r.ma);
+    };
+    if ($('b-xoa-phong')) $('b-xoa-phong').onclick = async (e) => {
+      if (!confirm('Xóa phòng ' + p.ma + ' – ' + p.ten + '?\nChỉ xóa được phòng chưa có thiết bị, tủ đang dùng, lớp, đơn, biên bản.')) return;
+      await chay(e.target, () => api('phong_xoa', { ma: p.ma }));
+      S.dm = (await api('toi')).danh_muc; dongHop(); toast('Đã xóa phòng ' + p.ma); location.hash = '#/phong';
     };
   }
   async function manPhong(ma) {
