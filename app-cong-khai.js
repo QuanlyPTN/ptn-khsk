@@ -137,7 +137,7 @@
   const PHONG_TB_QR2 = 'D11.01'; // QR2: chỉ cho mượn thiết bị đặt tại phòng này
   const dsPhong = () => S.dm.phong.map(p => [p.ma, '<b>' + esc(p.ma) + '</b> – ' + esc(p.ten)]);
   // khu tủ sắt hành lang (QR6, QR7): "HL F4 – Tủ sắt hành lang F4 (3 trống)"
-  const tuSatHL = () => [].concat(...(S.dm.khu_tu || []).map(k => (k.tu_sat || []).filter(t => +t.so_o > 0).map(t => ({ ma: t.ma, so_tu: t.so_o, khu: k, ten: k.ma.replace(/^HL-/, 'HL ') + ' – Tủ ' + t.so }))));
+  const tuSatHL = () => [].concat(...(S.dm.khu_tu || []).map(k => (k.tu_sat || []).filter(t => +t.so_o > 0).map(t => ({ ma: t.ma, so_tu: t.so_o, khu: k, ten: k.ma.replace(/^HL-/, 'HL ') + ' – Tủ ' + t.so + (t.ghi_chu ? ' (' + t.ghi_chu + ')' : '') }))));
   const dsKhuTu = () => tuSatHL().map(t => [t.ma, '<b>' + esc(t.ten) + '</b> – ' + esc(t.khu.ten) + ' <span class="note">(' + (S.dm.tu_trong[t.ma] || []).length + ' ô trống)</span>']);
   // phòng gom theo tòa – tầng (F4, F5… D10): bấm nhóm thì hiện phòng của nhóm; phòng đã chọn ở mọi nhóm vẫn giữ (ô chọn ẩn vẫn nằm trong form)
   const TEN_NHOM_PHONG = {};

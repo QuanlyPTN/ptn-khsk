@@ -1052,7 +1052,7 @@
       o('tu_ngay', 'Từ ngày', { type: 'date', v: t.tu_ngay || homNay() }) + o('han', 'Hạn trả', { type: 'date', v: t.han }) + '</div></div>' +
       o('ghi_chu', 'Ghi chú', { v: t.ghi_chu }) +
       '<p class="note">Đơn QR6 khi cán bộ bấm "Giao chìa tủ" / "Trả tủ" sẽ tự cập nhật sơ đồ này.</p>' +
-      '<div class="modal-foot">' + (t.trang_thai !== 'Đang dùng' && coQuyen('phong', 'xu_ly') ? '<button type="button" class="btn red o" id="b-xoa-tu" style="margin-right:auto">🗑 Xóa tủ</button>' : '') + '<button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>', (root) => {
+      '<div class="modal-foot">' + (t.trang_thai !== 'Đang dùng' && coQuyen('phong', 'xu_ly') ? '<button type="button" class="btn red o" id="b-xoa-tu" style="margin-right:auto">🗑 Xóa ' + (/^HL-/.test(t.phong) ? 'ô' : 'tủ') + '</button>' : '') + '<button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>', (root) => {
       const sel = root.querySelector('[name=trang_thai]'), box = $('tu-dung');
       const doi = () => box.classList.toggle('hide', sel.value !== 'Đang dùng');
       sel.onchange = doi; doi();
@@ -1064,8 +1064,8 @@
       dongHop(); toast('Đã cập nhật tủ ' + t.so); dieuHuong();
     };
     if ($('b-xoa-tu')) $('b-xoa-tu').onclick = async (e) => {
-      if (!confirm('Xóa tủ ' + t.so + ' của phòng ' + t.phong + '? (xóa nhầm: bấm "+ Thêm tủ" để thêm lại)')) return;
-      await chay(e.target, () => api('tu_xoa', { phong: t.phong, so: t.so })); dongHop(); toast('Đã xóa tủ ' + t.so); dieuHuong(); };
+      if (!confirm(/^HL-/.test(t.phong) ? 'Xóa ô ' + t.so + ' – ' + t.phong.replace(/^HL-(.+)-(\d+)$/, 'HL $1 – Tủ $2') + '? (xóa nhầm: bấm ô mờ "＋' + t.so + '" để thêm lại)' : 'Xóa tủ ' + t.so + ' của phòng ' + t.phong + '? (xóa nhầm: bấm "+ Thêm tủ" để thêm lại)')) return;
+      await chay(e.target, () => api('tu_xoa', { phong: t.phong, so: t.so })); dongHop(); toast('Đã xóa ' + (/^HL-/.test(t.phong) ? 'ô ' : 'tủ ') + t.so); dieuHuong(); };
   }
 
   // ---------------- Tài sản ----------------

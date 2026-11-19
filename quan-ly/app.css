@@ -342,6 +342,12 @@ tr.nb td { background: #FFF4C2; }
 .locker.giu { background: #FFF4D6; }
 .hl-tu { border-top: 1px dashed var(--line, #E2E6EE); margin-top: 10px; padding-top: 8px; }
 .hl-tu .lockers { margin-top: 6px; }
+.locker.mat { border-style: dashed; background: transparent; color: var(--muted); opacity: .75; }
+details.hl-khu > summary { cursor: pointer; list-style: none; }
+details.hl-khu > summary::-webkit-details-marker { display: none; }
+details.hl-khu > summary h2::before { content: '▸ '; color: var(--muted); }
+details.hl-khu[open] > summary h2::before { content: '▾ '; }
+.hl-gc { color: var(--mn); font-weight: 600; }
 .hl-chon { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
 .hl-chon .on { background: var(--mn); color: #fff; }
 /* Lịch & việc của tôi */
