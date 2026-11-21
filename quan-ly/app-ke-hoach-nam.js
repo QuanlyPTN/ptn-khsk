@@ -23,20 +23,22 @@
     D = await api('khn_ds', nam ? { nam } : {});
     D.leaf = D.muc.filter(m => m[4]);
     $('main').querySelector('h1').innerHTML = 'Danh sách thiết bị dự trù năm <select id="k-nam" class="sm" style="font-size:inherit;font-weight:700">' +
-      D.cac_nam.concat([String(+D.cac_nam[D.cac_nam.length - 1] + 1)]).filter((x, i, a) => a.indexOf(x) === i).map(n => '<option' + (n === D.nam ? ' selected' : '') + '>' + n + '</option>').join('') + '</select>';
-    $('k-nam').onchange = (e) => { location.hash = '#/ke-hoach-nam/' + e.target.value; };
+      D.cac_nam.concat([String(+D.cac_nam[D.cac_nam.length - 1] + 1)]).filter((x, i, a) => a.indexOf(x) === i).map(n => '<option' + (n === D.nam ? ' selected' : '') + '>' + n + '</option>').join('') +
+      (xl() ? '<option value="+">+ Tạo năm…</option>' : '') + '</select>';
+    $('k-nam').onchange = (e) => { if (e.target.value === '+') { e.target.value = D.nam; return hopTaoNam(); } location.hash = '#/ke-hoach-nam/' + e.target.value; };
     const c = D.cau_hinh, mo = D.nam === D.nam_mo;
     nd.innerHTML = '<div class="card note" style="border-color:#E8C77A;background:#FFFBEF">Năm <b>' + esc(D.nam) + '</b>: ' +
       (mo ? 'đang nhận đề xuất từ giảng viên (phiếu <b>GV-BS – Kế hoạch năm – dự trù thiết bị</b> ở trang dùng chung tự vào danh sách, trạng thái "Chờ duyệt")' + (c.han ? ' · hạn nộp <b>' + ngayVN(c.han) + '</b>' + (c.han < Q.homNay() ? ' <span class="tag t-gray">đã hết hạn</span>' : '') : ' · chưa đặt hạn nộp') :
-        'không phải năm đang nhận đề xuất (năm nhận đề xuất: ' + esc(D.nam_mo) + ')') + '. Số tiền tính theo <b>nghìn đồng</b> như file của Trường.</div>' +
+        'không phải năm đang nhận đề xuất (năm nhận đề xuất: ' + esc(D.nam_mo) + ')') + '. Số tiền tính theo <b>nghìn đồng</b> như file của Trường.' +
+      (c.khoa ? '<br><b>🔒 Năm ' + esc(D.nam) + ' đã khóa</b>: chỉ xem, xuất file, ghi nhận mua; không thêm / sửa / xóa / duyệt / nhập / chuyển (mở khóa ở "⚙ Hạn nộp – kinh phí khoán").' : '') + '</div>' +
       '<div class="btns" style="margin:10px 0">' + (xl() ? '<button class="btn sm" id="k-them">+ Thêm dòng</button><label class="btn o sm">⇪ Nhập từ file Excel<input type="file" id="x-file" accept=".xlsx,.xls" hidden></label>' : '') +
-      '<button class="btn o sm" id="k-xuat">⇩ Xuất file Excel theo mẫu</button><button class="btn o sm" id="k-bc">📊 Báo cáo thực hiện</button>' + (xl() ? '<button class="btn o sm" id="k-chep">⎘ Chép dòng chưa mua từ năm khác</button><button class="btn o sm" id="k-ch">⚙ Hạn nộp – kinh phí khoán</button>' : '') + '</div>' +
+      '<button class="btn o sm" id="k-xuat">⇩ Xuất file Excel theo mẫu</button><button class="btn o sm" id="k-bc">📊 Báo cáo thực hiện</button>' + (xl() ? '<button class="btn o sm" id="k-chep">⇄ Chuyển / cập nhật từ năm khác</button><button class="btn o sm" id="k-ch">⚙ Hạn nộp – kinh phí khoán</button>' : '') + '</div>' +
       (D.xd ? '<div class="btns" style="margin:0 0 10px"><a class="btn sm ' + (tabXd ? 'o' : 'chon') + '" href="#/ke-hoach-nam/' + D.nam + '">Mua sắm thiết bị (trang tính Muasam)</a>' +
         '<a class="btn sm ' + (tabXd ? 'chon' : 'o') + '" href="#/ke-hoach-nam/' + D.nam + '/xd">🔒 Xây dựng – sửa chữa công trình (trang tính Xaydung, chỉ admin)</a></div><div id="k-xd"' + (tabXd ? '' : ' hidden') + '></div>' : '') +
       '<div id="k-tb"' + (D.xd && tabXd ? ' hidden' : '') + '><div id="k-tong"></div><div class="tools"><input type="search" id="k-q" placeholder="Tìm tên, yêu cầu kỹ thuật, bộ môn, người đề xuất…"><select id="k-tt"><option value="">Mọi trạng thái</option>' +
       D.trang_thai.map(t => '<option>' + t + '</option>').join('') + '</select><select id="k-muc" style="max-width:340px"><option value="">Mọi mục</option>' + D.leaf.map(m => '<option value="' + m[0] + '">' + esc(m[0] + ' – ' + m[3]) + '</option>').join('') + '</select>' +
       '<select id="k-bm"><option value="">Mọi bộ môn</option>' + [...new Set(D.dong.map(d => d.bo_mon).filter(Boolean))].sort().map(b => '<option>' + esc(b) + '</option>').join('') + '</select></div>' +
-      (xl() ? '<div class="btns" id="k-chon" style="margin:6px 0" hidden><span class="note" id="k-dem"></span>' + TT_TAY.map(t => '<button class="btn o sm" data-tt="' + t + '">→ ' + t + '</button>').join('') + '<button class="btn red o sm" id="k-xoa">Xóa dòng đã chọn</button></div>' : '') +
+      (xl() ? '<div class="btns" id="k-chon" style="margin:6px 0" hidden><span class="note" id="k-dem"></span>' + TT_TAY.map(t => '<button class="btn o sm" data-tt="' + t + '">→ ' + t + '</button>').join('') + '<button class="btn o sm" id="k-chuyen">⇄ Chuyển sang năm…</button><button class="btn red o sm" id="k-xoa">Xóa dòng đã chọn</button></div>' : '') +
       '<div id="k-ds"></div></div>';
     $('k-q').oninput = veDS; ['k-tt', 'k-muc', 'k-bm'].forEach(id => { $(id).onchange = veDS; });
     $('k-xuat').onclick = hopXuat; $('k-bc').onclick = hopBaoCao;
@@ -44,12 +46,16 @@
     if (xl()) {
       $('k-them').onclick = () => hopSua(null);
       $('x-file').onchange = (e) => { const f = e.target.files[0]; if (f) hopNhap(f); };
-      $('k-chep').onclick = hopChep; $('k-ch').onclick = hopCauHinh;
+      $('k-chep').onclick = () => hopLienKet(); $('k-ch').onclick = hopCauHinh;
+      $('k-chuyen').onclick = () => { const ids = dangChon(), den = prompt('Chuyển ' + ids.length + ' dòng đã chọn (phần còn phải mua) sang kế hoạch năm:', String(+D.nam + 1)); if (!den) return;
+        if (!/^20\d\d$/.test(den.trim()) || den.trim() === D.nam) return toast('Năm không hợp lệ', true); hopLienKet(D.nam, ids, den.trim()); };
       $('k-chon').querySelectorAll('[data-tt]').forEach(b => { b.onclick = (e) => chay(e.target, async () => { const r = await api('khn_tt', { ids: dangChon(), trang_thai: b.dataset.tt }); toast('Đã chuyển ' + r.n + ' dòng sang "' + b.dataset.tt + '"'); await taiLai(); }); });
       $('k-xoa').onclick = (e) => { const ids = dangChon(); if (!confirm('Xóa ' + ids.length + ' dòng đã chọn (kèm dòng con)?')) return; chay(e.target, async () => { const r = await api('khn_xoa', { ids }); toast('Đã xóa ' + r.n + ' dòng'); await taiLai(); }); };
     }
     veTong(); veDS(); if (D.xd) veXD();
+    if (moLK) { const t = moLK; moLK = null; hopLienKet(t); } // vừa tạo năm "lấy từ năm trước"
   }
+  let moLK = null;
   async function taiLai() { const y = window.scrollY; D = await api('khn_ds', { nam: D.nam }); D.leaf = D.muc.filter(m => m[4]); veTong(); veDS(); if (D.xd) veXD(); window.scrollTo(0, y); }
 
   // ---------- trang tính Xây dựng: sửa chữa, cải tạo, xây dựng công trình (chỉ admin) ----------
@@ -147,7 +153,8 @@
           '<td>' + esc(d.dvt) + '</td><td>' + NC.filter(k => d[k]).map(k => esc(D.nhu_cau[k])).join(', ') + '</td><td class="num">' + (laCha ? '' : fmt(d.sl) + (d.sl_mua ? '<div class="note" title="Đã mua / kế hoạch">mua ' + fmt(d.sl_mua) + '/' + fmt(d.sl) + '</div>' : '')) + '</td><td class="num">' + (laCha ? '' : tien(d.dinh_muc)) + '</td>' +
           '<td class="num"><b>' + tien(kp(d)) + '</b></td><td style="max-width:220px;white-space:pre-line">' + esc([d.bo_mon, d.ly_do].filter(Boolean).join('\n')) + '</td><td>' + esc(d.thoi_diem) + '</td>' +
           '<td>' + (ht.co ? '<span title="Thiết bị cùng tên trong Tài sản">' + ht.co + ' cái</span>' + (ht.hong ? ' · <b style="color:#B42318">' + ht.hong + ' hỏng</b>' : '') : '<span class="note">—</span>') + '</td>' +
-          '<td>' + tagTT(d.trang_thai) + (d.ngung ? '<div class="note">' + esc(d.ngung) + '</div>' : '') + (d.khdt ? '<div class="note" style="color:#1E4FC2" title="' + esc(d.khdt.ghi_chu || '') + '">P.KHĐT duyệt ' + fmt(d.sl_khdt) + '/' + fmt(d.sl) + (d.khdt.ngay ? ' · ' + ngayVN(d.khdt.ngay) : '') + '</div>' : '') + (d.tb_moi.length ? '<div class="note">Đã tạo ' + d.tb_moi.length + ' TB</div>' : '') + '</td>' +
+          '<td>' + tagTT(d.trang_thai) + (d.ngung ? '<div class="note">' + esc(d.ngung) + '</div>' : '') + (d.khdt ? '<div class="note" style="color:#1E4FC2" title="' + esc(d.khdt.ghi_chu || '') + '">P.KHĐT duyệt ' + fmt(d.sl_khdt) + '/' + fmt(d.sl) + (d.khdt.ngay ? ' · ' + ngayVN(d.khdt.ngay) : '') + '</div>' : '') +
+          (d.tu_nam ? '<div class="note" title="Liên kết với dòng năm ' + esc(d.tu_nam) + ' – cập nhật bằng nút ⇄">↳ từ năm ' + esc(d.tu_nam) + '</div>' : '') + (d.chuyen && d.chuyen.length ? '<div class="note">→ đã chuyển sang ' + d.chuyen.map(esc).join(', ') + '</div>' : '') + (d.tb_moi.length ? '<div class="note">Đã tạo ' + d.tb_moi.length + ' TB</div>' : '') + '</td>' +
           '<td class="note">' + d.nguon.map(n => '<a href="#/giang-vien/' + esc(n.don) + '">' + esc(n.don) + '</a> ' + esc(n.gv) + ' · ' + fmt(n.sl)).join('<br>') + '</td>' +
           (xl() ? '<td style="white-space:nowrap"><button class="btn o sm" data-sua="' + esc(d.id) + '" title="Sửa">✎</button><button class="btn o sm" data-len="' + esc(d.id) + '" title="Lên">↑</button><button class="btn o sm" data-xuong="' + esc(d.id) + '" title="Xuống">↓</button>' +
             (d.cha ? '' : '<button class="btn o sm" data-con="' + esc(d.id) + '" title="Thêm dòng con (hạng mục của thiết bị đồng bộ)">+ con</button>') +
@@ -197,19 +204,58 @@
       '<p class="note full">Kinh phí khoán: mục không kê từng thiết bị (VD "B. Tài sản cố định đặc thù", "III.2 Sửa chữa máy móc") ghi một số tổng (nghìn đồng); mục đã có dòng thì tính theo dòng.</p>' +
       D.leaf.map(m => o('kp_' + m[0], m[0] + ' – ' + m[3], { type: 'number', v: c.kp_muc[m[0]] || '', extra: ' min="0" step="any"' })).join('') +
       '<p class="note full">Thời điểm thực hiện dự kiến: file xuất luôn ghi theo năm kế hoạch. <button type="button" class="btn o sm" id="k-td">Đổi thời điểm của mọi dòng đang lưu sang năm ' + esc(D.nam) + '</button></p>' +
+      '<label class="f full"><span>Khóa năm</span><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" name="khoa"' + (c.khoa ? ' checked' : '') + '> 🔒 Khóa kế hoạch năm ' + esc(D.nam) + ' (năm đã xong: chỉ xem, xuất file, ghi nhận mua; không nhận phiếu GV-BS)</label></label>' +
+      (laAdmin() ? '<p class="note full">Danh sách này thực chất là của năm khác? <button type="button" class="btn o sm" id="k-doi-nam">Đổi năm của danh sách này…</button> (chuyển cả dòng thiết bị, xây dựng, kinh phí khoán sang năm chưa có dữ liệu)</p>' : '') +
       '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>', (m) => {
       m.querySelector('#k-td').onclick = (e) => chay(e.target, async () => { const r = await api('khn_td', { nam: D.nam }); toast('Đã đổi ' + r.n + ' dòng sang năm ' + D.nam); dongHop(); await taiLai(); });
+      if (m.querySelector('#k-doi-nam')) m.querySelector('#k-doi-nam').onclick = (e) => { const den = (prompt('Đổi toàn bộ danh sách năm ' + D.nam + ' sang năm (năm chưa có dữ liệu):', String(+D.nam - 1)) || '').trim(); if (!den) return;
+        if (!confirm('Chuyển toàn bộ dòng thiết bị, hạng mục xây dựng, kinh phí khoán của năm ' + D.nam + ' sang năm ' + den + '? Thời điểm thực hiện đổi theo năm ' + den + '.')) return;
+        chay(e.target, async () => { const r = await api('khn_doi_nam', { tu: D.nam, den }); toast('Đã đổi sang năm ' + r.nam + ': ' + r.n + ' dòng thiết bị, ' + r.xd + ' hạng mục xây dựng'); dongHop(); location.hash = '#/ke-hoach-nam/' + r.nam; }); };
       m.querySelector('#k-f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target), kpm = {}; D.leaf.forEach(x => { if (so(v['kp_' + x[0]])) kpm[x[0]] = so(v['kp_' + x[0]]); });
-        await chay(e.submitter, () => api('khn_cau_hinh', { nam: D.nam, han: v.han, kp_muc: kpm, nam_mo: v.nam_mo ? 1 : 0 })); dongHop(); toast('Đã lưu'); Q.dieuHuong(); };
+        await chay(e.submitter, () => api('khn_cau_hinh', { nam: D.nam, han: v.han, kp_muc: kpm, nam_mo: v.nam_mo ? 1 : 0, khoa: v.khoa ? 1 : 0 })); dongHop(); toast('Đã lưu'); Q.dieuHuong(); };
     });
   }
-  function hopChep() {
-    const khac = D.cac_nam.filter(n => n !== D.nam);
-    if (!khac.length) return toast('Chưa có năm nào khác để chép', true);
-    moHop('<h2>Chép dòng chưa mua sang năm ' + esc(D.nam) + '</h2><form id="k-f" class="form-grid">' + o('tu', 'Chép từ năm', { select: khac.slice().reverse(), full: 1 }) +
-      '<p class="note full">Chép các dòng chưa mua đủ (bỏ dòng "Đã mua", "Ngừng mua", "Không duyệt"), kèm dòng con; dòng "Mua một phần" chỉ chép số còn thiếu; trạng thái về "Chờ duyệt". Dòng đã có cùng tên trong năm ' + esc(D.nam) + ' thì bỏ qua.</p>' +
-      '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Chép</button></div></form>', (m) => {
-      m.querySelector('#k-f').onsubmit = async (e) => { e.preventDefault(); const r = await chay(e.submitter, () => api('khn_chep', { tu: giaTri(e.target).tu, den: D.nam })); dongHop(); toast('Đã chép ' + r.n + ' dòng'); await taiLai(); };
+  // tạo năm: trống hoặc lấy phần còn phải mua của năm khác (có liên kết từng dòng)
+  function hopTaoNam() {
+    const goi = String(Math.max.apply(null, D.cac_nam.map(Number)) + 1);
+    moHop('<h2>Tạo năm kế hoạch</h2><form id="k-f" class="form-grid">' + o('nam', 'Năm', { type: 'number', v: goi, req: 1, extra: ' min="2020" max="2100"' }) +
+      o('tu', 'Dữ liệu ban đầu', { select: [['', 'Trống (thêm dòng, nhập file sau)']].concat(D.cac_nam.slice().reverse().map(n => [n, 'Lấy phần còn phải mua từ năm ' + n])), v: D.nam, full: 1 }) +
+      '<p class="note full">Lấy từ năm trước: mỗi dòng còn phải mua (kế hoạch − đã mua − P.KHĐT đã duyệt) được chuyển sang, trạng thái "Chờ duyệt", và <b>giữ liên kết</b> với dòng gốc. ' +
+      'Dòng "Đã mua", "Ngừng mua", "Không duyệt", dòng mua / duyệt đủ không chuyển. Sau này năm trước mua thêm hoặc P.KHĐT duyệt thêm: bấm <b>"⇄ Chuyển / cập nhật từ năm khác"</b> để cắt / giảm theo. Trước khi chuyển có danh sách để bỏ chọn dòng không muốn.</p>' +
+      '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Tạo năm</button></div></form>', (m) => {
+      m.querySelector('#k-f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target);
+        const r = await chay(e.submitter, () => api('khn_tao_nam', { nam: v.nam })); dongHop(); moLK = v.tu && v.tu !== r.nam ? v.tu : null;
+        if (location.hash === '#/ke-hoach-nam/' + r.nam) Q.dieuHuong(); else location.hash = '#/ke-hoach-nam/' + r.nam; };
+    });
+  }
+  // chuyển / cập nhật từ năm khác: xem trước các thay đổi (thêm dòng còn phải mua, đổi số lượng, cắt dòng đã mua / duyệt đủ) → tick chọn → áp dụng
+  async function hopLienKet(tu, chi, den) {
+    den = den || D.nam;
+    const khac = D.cac_nam.filter(n => n !== den);
+    tu = tu || khac.filter(n => n < den).pop() || khac[0];
+    if (!tu) return toast('Chưa có năm nào khác', true);
+    let r; try { r = await api('khn_lk', { tu, den, chi }); } catch (e) { return toast(e.message, true); }
+    const NHAN = { them: ['Thêm', '#067647'], doi: ['Đổi số lượng', '#1E4FC2'], cat: ['Cắt', '#B42318'] }, dem = (l) => ['them', 'doi', 'cat'].map(k => [k, r.ds.filter(x => x.loai === k).length]).filter(x => x[1]);
+    moHop('<h2>⇄ ' + (chi ? 'Chuyển ' + chi.length + ' dòng đã chọn' : 'Chuyển / cập nhật') + ' từ năm ' + esc(tu) + ' sang năm ' + esc(den) + '</h2>' +
+      (chi ? '' : '<div class="btns" style="margin:0 0 8px"><label class="note">Năm nguồn <select id="k-lk-tu">' + D.cac_nam.filter(n => n !== den).map(n => '<option' + (n === tu ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></label></div>') +
+      '<p class="note">Số chuyển = kế hoạch năm ' + esc(tu) + ' − đã mua − P.KHĐT đã duyệt. <b>Thêm</b>: dòng còn phải mua chưa có ở năm ' + esc(den) + ' · <b>Đổi số lượng</b>: năm ' + esc(tu) + ' mua / duyệt thêm · <b>Cắt</b>: năm ' + esc(tu) + ' đã mua / duyệt đủ, ngừng mua hoặc không duyệt. ' +
+      'Dòng thêm tay ở năm ' + esc(den) + ' (không liên kết) và dòng năm ' + esc(den) + ' đã ghi nhận mua giữ nguyên. Dòng ⚠ đã sửa tay ở năm ' + esc(den) + ' không chọn sẵn.</p>' +
+      (r.khoa ? '<p class="note" style="color:#B42318"><b>🔒 Năm ' + esc(den) + ' đã khóa</b> – mở khóa trước khi áp dụng.</p>' : '') +
+      (!r.ds.length ? '<div class="card empty">Không có thay đổi nào – năm ' + esc(den) + ' đã khớp với phần còn phải mua của năm ' + esc(tu) + '.</div><div class="modal-foot"><button type="button" class="btn o" data-dong>Đóng</button></div>' :
+        '<p class="note">' + dem().map(x => NHAN[x[0]][0] + ' <b>' + x[1] + '</b>').join(' · ') + ' <button type="button" class="btn o sm" id="k-lk-het">Chọn hết</button><button type="button" class="btn o sm" id="k-lk-bo">Bỏ hết</button></p>' +
+        '<div class="tbl-wrap" style="max-height:52vh"><table><thead><tr><th></th><th>Thay đổi</th><th>Mục</th><th>Thiết bị</th><th class="num">Năm ' + esc(den) + '</th><th>Năm ' + esc(tu) + '</th></tr></thead><tbody>' +
+        r.ds.map(x => '<tr><td><input type="checkbox" data-lk="' + esc(x.k) + '"' + (x.mac_dinh ? ' checked' : '') + '></td><td><b style="color:' + NHAN[x.loai][1] + '">' + NHAN[x.loai][0] + '</b>' + (x.sua_tay ? '<div class="note" style="color:#B54708">⚠ đã sửa tay ở năm ' + esc(den) + '</div>' : '') + '</td>' +
+          '<td>' + esc(x.muc) + '</td><td>' + esc(x.ten) + '</td><td class="num">' + (x.loai === 'them' ? '<b>' + fmt(x.sl_moi) + '</b>' : fmt(x.sl_cu) + ' → <b>' + fmt(x.sl_moi) + '</b>') + ' ' + esc(x.dvt || '') + '</td>' +
+          '<td class="note">kế hoạch ' + fmt(x.sl_goc) + ' · ' + esc(x.tt_goc) + (x.ly_do ? ' · ' + esc(x.ly_do) : '') + '</td></tr>').join('') + '</tbody></table></div>' +
+        '<div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button type="button" class="btn" id="k-lk-ap">Áp dụng</button></div>'), (m) => {
+      const s = m.querySelector('#k-lk-tu'); if (s) s.onchange = () => { dongHop(); hopLienKet(s.value, null, den); };
+      const hop = () => [...m.querySelectorAll('[data-lk]')], nut = m.querySelector('#k-lk-ap'), dem2 = () => { if (nut) nut.textContent = 'Áp dụng ' + hop().filter(x => x.checked).length + ' thay đổi'; };
+      if (!nut) return; dem2(); hop().forEach(x => { x.onchange = dem2; });
+      m.querySelector('#k-lk-het').onclick = () => { hop().forEach(x => { x.checked = true; }); dem2(); };
+      m.querySelector('#k-lk-bo').onclick = () => { hop().forEach(x => { x.checked = false; }); dem2(); };
+      nut.onclick = (e) => { const ap = hop().filter(x => x.checked).map(x => x.dataset.lk); if (!ap.length) return toast('Chưa chọn thay đổi nào', true);
+        chay(e.target, async () => { const k = await api('khn_lk', { tu, den, chi, ap }); toast('Năm ' + den + ': thêm ' + k.them + ', đổi ' + k.doi + ', cắt ' + k.cat + ' dòng'); dongHop();
+          if (den === D.nam) await taiLai(); else location.hash = '#/ke-hoach-nam/' + den; }); };
     });
   }
   // ghi nhận mua: lịch sử từng lần mua, thêm lần mua, ngừng mua phần còn thiếu
@@ -227,6 +273,7 @@
       (d.con_lai > 0 ? (d.trang_thai === 'Ngừng mua' ? '<p style="margin-top:12px"><button type="button" class="btn o sm" id="k-bo-ngung">Bỏ "Ngừng mua" (mua tiếp phần còn thiếu)</button></p>'
         : '<p class="note" style="margin-top:12px">Không mua phần còn thiếu nữa? <button type="button" class="btn o sm" id="k-ngung">Ngừng mua ' + fmt(d.con_lai) + ' còn lại…</button></p>') : '') +
       (d.con_lai > 0 && !d.khdt && ['Đã duyệt', 'Mua một phần'].indexOf(d.trang_thai) >= 0 ? '<p class="note" style="margin-top:8px">Phòng KHĐT đã duyệt mua nhưng chưa mua? <button type="button" class="btn o sm" id="k-khdt">P.KHĐT đã duyệt mua – chưa mua…</button> <span>(ghi số lượng được duyệt; xuất "Phần còn phải mua" chỉ còn phần chưa duyệt)</span></p>' : '') +
+      (d.trang_thai === 'Đã mua' ? '<p class="note" style="margin-top:12px">Năm sau cần mua thêm? <button type="button" class="btn o sm" id="k-mua-them">Đề xuất mua thêm ở năm sau…</button> <span>(dòng mới lấy sẵn tên, yêu cầu kỹ thuật, định mức; không liên kết nên không bị cắt)</span></p>' : '') +
       (d.con_lai > 0 && d.trang_thai !== 'Ngừng mua' ? '' : '<div class="modal-foot"><button type="button" class="btn o" data-dong>Đóng</button></div>'), (m) => {
       const xong = async (r, tb) => { toast(tb); await taiLai(); d = D.dong.find(x => x.id === d.id) || Object.assign(d, r); ve(); };
       const f = m.querySelector('#k-f');
@@ -239,6 +286,11 @@
         const gc = prompt('Ghi chú (số văn bản, ngày P.KHĐT duyệt…) – có thể để trống:', d.khdt ? d.khdt.ghi_chu || '' : ''); if (gc === null) return;
         chay(e.target, async () => xong(await api('khn_khdt', { id: d.id, sl: String(sl).replace(',', '.'), ghi_chu: gc }), 'Đã ghi P.KHĐT duyệt mua ' + sl)); };
       if (m.querySelector('#k-bo-khdt')) m.querySelector('#k-bo-khdt').onclick = (e) => chay(e.target, async () => xong(await api('khn_khdt', { id: d.id, bo: 1 }), 'Đã bỏ đánh dấu P.KHĐT'));
+      if (m.querySelector('#k-mua-them')) m.querySelector('#k-mua-them').onclick = (e) => {
+        const den = (prompt('Đề xuất mua thêm "' + d.ten.split('\n')[0] + '" vào kế hoạch năm:', String(+d.nam + 1)) || '').trim(); if (!den) return;
+        const sl = (prompt('Số lượng mua thêm (' + d.dvt + '):', '1') || '').trim(); if (!sl) return;
+        chay(e.target, async () => { await api('khn_luu', { nam: den, d: { ten: d.ten, dvt: d.dvt, dinh_muc: d.dinh_muc, yckt: d.yckt, ly_do: d.ly_do, bo_mon: d.bo_mon, muc: d.muc, tb: d.tb, bo_sung: sl.replace(',', '.'),
+          trang_thai: 'Chờ duyệt', thoi_diem: 'Năm ' + den, ghi_chu: 'Mua thêm – năm ' + d.nam + ' đã mua đủ ' + fmt(d.sl) } }); toast('Đã thêm vào kế hoạch năm ' + den + ' (Chờ duyệt)'); }); };
       if (m.querySelector('#k-bo-ngung')) m.querySelector('#k-bo-ngung').onclick = (e) => chay(e.target, async () => xong(await api('khn_ngung', { id: d.id, bo: 1 }), 'Đã bỏ ngừng mua'));
     });
     ve();
@@ -363,7 +415,7 @@
         (Object.keys(r.kp).length ? ' · kinh phí khoán: ' + Object.keys(r.kp).map(k => k + ' ' + tien(r.kp[k])).join(', ') : '') + (r.loi ? ' · <b>' + r.loi + ' mục lạ</b> xếp vào mục gần nhất' : '') + (r.xd.length ? ' · trang tính Xaydung: <b>' + slXd(r.xd) + '</b>' : '') + '</p>' +
         '<div class="tbl-wrap"><table><thead><tr><th>Mục</th><th class="num">Số dòng</th><th class="num">Kinh phí (nghìn đ)</th></tr></thead><tbody>' +
         Object.keys(theoMuc).map(k => '<tr><td><b>' + esc(k) + '</b> ' + esc((D.muc.find(m => m[0] === k) || [])[3] || '') + '</td><td class="num">' + theoMuc[k][0] + '</td><td class="num">' + tien(theoMuc[k][1]) + '</td></tr>').join('') + '</tbody></table></div>') +
-        '<form id="k-f" class="form-grid">' + o('nam', 'Nhập vào năm', { select: D.cac_nam.concat([String(+D.cac_nam[D.cac_nam.length - 1] + 1)]).filter((x, i, a) => a.indexOf(x) === i), v: (/(20\d\d)/.exec(f.name) || [])[1] && D.cac_nam.indexOf(/(20\d\d)/.exec(f.name)[1]) >= 0 ? /(20\d\d)/.exec(f.name)[1] : D.nam }) +
+        '<form id="k-f" class="form-grid">' + o('nam', 'Nhập vào năm', { select: D.cac_nam.concat([String(+D.cac_nam[D.cac_nam.length - 1] + 1), String(+D.nam + 1)], (/(20\d\d)/.exec(f.name) || []).slice(1)).filter((x, i, a) => a.indexOf(x) === i).sort(), v: (/(20\d\d)/.exec(f.name) || [])[1] && D.cac_nam.indexOf(/(20\d\d)/.exec(f.name)[1]) >= 0 ? /(20\d\d)/.exec(f.name)[1] : D.nam }) +
         (ca ? o('pham_vi', 'Trang tính nhập', { select: [['ca', 'Cả hai: Muasam (thiết bị) + Xaydung (xây dựng)'], ['tb', 'Chỉ Muasam – thiết bị (giữ nguyên hạng mục xây dựng)'], ['xd', 'Chỉ Xaydung – xây dựng (giữ nguyên dòng thiết bị)']], v: 'ca', full: 1 }) : '') +
         o('cach', 'Cách nhập', { select: [['them', 'Thêm vào danh sách đang có'], ['thay', r.chiXd ? 'Thay toàn bộ hạng mục xây dựng của năm (xóa hạng mục cũ)' : 'Thay toàn bộ danh sách của năm (xóa dòng cũ của phần được nhập)']], v: r.chiXd ? ((D.xd || []).length ? 'thay' : 'them') : daCo ? 'them' : 'thay' }) +
         '<p class="note full">Dòng nhập từ file có trạng thái "Đã duyệt" (cột N ghi "đã mua" → "Đã mua"). "Đơn vị sử dụng: …" ở cột lý do được tách thành bộ môn. Thời điểm thực hiện đổi theo năm nhập vào. Lần nhập ghi vào <b>Lịch sử tải file</b> (thu hồi được, lưu file gốc).</p>' +
