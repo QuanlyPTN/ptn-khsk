@@ -130,7 +130,7 @@
           '<td>' + esc(d.dvt) + '</td><td>' + NC.filter(k => d[k]).map(k => esc(D.nhu_cau[k])).join(', ') + '</td><td class="num">' + (laCha ? '' : fmt(d.sl) + (d.sl_mua ? '<div class="note" title="Đã mua / kế hoạch">mua ' + fmt(d.sl_mua) + '/' + fmt(d.sl) + '</div>' : '')) + '</td><td class="num">' + (laCha ? '' : tien(d.dinh_muc)) + '</td>' +
           '<td class="num"><b>' + tien(kp(d)) + '</b></td><td style="max-width:220px;white-space:pre-line">' + esc([d.bo_mon, d.ly_do].filter(Boolean).join('\n')) + '</td><td>' + esc(d.thoi_diem) + '</td>' +
           '<td>' + (ht.co ? '<span title="Thiết bị cùng tên trong Tài sản">' + ht.co + ' cái</span>' + (ht.hong ? ' · <b style="color:#B42318">' + ht.hong + ' hỏng</b>' : '') : '<span class="note">—</span>') + '</td>' +
-          '<td>' + tagTT(d.trang_thai) + (d.ngung ? '<div class="note">' + esc(d.ngung) + '</div>' : '') + (d.tb_moi.length ? '<div class="note">Đã tạo ' + d.tb_moi.length + ' TB</div>' : '') + '</td>' +
+          '<td>' + tagTT(d.trang_thai) + (d.ngung ? '<div class="note">' + esc(d.ngung) + '</div>' : '') + (d.khdt ? '<div class="note" style="color:#1E4FC2" title="' + esc(d.khdt.ghi_chu || '') + '">P.KHĐT đã duyệt mua' + (d.khdt.ngay ? ' ' + ngayVN(d.khdt.ngay) : '') + '</div>' : '') + (d.tb_moi.length ? '<div class="note">Đã tạo ' + d.tb_moi.length + ' TB</div>' : '') + '</td>' +
           '<td class="note">' + d.nguon.map(n => '<a href="#/giang-vien/' + esc(n.don) + '">' + esc(n.don) + '</a> ' + esc(n.gv) + ' · ' + fmt(n.sl)).join('<br>') + '</td>' +
           (xl() ? '<td style="white-space:nowrap"><button class="btn o sm" data-sua="' + esc(d.id) + '" title="Sửa">✎</button><button class="btn o sm" data-len="' + esc(d.id) + '" title="Lên">↑</button><button class="btn o sm" data-xuong="' + esc(d.id) + '" title="Xuống">↓</button>' +
             (d.cha ? '' : '<button class="btn o sm" data-con="' + esc(d.id) + '" title="Thêm dòng con (hạng mục của thiết bị đồng bộ)">+ con</button>') +
@@ -199,6 +199,7 @@
   function hopMua(d) {
     const ve = () => moHop('<h2>🛒 ' + esc(d.ten.split('\n')[0]) + '</h2><p>Kế hoạch <b>' + fmt(d.sl) + ' ' + esc(d.dvt) + '</b> × ' + tien(d.dinh_muc) + ' = ' + tien(d.kinh_phi) + ' nghìn đ · đã mua <b>' + fmt(d.sl_mua) + '</b> · còn <b>' + fmt(d.con_lai) + '</b> · ' + tagTT(d.trang_thai) +
       (d.ngung ? ' – ' + esc(d.ngung) : '') + '</p>' +
+      (d.khdt ? '<p style="margin:0 0 10px;padding:8px 12px;border-radius:8px;background:#EEF3FC"><b>P.KHĐT đã duyệt mua – chưa mua</b>' + (d.khdt.ngay ? ' · ' + ngayVN(d.khdt.ngay) : '') + (d.khdt.ghi_chu ? ' · ' + esc(d.khdt.ghi_chu) : '') + ' <button type="button" class="btn o sm" id="k-bo-khdt">Bỏ đánh dấu</button></p>' : '') +
       (d.mua.length ? '<div class="tbl-wrap"><table><thead><tr><th>Ngày</th><th class="num">SL</th><th class="num">Đơn giá thực tế</th><th class="num">Thành tiền</th><th>Ghi chú</th><th>Người ghi</th><th></th></tr></thead><tbody>' +
         d.mua.map(m => '<tr><td>' + (m.ngay ? ngayVN(m.ngay) : '—') + '</td><td class="num">' + fmt(m.sl) + '</td><td class="num">' + (m.don_gia ? tien(m.don_gia) : '<span class="note">theo định mức</span>') + '</td><td class="num">' + tien(m.sl * (m.don_gia || d.dinh_muc)) + '</td>' +
           '<td>' + esc(m.ghi_chu) + '</td><td>' + esc(m.nguoi) + '</td><td><button type="button" class="btn red o sm" data-xm="' + esc(m.id) + '" title="Xóa lần mua ghi nhầm">✕</button></td></tr>').join('') + '</tbody></table></div>' : '<p class="note">Chưa ghi nhận lần mua nào.</p>') +
@@ -207,6 +208,7 @@
         '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Đóng</button><button class="btn">Ghi nhận mua</button></div></form>' : '') +
       (d.con_lai > 0 ? (d.trang_thai === 'Ngừng mua' ? '<p style="margin-top:12px"><button type="button" class="btn o sm" id="k-bo-ngung">Bỏ "Ngừng mua" (mua tiếp phần còn thiếu)</button></p>'
         : '<p class="note" style="margin-top:12px">Không mua phần còn thiếu nữa? <button type="button" class="btn o sm" id="k-ngung">Ngừng mua ' + fmt(d.con_lai) + ' còn lại…</button></p>') : '') +
+      (d.con_lai > 0 && !d.khdt && ['Đã duyệt', 'Mua một phần'].indexOf(d.trang_thai) >= 0 ? '<p class="note" style="margin-top:8px">Phòng KHĐT đã duyệt mua nhưng chưa mua? <button type="button" class="btn o sm" id="k-khdt">P.KHĐT đã duyệt mua – chưa mua…</button> <span>(xuất "Phần còn phải mua" sẽ bỏ dòng này như đã mua)</span></p>' : '') +
       (d.con_lai > 0 && d.trang_thai !== 'Ngừng mua' ? '' : '<div class="modal-foot"><button type="button" class="btn o" data-dong>Đóng</button></div>'), (m) => {
       const xong = async (r, tb) => { toast(tb); await taiLai(); d = D.dong.find(x => x.id === d.id) || Object.assign(d, r); ve(); };
       const f = m.querySelector('#k-f');
@@ -214,6 +216,9 @@
       m.querySelectorAll('[data-xm]').forEach(b => { b.onclick = (e) => { if (!confirm('Xóa lần mua này?')) return; chay(e.target, async () => xong(await api('khn_mua_xoa', { id: d.id, mua: b.dataset.xm }), 'Đã xóa lần mua')); }; });
       if (m.querySelector('#k-ngung')) m.querySelector('#k-ngung').onclick = (e) => { const ly = prompt('Lý do ngừng mua ' + fmt(d.con_lai) + ' ' + d.dvt + ' còn lại (VD: đã đủ dùng, hết kinh phí, chuyển sang năm sau):'); if (!ly) return;
         chay(e.target, async () => xong(await api('khn_ngung', { id: d.id, ly_do: ly }), 'Đã ngừng mua phần còn thiếu')); };
+      if (m.querySelector('#k-khdt')) m.querySelector('#k-khdt').onclick = (e) => { const gc = prompt('Ghi chú (số văn bản, ngày P.KHĐT duyệt…) – có thể để trống:', ''); if (gc === null) return;
+        chay(e.target, async () => xong(await api('khn_khdt', { id: d.id, ghi_chu: gc }), 'Đã đánh dấu P.KHĐT đã duyệt mua')); };
+      if (m.querySelector('#k-bo-khdt')) m.querySelector('#k-bo-khdt').onclick = (e) => chay(e.target, async () => xong(await api('khn_khdt', { id: d.id, bo: 1 }), 'Đã bỏ đánh dấu P.KHĐT'));
       if (m.querySelector('#k-bo-ngung')) m.querySelector('#k-bo-ngung').onclick = (e) => chay(e.target, async () => xong(await api('khn_ngung', { id: d.id, bo: 1 }), 'Đã bỏ ngừng mua'));
     });
     ve();
@@ -345,8 +350,8 @@
   const napExcelJS = () => window.ExcelJS ? Promise.resolve(window.ExcelJS) : new Promise((ok, loi) => { const s = document.createElement('script'); s.src = EXCELJS; s.onload = () => ok(window.ExcelJS); s.onerror = () => loi(new Error('Không tải được thư viện Excel (cần mạng)')); document.head.appendChild(s); });
   function hopXuat() {
     moHop('<h2>Xuất kế hoạch năm ' + esc(D.nam) + ' theo file mẫu</h2><form id="k-f" class="form-grid">' +
-      o('pham_vi', 'Dòng đưa vào file', { select: [['duyet', 'Đã duyệt (kể cả đã mua, mua một phần) – gửi P.KHĐT'], ['con_lai', 'Phần còn phải mua (bỏ dòng đã mua đủ; mua thiếu → số lượng còn lại)'], ['tat_ca', 'Tất cả trừ "Không duyệt" (bản nháp tổng hợp)'], ['trong', 'Không dòng nào (file mẫu trống để điền tay)']], full: 1 }) +
-      '<p class="note full">File dựng từ mẫu "KẾ HOẠCH MUA SẮM NĂM" của Trường: giữ khung, định dạng, chữ ký, trang tính Xây dựng và Tool; công thức <b>D = SUM(E:H)</b>, <b>J = I × số lượng</b>, tổng từng mục và <b>Tổng cộng (A+B+C+D+E)</b> viết lại theo số dòng thực tế; mục chưa có thiết bị giữ nguyên các dòng ví dụ ("1 – Chương trình, kế hoạch…", "…") như file mẫu. <b>Phần còn phải mua</b>: lấy dòng Đã duyệt / Mua một phần còn thiếu, số lượng = kế hoạch − đã mua (trừ dần từ cột Bổ sung → Nâng cấp), kinh phí tính lại theo số còn lại; dòng Đã mua, Ngừng mua không đưa vào.</p>' +
+      o('pham_vi', 'Dòng đưa vào file', { select: [['duyet', 'Đã duyệt (kể cả đã mua, mua một phần) – gửi P.KHĐT'], ['con_lai', 'Phần còn phải mua (bỏ dòng đã mua đủ, P.KHĐT đã duyệt mua; mua thiếu → số lượng còn lại)'], ['tat_ca', 'Tất cả trừ "Không duyệt" (bản nháp tổng hợp)'], ['trong', 'Không dòng nào (file mẫu trống để điền tay)']], full: 1 }) +
+      '<p class="note full">File dựng từ mẫu "KẾ HOẠCH MUA SẮM NĂM" của Trường: giữ khung, định dạng, chữ ký, trang tính Xây dựng và Tool; công thức <b>D = SUM(E:H)</b>, <b>J = I × số lượng</b>, tổng từng mục và <b>Tổng cộng (A+B+C+D+E)</b> viết lại theo số dòng thực tế; mục chưa có thiết bị giữ nguyên các dòng ví dụ ("1 – Chương trình, kế hoạch…", "…") như file mẫu. <b>Phần còn phải mua</b>: lấy dòng Đã duyệt / Mua một phần còn thiếu, số lượng = kế hoạch − đã mua (trừ dần từ cột Bổ sung → Nâng cấp), kinh phí tính lại theo số còn lại; dòng Đã mua, Ngừng mua, dòng đánh dấu <b>P.KHĐT đã duyệt mua – chưa mua</b> (nút 🛒 Mua) không đưa vào.</p>' +
       '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">⇩ Tải file Excel</button></div></form>', (m) => {
       m.querySelector('#k-f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target); await chay(e.submitter, () => xuatExcel(v.pham_vi)); dongHop(); };
     });
@@ -386,7 +391,7 @@
     let ds = lay.filter(d => !d.cha || coCha[d.cha]);
     // phần còn phải mua: chỉ dòng còn thiếu; dòng cha giữ lại khi còn dòng con
     const conLai = phamVi === 'con_lai', coCon = (d) => D.dong.some(x => x.cha === d.id);
-    if (conLai) { ds = ds.filter(d => coCon(d) || (['Đã duyệt', 'Mua một phần'].indexOf(d.trang_thai) >= 0 && d.con_lai > 0)); ds = ds.filter(d => !coCon(d) || ds.some(x => x.cha === d.id)); }
+    if (conLai) { ds = ds.filter(d => coCon(d) || (['Đã duyệt', 'Mua một phần'].indexOf(d.trang_thai) >= 0 && d.con_lai > 0 && !d.khdt)); ds = ds.filter(d => !coCon(d) || ds.some(x => x.cha === d.id)); }
     let r = 9;
     const ghi = (m, v, h) => { const row = ws.getRow(r); for (let c = 1; c <= 14; c++) { const o2 = row.getCell(c); o2.style = sao(m.st[c]) || {}; o2.value = v[c] === undefined || v[c] === '' ? null : v[c]; } row.height = h || m.h; return r++; };
     const F = (f, kq2) => ({ formula: f, result: kq2 });
