@@ -54,7 +54,7 @@
   // ---------------- Gọi máy chủ ----------------
   // Đơn QR (don_ds, don_ct, hom_nay, qr_ds…) luôn đọc mới để xử lý kịp thời.
   // Kết quả đọc giữ 60 giây trong trang (quay lại trang vừa xem hiện ngay); có thao tác ghi bất kỳ thì xóa hết để đọc lại dữ liệu mới
-  const API_DOC = /^(tong_quan|nd_ds|phong_ds|phong_ct|tb_ds|tb_ct|hk_ds|vt_ds|mon_ds|mon_ct|lop_ds|kh_tinh|bb_ds|bb_ct|phong_lich|hs_ds|hs_ct|kho_ds|vt_goi_y|dt_dot|dt_tinh|dtm_ma_ds|dtm_dn_ds|dtm_dn_ct|dt_cap_ds|dtm_tong|dtm_doi_chieu|dtm_phieu|dtm_ct|kho_lo|kho_so_ks|bc_tb|bc_thang|bc_khac|bc_da_luu|so_ds|so_tong)$/;
+  const API_DOC = /^(tong_quan|nd_ds|phong_ds|phong_ct|tb_ds|tb_ct|hk_ds|vt_ds|mon_ds|mon_tim|mon_ct|lop_ds|kh_tinh|bb_ds|bb_ct|phong_lich|hs_ds|hs_ct|kho_ds|vt_goi_y|dt_dot|dt_tinh|dtm_ma_ds|dtm_dn_ds|dtm_dn_ct|dt_cap_ds|dtm_tong|dtm_doi_chieu|dtm_phieu|dtm_ct|kho_lo|kho_so_ks|bc_tb|bc_thang|bc_khac|bc_da_luu|so_ds|so_tong)$/;
   const DEM = new Map();
   async function api(act, data) {
     if (!API_DOC.test(act)) { DEM.clear(); return goiMayChu(act, data); }
@@ -660,6 +660,8 @@
       '<ul style="margin:6px 0 0 18px;padding:0"><li>Hóa chất, vật tư tiêu hao tính cho <b>1 sinh viên</b>; dụng cụ tính cho <b>1 bộ giao 1 lớp thực hành</b> (gồm các nhóm của lớp; lớp nhận thêm bộ 2, 3 thì xuất biên bản bộ 2, 3 ở trang biên bản dụng cụ) – nhập một lần, dùng lại mọi học kỳ, chỉ sửa khi môn đổi bài.</li>' +
       '<li>Số cần cho từng học kỳ = định mức × sĩ số theo thời khóa biểu: xem / lấy ở thẻ <a href="#/hoa-chat/du-tru-mon"><b>Dự trù hóa chất ' + esc(hkMacDinh() || 'HK') + '</b></a> (chọn môn → "Lấy dự trù từ định mức", không cần tải file).</li>' +
       '<li>Biên bản bàn giao và dự trù theo đợt cũng tự tính từ định mức này.</li></ul></div>' +
+      '<div class="card" style="margin-bottom:12px"><form id="f-tim-hc" class="btns" style="margin:0;align-items:center"><input id="q-hc" placeholder="🔍 Tìm hóa chất trong định mức các môn – tên, mã VT hoặc công thức (VD: NaOH)" style="flex:1;min-width:260px">' +
+      '<select id="q-loai"><option value="HC">Hóa chất – vật tư</option><option value="DC">Dụng cụ</option><option value="">Tất cả</option></select><button class="btn sm">Tìm môn</button><button type="button" class="btn o sm" id="b-xoa-tim" style="display:none">✕</button></form><div id="kq-hc"></div></div>' +
       '<div class="tools"><button class="btn sm" id="b-kh">⇪ Tải file định mức hóa chất (một hay nhiều môn)</button><button class="btn sm" id="b-dc">⇪ Tải file dụng cụ (một hoặc nhiều môn)</button><button class="btn o sm" id="b-mon">+ Môn</button>' + (laAdmin() ? '<button class="btn o sm" id="b-gop" title="Gộp môn trùng tên (do tải file tên viết khác) vào môn giữ lại">⇄ Gộp môn trùng</button><button class="btn red o sm" id="b-don" title="Xóa định mức, dự trù, biên bản lớp thực hành của các môn được chọn">🧹 Dọn dữ liệu</button>' : '') + (coQuyen('hoa-chat', 'xu_ly') ? '<button class="btn o sm" id="b-chuan-nhom" title="Xếp lại định mức hóa chất mọi môn về 3 nhóm: Hóa chất · Dược liệu · Vật tư tiêu hao">⇄ Chuẩn hóa nhóm (Hóa chất / Dược liệu / Vật tư tiêu hao)</button>' : '') + '</div>' +
       '<p class="note">Định mức hóa chất tính cho <b>1 sinh viên</b>; định mức dụng cụ tính cho <b>1 bộ / 1 lớp thực hành</b>. Đây là dữ liệu cốt lõi, dùng lại cho mọi học kỳ. Môn nào có file thì tải lên môn đó – biên bản bàn giao và dự trù của học kỳ đang chọn tự cập nhật.</p>' +
       (ds.length && laAdmin() ? '<div class="btns" style="margin-bottom:6px"><button class="btn red o sm" id="b-xoa-mon" disabled>🗑 Xóa môn đã chọn</button><span class="note">Xóa hẳn môn kèm định mức, dự trù, biên bản lớp thực hành; thời khóa biểu giữ nguyên (bỏ gán môn). Thu hồi được ở Lịch sử tải file.</span></div>' : '') +
@@ -667,6 +669,25 @@
         ds.map(m => '<tr class="click" data-ma="' + esc(m.ma) + '">' + (laAdmin() ? '<td><input type="checkbox" data-chon-mon="' + esc(m.ma) + '"></td>' : '') + '<td class="mono">' + esc(m.ma) + '</td><td><b>' + esc(m.ten) + '</b></td><td class="mono">' + esc(m.ma_hp) + '</td><td class="num">' + (m.so_hc || '<span class="tag t-warn">0</span>') + '</td><td class="num">' + (m.so_dc || '—') + '</td></tr>').join('') + '</tbody></table></div>'
         : '<div class="card empty">Chưa có môn. Bấm "Nhập định mức hóa chất" và chọn file kế hoạch vật tư (ví dụ "KSK. KH vat HKI 2026.xlsm").</div>');
     nd.querySelectorAll('tr[data-ma]').forEach(tr => { tr.onclick = (e) => { if (e.target.closest('input')) return; location.hash = '#/hoa-chat/mon/' + tr.dataset.ma; }; });
+    // tìm hóa chất → các môn có hóa chất đó (nhớ ô tìm khi quay lại trang)
+    const timHc = async () => {
+      const q = $('q-hc').value.trim(), loai = $('q-loai').value;
+      try { sessionStorage.setItem('mon_tim', JSON.stringify([q, loai])); } catch (e) { /* trình duyệt chặn lưu */ }
+      $('b-xoa-tim').style.display = q ? '' : 'none';
+      if (!q) { $('kq-hc').innerHTML = ''; return; }
+      $('kq-hc').innerHTML = '<p class="note">Đang tìm…</p>';
+      let r; try { r = await api('mon_tim', { q, loai }); } catch (e) { $('kq-hc').innerHTML = '<p class="note" style="color:#B42318">' + esc(e.message) + '</p>'; return; }
+      $('kq-hc').innerHTML = !r.mon.length ? '<p class="note" style="margin-top:8px">Không môn nào có "' + esc(q) + '" trong định mức.</p>' :
+        '<p class="note" style="margin:8px 0 6px"><b>' + r.mon.length + ' môn</b> có "' + esc(q) + '" (' + r.so_dong + ' dòng định mức) – bấm một môn để mở định mức.</p>' +
+        '<div class="tbl-wrap"><table><thead><tr><th>Môn thực hành</th><th>Mã HP</th><th>Bộ môn</th><th>Dòng định mức khớp</th><th class="r">Định mức</th></tr></thead><tbody>' +
+        r.mon.map(m => '<tr class="click" data-tim-mon="' + esc(m.ma) + '"><td><b>' + esc(m.ten) + '</b><div class="note mono">' + esc(m.ma) + '</div></td><td class="mono">' + esc(m.ma_hp || '') + '</td><td>' + esc(m.bo_mon || '') + '</td>' +
+          '<td>' + m.dong.map(d => esc(d.ten) + (d.cong_thuc ? ' <span class="note">(' + esc(d.cong_thuc) + ')</span>' : '') + (d.ma_vt ? ' <span class="note mono">' + esc(d.ma_vt) + '</span>' : '') + (d.loai === 'DC' ? ' <span class="badge">DC</span>' : '')).join('<br>') + '</td>' +
+          '<td class="r">' + m.dong.map(d => esc(d.dm || '') + ' ' + esc(d.dvt || '') + (d.loai === 'HC' ? ' <span class="note">/SV</span>' : '')).join('<br>') + '</td></tr>').join('') + '</tbody></table></div>';
+      $('kq-hc').querySelectorAll('[data-tim-mon]').forEach(tr => { tr.onclick = () => { location.hash = '#/hoa-chat/mon/' + tr.dataset.timMon; }; });
+    };
+    $('f-tim-hc').onsubmit = (e) => { e.preventDefault(); timHc(); };
+    $('b-xoa-tim').onclick = () => { $('q-hc').value = ''; timHc(); };
+    try { const c = JSON.parse(sessionStorage.getItem('mon_tim') || 'null'); if (c && c[0]) { $('q-hc').value = c[0]; $('q-loai').value = c[1]; timHc(); } } catch (e) { /* bỏ qua */ }
     if ($('b-xoa-mon')) {
       const capNhat = () => { const n = nd.querySelectorAll('[data-chon-mon]:checked').length; $('b-xoa-mon').disabled = !n; $('b-xoa-mon').textContent = '🗑 Xóa môn đã chọn' + (n ? ' (' + n + ')' : ''); };
       nd.querySelectorAll('[data-chon-mon]').forEach(c => { c.onchange = capNhat; });
