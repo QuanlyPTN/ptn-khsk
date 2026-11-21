@@ -54,7 +54,7 @@
   // ---------------- Gọi máy chủ ----------------
   // Đơn QR (don_ds, don_ct, hom_nay, qr_ds…) luôn đọc mới để xử lý kịp thời.
   // Kết quả đọc giữ 60 giây trong trang (quay lại trang vừa xem hiện ngay); có thao tác ghi bất kỳ thì xóa hết để đọc lại dữ liệu mới
-  const API_DOC = /^(tong_quan|nd_ds|phong_ds|phong_ct|tb_ds|tb_ct|hk_ds|vt_ds|mon_ds|mon_tim|mon_ct|lop_ds|kh_tinh|bb_ds|bb_ct|phong_lich|hs_ds|hs_ct|kho_ds|vt_goi_y|dt_dot|dt_tinh|dtm_ma_ds|dtm_dn_ds|dtm_dn_ct|dt_cap_ds|dtm_tong|dtm_doi_chieu|dtm_phieu|dtm_ct|kho_lo|kho_so_ks|bc_tb|bc_thang|bc_khac|bc_da_luu|so_ds|so_tong)$/;
+  const API_DOC = /^(tong_quan|nd_ds|phong_ds|phong_ct|tb_ds|tb_ct|hk_ds|vt_ds|mon_ds|mon_tim|mon_ct|tu_ls|lop_ds|kh_tinh|bb_ds|bb_ct|phong_lich|hs_ds|hs_ct|kho_ds|vt_goi_y|dt_dot|dt_tinh|dtm_ma_ds|dtm_dn_ds|dtm_dn_ct|dt_cap_ds|dtm_tong|dtm_doi_chieu|dtm_phieu|dtm_ct|kho_lo|kho_so_ks|bc_tb|bc_thang|bc_khac|bc_da_luu|so_ds|so_tong)$/;
   const DEM = new Map();
   async function api(act, data) {
     if (!API_DOC.test(act)) { DEM.clear(); return goiMayChu(act, data); }
@@ -100,7 +100,7 @@
 
   // ---------------- Hộp thoại ----------------
   function moHop(html, onOpen) {
-    $('modal-body').innerHTML = html; $('modal').classList.remove('hide');
+    $('modal-body').innerHTML = html; $('modal').classList.remove('hide'); $('modal-body').parentNode.style.maxWidth = ''; // hộp rộng (lịch sử tủ) đặt lại mỗi lần mở
     if (document.body.classList.contains('chi-xem')) anNutGhi($('modal-body'));
     const f = $('modal-body').querySelector('input,select,textarea'); if (f) setTimeout(() => f.focus(), 50);
     if (onOpen) onOpen($('modal-body'));
@@ -1049,7 +1049,7 @@
     let h = '<div class="card"><h2>' + esc(p.ten) + '</h2><dl class="kv">' +
       [['Vị trí', p.vi_tri], ['Chức năng', p.chuc_nang], ['Cán bộ phụ trách', p.phu_trach], ['Diện tích', p.dien_tich ? p.dien_tich + ' m²' : ''], ['Ghi chú', p.ghi_chu]]
         .filter(x => x[1]).map(x => '<dt>' + x[0] + '</dt><dd>' + esc(x[1]) + '</dd>').join('') + '</dl></div>';
-    h += '<div class="card"><div class="btns" style="justify-content:space-between"><h2 style="margin:0">Sơ đồ tủ (' + r.tu.length + ')</h2>' + (coQuyen('phong', 'xu_ly') ? '<button class="btn o sm" id="b-them-tu">+ Thêm tủ</button>' : '') + '</div><div class="lockers">' + r.tu.map(t =>
+    h += '<div class="card"><div class="btns" style="justify-content:space-between"><h2 style="margin:0">Sơ đồ tủ (' + r.tu.length + ')</h2><span class="btns"><button class="btn o sm" id="b-ls-phong">🕘 Lịch sử mượn tủ</button>' + (coQuyen('phong', 'xu_ly') ? '<button class="btn o sm" id="b-them-tu">+ Thêm tủ</button>' : '') + '</span></div><div class="lockers">' + r.tu.map(t =>
       '<div class="locker ' + (t.trang_thai === 'Đang dùng' ? 'dung' : t.trang_thai === 'Hỏng' ? 'hong' : '') + (t.trang_thai === 'Đang dùng' && t.han && t.han < hn ? ' qh' : '') + '" data-so="' + esc(t.so) + '" title="' + esc(t.trang_thai + (t.nguoi ? ' – ' + t.nguoi : '') + (t.han ? ' – hạn ' + ngayVN(t.han) : '')) + '">' +
       '<b>' + esc(t.so) + '</b><small>' + esc(t.trang_thai === 'Đang dùng' ? t.nguoi : t.trang_thai) + '</small></div>').join('') + '</div>' +
       '<div class="legend"><span><i></i>Trống</span><span><i style="background:var(--info-bg)"></i>Đang dùng</span><span><i style="background:var(--bad-bg)"></i>Hỏng</span><span><i style="outline:2px solid var(--warn)"></i>Quá hạn trả</span><span>Bấm vào tủ để giao / trả / báo hỏng</span></div></div>';
@@ -1059,12 +1059,29 @@
     nd.innerHTML = h;
     ganBangTB(nd, r.thiet_bi);
     nd.querySelectorAll('.locker').forEach(el => { el.onclick = () => hopTu(r.tu.find(t => t.so === el.dataset.so)); });
+    $('b-ls-phong').onclick = () => hopLsTu({ phong: ma }, 'tủ – phòng ' + ma);
     if ($('b-them-tu')) $('b-them-tu').onclick = async (e) => {
       const n = prompt('Thêm bao nhiêu tủ cho phòng ' + ma + '? (đang có ' + r.tu.length + ' tủ; tủ mới đánh số tiếp theo)', '1'); if (!n) return;
       const x = await chay(e.target, () => api('tu_them', { phong: ma, so_luong: n })); toast('Đã thêm tủ ' + x.them.join(', ') + ' – phòng có ' + x.tong + ' tủ'); dieuHuong(); };
     if (window.PTN_QL.lichPhong) window.PTN_QL.lichPhong(ma, $('lich-phong'));
     if ($('b-sua-phong')) $('b-sua-phong').onclick = () => hopPhong(p);
     $('b-them-tb').onclick = () => hopThietBi(null, ma);
+  }
+  // lịch sử mượn tủ: q = { phong, so } | { khu }; người đang mượn ở đầu, sau đó các lượt đã trả (mới nhất trước)
+  async function hopLsTu(q, tieuDe) {
+    let r; try { r = await api('tu_ls', q); } catch (e) { return toast(e.message, true); }
+    const tenTu = (x) => /^HL-/.test(x.phong) ? x.phong.replace(/^HL-(.+)-(\d+)$/, 'HL $1 – Tủ $2') + ' – ô ' + x.so : 'Phòng ' + x.phong + ' – tủ ' + x.so, mot = q.so;
+    moHop('<h2>🕘 Lịch sử mượn ' + esc(tieuDe) + '</h2>' + (!r.ds.length ? '<div class="card empty">Chưa có lượt mượn nào.</div>' :
+      '<div class="tools"><input type="search" id="ls-q" placeholder="Tìm người mượn, MSSV, đơn, biên bản…"><span class="note">' + r.ds.filter(x => x.dang).length + ' đang mượn · ' + r.ds.filter(x => !x.dang).length + ' lượt đã trả</span></div>' +
+      '<div class="tbl-wrap" style="max-height:60vh"><table id="ls-bang"><thead><tr>' + (mot ? '' : '<th>Tủ / ô</th>') + '<th>Người mượn</th><th>Mượn theo</th><th>Từ ngày</th><th>Hạn trả</th><th>Ngày trả</th><th>Kết quả</th><th>Ghi chú khi trả</th></tr></thead><tbody>' +
+      r.ds.map(x => '<tr data-tim="' + esc([x.nguoi, x.sdt, x.theo, x.don, x.hs, x.bb, x.phong].join(' ').toLowerCase()) + '"' + (x.dang ? ' style="background:var(--info-bg)"' : '') + '>' + (mot ? '' : '<td>' + esc(tenTu(x)) + '</td>') +
+        '<td><b>' + esc(x.nguoi) + '</b>' + (x.sdt ? '<div class="note">' + esc(x.sdt) + '</div>' : '') + '</td><td class="note">' + esc(x.theo || '') + (x.hs ? '<div>Hồ sơ ' + esc(x.hs) + '</div>' : '') + '</td>' +
+        '<td>' + (x.tu_ngay ? ngayVN(x.tu_ngay) : '') + '</td><td>' + (x.han ? ngayVN(x.han) : '') + '</td><td>' + (x.ngay_tra ? ngayVN(x.ngay_tra) : '') + '</td>' +
+        '<td>' + (x.dang ? '<b>Đang mượn</b>' : esc(x.ket_qua || '')) + '</td><td class="note">' + esc([x.ghi_chu, x.cach, x.nguoi_ghi && 'cán bộ: ' + x.nguoi_ghi].filter(Boolean).join(' · ')) + '</td></tr>').join('') + '</tbody></table></div>') +
+      '<div class="modal-foot"><button type="button" class="btn o" data-dong>Đóng</button></div>', (m) => {
+      m.parentNode.style.maxWidth = 'min(1100px, 96vw)';
+      const s = m.querySelector('#ls-q'); if (s) s.oninput = () => { const k = s.value.trim().toLowerCase(); m.querySelectorAll('#ls-bang tbody tr').forEach(tr => { tr.style.display = !k || tr.dataset.tim.indexOf(k) >= 0 ? '' : 'none'; }); };
+    });
   }
   function hopTu(t) {
     moHop('<h2>' + (/^HL-/.test(t.phong) ? 'Ô ' + esc(t.so) + ' – ' + esc(t.phong.replace(/^HL-(.+)-(\d+)$/, 'HL $1 – Tủ $2')) : 'Tủ ' + esc(t.so) + ' – phòng ' + esc(t.phong)) + '</h2><form id="f">' +
@@ -1073,7 +1090,7 @@
       o('tu_ngay', 'Từ ngày', { type: 'date', v: t.tu_ngay || homNay() }) + o('han', 'Hạn trả', { type: 'date', v: t.han }) + '</div></div>' +
       o('ghi_chu', 'Ghi chú', { v: t.ghi_chu }) +
       '<p class="note">Đơn QR6 khi cán bộ bấm "Giao chìa tủ" / "Trả tủ" sẽ tự cập nhật sơ đồ này.</p>' +
-      '<div class="modal-foot">' + (t.trang_thai !== 'Đang dùng' && coQuyen('phong', 'xu_ly') ? '<button type="button" class="btn red o" id="b-xoa-tu" style="margin-right:auto">🗑 Xóa ' + (/^HL-/.test(t.phong) ? 'ô' : 'tủ') + '</button>' : '') + '<button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>', (root) => {
+      '<div class="modal-foot">' + (t.trang_thai !== 'Đang dùng' && coQuyen('phong', 'xu_ly') ? '<button type="button" class="btn red o" id="b-xoa-tu" style="margin-right:auto">🗑 Xóa ' + (/^HL-/.test(t.phong) ? 'ô' : 'tủ') + '</button>' : '') + '<button type="button" class="btn o" id="b-ls-tu">🕘 Lịch sử</button><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>', (root) => {
       const sel = root.querySelector('[name=trang_thai]'), box = $('tu-dung');
       const doi = () => box.classList.toggle('hide', sel.value !== 'Đang dùng');
       sel.onchange = doi; doi();
@@ -1084,6 +1101,7 @@
       await chay(e.submitter, () => api('tu_luu', { tu: v }));
       dongHop(); toast('Đã cập nhật tủ ' + t.so); dieuHuong();
     };
+    $('b-ls-tu').onclick = () => hopLsTu({ phong: t.phong, so: t.so }, /^HL-/.test(t.phong) ? 'ô ' + t.so + ' – ' + t.phong.replace(/^HL-(.+)-(\d+)$/, 'HL $1 – Tủ $2') : 'tủ ' + t.so + ' – phòng ' + t.phong);
     if ($('b-xoa-tu')) $('b-xoa-tu').onclick = async (e) => {
       if (!confirm(/^HL-/.test(t.phong) ? 'Xóa ô ' + t.so + ' – ' + t.phong.replace(/^HL-(.+)-(\d+)$/, 'HL $1 – Tủ $2') + '? (xóa nhầm: bấm ô mờ "＋' + t.so + '" để thêm lại)' : 'Xóa tủ ' + t.so + ' của phòng ' + t.phong + '? (xóa nhầm: bấm "+ Thêm tủ" để thêm lại)')) return;
       await chay(e.target, () => api('tu_xoa', { phong: t.phong, so: t.so })); dongHop(); toast('Đã xóa ' + (/^HL-/.test(t.phong) ? 'ô ' : 'tủ ') + t.so); dieuHuong(); };
@@ -1652,6 +1670,6 @@
   function trangCongKhai() { return location.href.split('#')[0].replace(/[?].*$/, '').replace(/quan-ly\/(index\.html|chay-thu\.html)?$/, ''); }
   // dùng chung cho app-mo-rong.js
   window.PTN_QL = { S, $, api, chay, trang, moHop, dongHop, o, giaTri, esc, toast, ngayVN, homNay, congNgay, boDau, tien, fmt, tag, hanTag, laAdmin, quyen, coQuyen, dieuHuong, napXlsx, napQR,
-    hopTu, guiTep, taiVe, docB64, dsPhongChon, phongTen, capNhatDanhMuc, lienKet, trangCongKhai, MENU, TUYEN, DEMO, ganDieuHuong, hopDonVaoBB, nhapFileHC, nhapFileDC, icon, docKeHoachVatTu, docPhieuDuTru, docDuTruNhom, hopFileExcel, ganGoiYVT };
+    hopTu, hopLsTu, guiTep, taiVe, docB64, dsPhongChon, phongTen, capNhatDanhMuc, lienKet, trangCongKhai, MENU, TUYEN, DEMO, ganDieuHuong, hopDonVaoBB, nhapFileHC, nhapFileDC, icon, docKeHoachVatTu, docPhieuDuTru, docDuTruNhom, hopFileExcel, ganGoiYVT };
   document.addEventListener('DOMContentLoaded', batDau);
 })();

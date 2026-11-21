@@ -36,9 +36,9 @@
         return '<details class="card hl-khu" id="khu-' + esc(k.ma) + '" data-khu="' + esc(k.ma) + '"' + (mo.indexOf(k.ma) >= 0 ? ' open' : '') + '><summary><h2 style="margin:0">' + esc(k.ten) + ' <span class="note">(' + esc(tenNgan(k.ma)) + ')</span></h2>' +
           '<div class="note">' + esc([k.vi_tri, k.ghi_chu].filter(Boolean).join(' · ')) + '</div><div class="note">' + k.tu_sat.length + ' tủ sắt · ' + ds.length + ' ô · ' + dem(ds, t => t.trang_thai === 'Trống') + ' trống · ' + dem(ds, t => t.trang_thai === 'Đang dùng') + ' đang dùng' +
           (dem(ds, t => t.trang_thai === 'Hỏng') ? ' · ' + dem(ds, t => t.trang_thai === 'Hỏng') + ' hỏng' : '') + (qh ? ' · <b style="color:var(--bad)">' + qh + ' quá hạn trả</b>' : '') + '</div></summary>' +
-          '<div class="btns" style="margin-top:8px">' + (xl ? '<button class="btn o sm" data-them-tu-sat="' + esc(k.ma) + '">+ Thêm tủ sắt</button><button class="btn o sm" data-sua-khu="' + esc(k.ma) + '">Sửa khu</button>' : '') + '</div>' +
+          '<div class="btns" style="margin-top:8px">' + (xl ? '<button class="btn o sm" data-them-tu-sat="' + esc(k.ma) + '">+ Thêm tủ sắt</button><button class="btn o sm" data-sua-khu="' + esc(k.ma) + '">Sửa khu</button>' : '') + '<button class="btn o sm" data-ls-khu="' + esc(k.ma) + '">🕘 Lịch sử mượn cả khu</button></div>' +
           (k.tu_sat.length ? k.tu_sat.map(t => '<div class="hl-tu"><div class="btns" style="justify-content:space-between"><b>Tủ ' + t.so + '</b>' + (t.ghi_chu ? ' <span class="hl-gc">' + esc(t.ghi_chu) + '</span>' : '') + ' <span class="note">' + t.o.length + ' ô · ' + dem(t.o, x => x.trang_thai === 'Trống') + ' trống</span>' +
-            (xl ? '<span class="btns" style="margin-left:auto"><button class="btn o sm" data-gc-tu="' + esc(t.ma) + '">✎ Ghi chú</button><button class="btn o sm" data-them-o="' + esc(t.ma) + '">+ Thêm ô</button><button class="btn o sm red" data-xoa-tu="' + esc(t.ma) + '">Xóa tủ</button></span>' : '') + '</div>' +
+            '<span class="btns" style="margin-left:auto"><button class="btn o sm" data-ls-tu="' + esc(t.ma) + '">🕘 Lịch sử</button></span>' + (xl ? '<span class="btns"><button class="btn o sm" data-gc-tu="' + esc(t.ma) + '">✎ Ghi chú</button><button class="btn o sm" data-them-o="' + esc(t.ma) + '">+ Thêm ô</button><button class="btn o sm red" data-xoa-tu="' + esc(t.ma) + '">Xóa tủ</button></span>' : '') + '</div>' +
             '<div class="lockers">' + oTu(t) + '</div></div>').join('')
             : '<div class="note" style="margin-top:8px">Khu chưa có tủ sắt' + (xl ? ' – bấm "+ Thêm tủ sắt".' : '.') + '</div>') + '</details>';
       }).join('') +
@@ -46,6 +46,8 @@
       '<span><i style="outline:2px solid var(--warn)"></i>Quá hạn trả</span><span>Bấm vào ô để giao / trả / báo hỏng</span></div>';
     const khu = (ma) => r.khu.find(k => k.ma === ma), tuSat = (ma) => [].concat(...r.khu.map(k => k.tu_sat)).find(t => t.ma === ma);
     nd.querySelectorAll('.locker[data-tu]').forEach(el => { el.onclick = () => Q.hopTu(tuSat(el.dataset.tu).o.find(t => t.so === el.dataset.so)); });
+    nd.querySelectorAll('[data-ls-tu]').forEach(b => { b.onclick = () => Q.hopLsTu({ phong: b.dataset.lsTu }, tenTu(b.dataset.lsTu)); });
+    nd.querySelectorAll('[data-ls-khu]').forEach(b => { b.onclick = () => Q.hopLsTu({ khu: b.dataset.lsKhu }, 'tủ – ' + khu(b.dataset.lsKhu).ten); });
     nd.querySelectorAll('[data-them-lai]').forEach(el => { el.onclick = async () => { const [ma, so] = el.dataset.themLai.split('|');
       if (!confirm('Thêm lại ô ' + so + ' vào ' + tenTu(ma) + '?')) return;
       await chay(null, () => api('tu_them', { phong: ma, so_cu: so })); toast('Đã thêm lại ô ' + so + ' – ' + tenTu(ma)); dieuHuong(); }; });
