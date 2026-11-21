@@ -1623,8 +1623,8 @@
       '<div class="tbl-wrap"><table><thead><tr><th>Họ tên</th><th>Gmail đăng nhập</th><th>Vai trò</th><th>Quyền</th><th>Trạng thái</th><th>Ngày tạo</th><th></th></tr></thead><tbody>' +
       ds.map(c => '<tr><td><b>' + esc(c.ten) + '</b>' + (c.ghi_chu ? '<div class="note">' + esc(c.ghi_chu) + '</div>' : '') + '</td><td>' + esc(c.email) + '</td><td>' + esc(c.vai_tro) + '</td><td>' + tomTatQuyen(c.quyen) + '</td><td>' +
         (c.trang_thai === 'Hoạt động' ? '<span class="tag t-ok">Hoạt động</span>' : '<span class="tag t-gray">Khóa</span>') + '</td><td>' + ngayVN(c.ngay_tao) + '</td>' +
-        '<td class="btns">' + (c.quyen ? '<button class="btn sm" data-quyen="' + esc(c.email) + '">Phân quyền</button>' : '') + '<button class="btn o sm" data-sua="' + esc(c.email) + '">Sửa</button><button class="btn o sm" data-pin="' + esc(c.email) + '">Cấp lại mật khẩu</button></td></tr>').join('') + '</tbody></table></div>' +
-      '<p class="note">Cán bộ đăng nhập bằng <b>Gmail cá nhân</b> + <b>mật khẩu do admin cấp</b>. Mật khẩu chỉ hiện một lần khi tạo / cấp lại; cán bộ nên đổi mật khẩu ở mục Tài khoản. Khóa tài khoản hoặc cấp lại mật khẩu sẽ đăng xuất cán bộ khỏi mọi máy. Bấm <b>Phân quyền</b> để chọn mục cán bộ được xem / xử lý.</p>';
+        '<td class="btns">' + (c.quyen ? '<button class="btn sm" data-quyen="' + esc(c.email) + '">Phân quyền</button>' : '') + '<button class="btn o sm" data-sua="' + esc(c.email) + '">Sửa</button><button class="btn o sm" data-pin="' + esc(c.email) + '">Cấp lại mật khẩu</button>' + (c.email !== (S.toi.nguoi || {}).email ? '<button class="btn red o sm" data-xoa-cb="' + esc(c.email) + '">Xóa</button>' : '') + '</td></tr>').join('') + '</tbody></table></div>' +
+      '<p class="note">Cán bộ đăng nhập bằng <b>Gmail cá nhân</b> + <b>mật khẩu do admin cấp</b>. Mật khẩu chỉ hiện một lần khi tạo / cấp lại; cán bộ nên đổi mật khẩu ở mục Tài khoản. Khóa tài khoản hoặc cấp lại mật khẩu sẽ đăng xuất cán bộ khỏi mọi máy. Cán bộ nghỉ hẳn: bấm <b>Xóa</b> (dữ liệu đã xử lý giữ tên người làm); tạm ngưng thì <b>Sửa</b> → Khóa. Bấm <b>Phân quyền</b> để chọn mục cán bộ được xem / xử lý.</p>';
     $('b-them-cb').onclick = () => {
       moHop('<h2>Thêm cán bộ</h2><form id="f">' + o('ten', 'Họ tên', { req: 1 }) + o('email', 'Gmail cá nhân (dùng để đăng nhập)', { type: 'email', req: 1, ph: 'ten.canbo@gmail.com' }) +
         oMatKhau('mat_khau', 'Mật khẩu', 'Để trống: hệ thống tự tạo mật khẩu 8 ký tự. Tự đặt: 8 – 32 ký tự, có cả chữ và số.') +
@@ -1640,6 +1640,10 @@
       ganHienMatKhau($('f'));
       $('f').onsubmit = async (e) => { e.preventDefault(); hienPin(await chay(e.submitter, () => api('canbo_cap_pin', { email: b.dataset.pin, mat_khau: giaTri(e.target).mat_khau }))); };
     }; });
+    nd.querySelectorAll('[data-xoa-cb]').forEach(b => { b.onclick = async (e) => {
+      const c = ds.find(x => x.email === b.dataset.xoaCb);
+      if (!confirm('Xóa hẳn tài khoản cán bộ ' + c.ten + ' (' + c.email + ')?\n\n• Cán bộ bị đăng xuất khỏi mọi máy, không đăng nhập được nữa.\n• Đơn, biên bản, nhật ký cán bộ đã xử lý vẫn giữ tên người làm.\n• Chỉ tạm ngưng thì dùng "Sửa" → Trạng thái "Khóa" (mở lại được).')) return;
+      await chay(e.target, () => api('canbo_xoa', { email: c.email })); toast('Đã xóa tài khoản ' + c.email); dieuHuong(); }; });
     nd.querySelectorAll('[data-quyen]').forEach(b => { b.onclick = () => {
       const c = ds.find(x => x.email === b.dataset.quyen);
       moHop('<h2>Phân quyền – ' + esc(c.ten) + '</h2><p class="note" style="margin-top:-6px">' + esc(c.email) + '</p><form id="f">' + nutMau() + bangQuyen(c.quyen) +
