@@ -69,7 +69,8 @@
       h += '<div class="tbl-wrap"><table><thead><tr><th>TT</th><th>Danh mục</th><th>Tên công trình</th><th>Địa điểm</th><th>Mục tiêu</th><th>Sự cần thiết, lý do</th><th>Tiêu chuẩn, định mức</th><th>ĐVT</th><th class="num">Khối lượng</th><th class="num">Đơn giá</th><th class="num">Tổng kinh phí</th><th>Thời điểm</th><th></th></tr></thead><tbody>';
       D.muc_xd.forEach(m => { const lm = l.filter(x => x.muc === m[0]); if (!lm.length) return;
         h += '<tr style="background:#F3F6FC"><td colspan="13"><b>' + esc(m[0].replace('#2', '')) + '</b> – ' + esc(m[1]) + ' · <span class="note">' + tien(lm.reduce((a, x) => a + x.kinh_phi, 0)) + ' nghìn đ</span></td></tr>';
-        lm.forEach((x, i) => { h += '<tr><td>' + (i + 1) + '</td>' + ['ten', 'cong_trinh', 'dia_diem', 'muc_tieu', 'ly_do', 'tieu_chuan', 'dvt'].map(k => '<td style="white-space:pre-line;' + ({ ten: 'min-width:240px', muc_tieu: 'min-width:200px', ly_do: 'min-width:180px', tieu_chuan: 'min-width:160px', cong_trinh: 'min-width:140px', dia_diem: 'min-width:110px' }[k] || '') + '">' + esc(x[k]) + '</td>').join('') +
+        lm.forEach((x, i) => { h += '<tr' + (x.xong ? ' style="opacity:.6"' : '') + '><td>' + (i + 1) + (x.xong ? '<div class="note" title="Đã thực hiện / P.KHĐT đã duyệt">✓</div>' : '') +
+          (x.tu_nam ? '<div class="note" title="Chuyển từ năm ' + esc(x.tu_nam) + '">↳ ' + esc(x.tu_nam) + '</div>' : '') + (x.chuyen ? '<div class="note" title="Đã chuyển sang năm ' + esc(x.chuyen) + '">→ ' + esc(x.chuyen) + '</div>' : '') + '</td>' + ['ten', 'cong_trinh', 'dia_diem', 'muc_tieu', 'ly_do', 'tieu_chuan', 'dvt'].map(k => '<td style="white-space:pre-line;' + ({ ten: 'min-width:240px', muc_tieu: 'min-width:200px', ly_do: 'min-width:180px', tieu_chuan: 'min-width:160px', cong_trinh: 'min-width:140px', dia_diem: 'min-width:110px' }[k] || '') + '">' + esc(x[k]) + '</td>').join('') +
           '<td class="num">' + fmt(x.khoi_luong) + '</td><td class="num">' + tien(x.don_gia) + (x.so_ct ? '<div class="note" title="Đơn giá 1 bộ = tổng thành tiền các dòng chi tiết">= tổng chi tiết</div>' : '') + '</td><td class="num"><b>' + tien(x.kinh_phi) + '</b></td><td>' + esc(x.thoi_diem) + '</td>' +
           '<td style="white-space:nowrap"><button class="btn o sm" data-xs="' + esc(x.id) + '" title="Sửa">✎</button><button class="btn o sm" data-xl="' + esc(x.id) + '" title="Lên">↑</button><button class="btn o sm" data-xx="' + esc(x.id) + '" title="Xuống">↓</button><button class="btn red o sm" data-xd="' + esc(x.id) + '" title="Xóa">✕</button><button class="btn o sm" data-xc="' + esc(x.id) + '" title="Thêm dòng chi tiết (bàn, ghế, tủ… của hạng mục)">+ chi tiết</button></td></tr>';
           // dòng chi tiết 1.1, 1.2…: danh mục, ĐVT, khối lượng, đơn giá; thành tiền cộng vào đơn giá 1 bộ của hạng mục
@@ -106,10 +107,11 @@
       (x.so_ct ? '<div class="f"><span>Đơn giá 1 bộ (nghìn đồng) = tổng thành tiền ' + x.so_ct + ' dòng chi tiết</span><b style="padding:8px 0">' + tien(x.don_gia) + '</b><input type="hidden" name="don_gia" value="' + (x.don_gia_goc || '') + '"></div>'
         : o('don_gia', 'Đơn giá (nghìn đồng)', { type: 'number', v: x.don_gia || '', extra: ' min="0" step="any"' })) + '<div class="f"><span>Tổng kinh phí (nghìn đồng)</span><b id="k-kp" style="padding:8px 0">—</b></div>' +
       o('thoi_diem', 'Thời điểm dự kiến thực hiện', { v: x.thoi_diem }) + o('ghi_chu', 'Ghi chú (không in vào file)', { v: x.ghi_chu }) +
+      '<label class="f full"><span>Tình trạng</span><label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" name="xong"' + (x.xong ? ' checked' : '') + '> Đã thực hiện / P.KHĐT đã duyệt – không chuyển sang năm sau (đã chuyển thì nút ⇄ ở năm sau đề xuất cắt)</label></label>' +
       '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>', (m) => {
       const f = m.querySelector('#k-f'), ve = () => { const v = giaTri(f), dg = x.so_ct ? x.don_gia : so(v.don_gia); m.querySelector('#k-kp').textContent = so(v.khoi_luong) && dg ? tien(so(v.khoi_luong) * dg) : '—'; };
       f.oninput = ve; ve(); m.querySelectorAll('textarea').forEach(t => { t.rows = 3; });
-      f.onsubmit = async (e) => { e.preventDefault(); await chay(e.submitter, () => api('khn_xd_luu', { nam: D.nam, d: Object.assign(giaTri(f), { id: x.id || '' }) })); dongHop(); toast('Đã lưu'); await taiLai(); };
+      f.onsubmit = async (e) => { e.preventDefault(); const v = giaTri(f); v.xong = v.xong ? 1 : ''; await chay(e.submitter, () => api('khn_xd_luu', { nam: D.nam, d: Object.assign(v, { id: x.id || '' }) })); dongHop(); toast('Đã lưu'); await taiLai(); };
     });
   }
   const dangChon = () => [...document.querySelectorAll('#k-ds [data-chon]:checked')].map(x => x.dataset.chon);
@@ -221,7 +223,7 @@
     moHop('<h2>Tạo năm kế hoạch</h2><form id="k-f" class="form-grid">' + o('nam', 'Năm', { type: 'number', v: goi, req: 1, extra: ' min="2020" max="2100"' }) +
       o('tu', 'Dữ liệu ban đầu', { select: [['', 'Trống (thêm dòng, nhập file sau)']].concat(D.cac_nam.slice().reverse().map(n => [n, 'Lấy phần còn phải mua từ năm ' + n])), v: D.nam, full: 1 }) +
       '<p class="note full">Lấy từ năm trước: mỗi dòng còn phải mua (kế hoạch − đã mua − P.KHĐT đã duyệt) được chuyển sang, trạng thái "Chờ duyệt", và <b>giữ liên kết</b> với dòng gốc. ' +
-      'Dòng "Đã mua", "Ngừng mua", "Không duyệt", dòng mua / duyệt đủ không chuyển. Sau này năm trước mua thêm hoặc P.KHĐT duyệt thêm: bấm <b>"⇄ Chuyển / cập nhật từ năm khác"</b> để cắt / giảm theo. Trước khi chuyển có danh sách để bỏ chọn dòng không muốn.</p>' +
+      'Xây dựng (admin): hạng mục chưa đánh dấu "Đã thực hiện / P.KHĐT đã duyệt" chuyển kèm dòng chi tiết. Dòng "Đã mua", "Ngừng mua", "Không duyệt", dòng mua / duyệt đủ không chuyển. Sau này năm trước mua thêm hoặc P.KHĐT duyệt thêm: bấm <b>"⇄ Chuyển / cập nhật từ năm khác"</b> để cắt / giảm theo. Trước khi chuyển có danh sách để bỏ chọn dòng không muốn.</p>' +
       '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Tạo năm</button></div></form>', (m) => {
       m.querySelector('#k-f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target);
         const r = await chay(e.submitter, () => api('khn_tao_nam', { nam: v.nam })); dongHop(); moLK = v.tu && v.tu !== r.nam ? v.tu : null;
@@ -239,13 +241,13 @@
     moHop('<h2>⇄ ' + (chi ? 'Chuyển ' + chi.length + ' dòng đã chọn' : 'Chuyển / cập nhật') + ' từ năm ' + esc(tu) + ' sang năm ' + esc(den) + '</h2>' +
       (chi ? '' : '<div class="btns" style="margin:0 0 8px"><label class="note">Năm nguồn <select id="k-lk-tu">' + D.cac_nam.filter(n => n !== den).map(n => '<option' + (n === tu ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></label></div>') +
       '<p class="note">Số chuyển = kế hoạch năm ' + esc(tu) + ' − đã mua − P.KHĐT đã duyệt. <b>Thêm</b>: dòng còn phải mua chưa có ở năm ' + esc(den) + ' · <b>Đổi số lượng</b>: năm ' + esc(tu) + ' mua / duyệt thêm · <b>Cắt</b>: năm ' + esc(tu) + ' đã mua / duyệt đủ, ngừng mua hoặc không duyệt. ' +
-      'Dòng thêm tay ở năm ' + esc(den) + ' (không liên kết) và dòng năm ' + esc(den) + ' đã ghi nhận mua giữ nguyên. Dòng ⚠ đã sửa tay ở năm ' + esc(den) + ' không chọn sẵn.</p>' +
+      'Xây dựng: hạng mục năm ' + esc(tu) + ' đánh dấu "Đã thực hiện / P.KHĐT đã duyệt" → cắt. Dòng thêm tay ở năm ' + esc(den) + ' (không liên kết) và dòng năm ' + esc(den) + ' đã ghi nhận mua giữ nguyên. Dòng ⚠ đã sửa tay ở năm ' + esc(den) + ' không chọn sẵn.</p>' +
       (r.khoa ? '<p class="note" style="color:#B42318"><b>🔒 Năm ' + esc(den) + ' đã khóa</b> – mở khóa trước khi áp dụng.</p>' : '') +
       (!r.ds.length ? '<div class="card empty">Không có thay đổi nào – năm ' + esc(den) + ' đã khớp với phần còn phải mua của năm ' + esc(tu) + '.</div><div class="modal-foot"><button type="button" class="btn o" data-dong>Đóng</button></div>' :
         '<p class="note">' + dem().map(x => NHAN[x[0]][0] + ' <b>' + x[1] + '</b>').join(' · ') + ' <button type="button" class="btn o sm" id="k-lk-het">Chọn hết</button><button type="button" class="btn o sm" id="k-lk-bo">Bỏ hết</button></p>' +
         '<div class="tbl-wrap" style="max-height:52vh"><table><thead><tr><th></th><th>Thay đổi</th><th>Mục</th><th>Thiết bị</th><th class="num">Năm ' + esc(den) + '</th><th>Năm ' + esc(tu) + '</th></tr></thead><tbody>' +
         r.ds.map(x => '<tr><td><input type="checkbox" data-lk="' + esc(x.k) + '"' + (x.mac_dinh ? ' checked' : '') + '></td><td><b style="color:' + NHAN[x.loai][1] + '">' + NHAN[x.loai][0] + '</b>' + (x.sua_tay ? '<div class="note" style="color:#B54708">⚠ đã sửa tay ở năm ' + esc(den) + '</div>' : '') + '</td>' +
-          '<td>' + esc(x.muc) + '</td><td>' + esc(x.ten) + '</td><td class="num">' + (x.loai === 'them' ? '<b>' + fmt(x.sl_moi) + '</b>' : fmt(x.sl_cu) + ' → <b>' + fmt(x.sl_moi) + '</b>') + ' ' + esc(x.dvt || '') + '</td>' +
+          '<td>' + esc(x.muc) + '</td><td>' + (x.xd ? '<span class="note">🏗 Xây dựng · </span>' : '') + esc(x.ten) + '</td><td class="num">' + (x.loai === 'them' ? '<b>' + fmt(x.sl_moi) + '</b>' : fmt(x.sl_cu) + ' → <b>' + fmt(x.sl_moi) + '</b>') + ' ' + esc(x.dvt || '') + '</td>' +
           '<td class="note">kế hoạch ' + fmt(x.sl_goc) + ' · ' + esc(x.tt_goc) + (x.ly_do ? ' · ' + esc(x.ly_do) : '') + '</td></tr>').join('') + '</tbody></table></div>' +
         '<div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button type="button" class="btn" id="k-lk-ap">Áp dụng</button></div>'), (m) => {
       const s = m.querySelector('#k-lk-tu'); if (s) s.onchange = () => { dongHop(); hopLienKet(s.value, null, den); };
@@ -254,7 +256,7 @@
       m.querySelector('#k-lk-het').onclick = () => { hop().forEach(x => { x.checked = true; }); dem2(); };
       m.querySelector('#k-lk-bo').onclick = () => { hop().forEach(x => { x.checked = false; }); dem2(); };
       nut.onclick = (e) => { const ap = hop().filter(x => x.checked).map(x => x.dataset.lk); if (!ap.length) return toast('Chưa chọn thay đổi nào', true);
-        chay(e.target, async () => { const k = await api('khn_lk', { tu, den, chi, ap }); toast('Năm ' + den + ': thêm ' + k.them + ', đổi ' + k.doi + ', cắt ' + k.cat + ' dòng'); dongHop();
+        chay(e.target, async () => { const k = await api('khn_lk', { tu, den, chi, ap }); toast('Năm ' + den + ': thêm ' + k.them + ', đổi ' + k.doi + ', cắt ' + k.cat + ' dòng' + (k.xd_them || k.xd_cat ? '; xây dựng: thêm ' + k.xd_them + ', cắt ' + k.xd_cat + ' hạng mục' : '')); dongHop();
           if (den === D.nam) await taiLai(); else location.hash = '#/ke-hoach-nam/' + den; }); };
     });
   }
