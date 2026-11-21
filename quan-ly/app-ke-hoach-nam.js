@@ -54,37 +54,54 @@
 
   // ---------- trang tính Xây dựng: sửa chữa, cải tạo, xây dựng công trình (chỉ admin) ----------
   function veXD() {
-    const l = D.xd, tong = l.reduce((a, x) => a + x.kinh_phi, 0);
+    const l = D.xd.filter(x => !x.cha), tong = l.reduce((a, x) => a + x.kinh_phi, 0), ctCua = (id) => D.xd.filter(x => x.cha === id);
     let h = '<div class="card note">Trang tính <b>Xaydung</b> của file kế hoạch: danh mục sửa chữa, cải tạo, nâng cấp, mở rộng, xây dựng mới hạng mục công trình. Chỉ admin xem và sửa; giảng viên chỉ đề xuất thiết bị. ' +
       'Xuất file: mục chưa có hạng mục giữ nguyên dòng ví dụ của mẫu; cột Tổng kinh phí = Khối lượng × Đơn giá.</div>' +
-      '<div class="btns" style="margin:10px 0"><button class="btn sm" id="x-them">+ Thêm hạng mục</button><span class="note">Tổng: <b>' + tien(tong) + '</b> nghìn đồng · ' + l.length + ' hạng mục</span></div>';
+      '<div class="btns" style="margin:10px 0"><button class="btn sm" id="x-them">+ Thêm hạng mục</button><span class="note">Tổng: <b>' + tien(tong) + '</b> nghìn đồng · ' + l.length + ' hạng mục' + (D.xd.length > l.length ? ' · ' + (D.xd.length - l.length) + ' dòng chi tiết (đơn giá 1 bộ của hạng mục = tổng thành tiền các dòng chi tiết)' : '') + '</span></div>';
     if (!l.length) h += '<div class="card empty">Chưa có hạng mục xây dựng – sửa chữa năm ' + esc(D.nam) + '. Bấm "+ Thêm hạng mục" hoặc nhập từ file Excel (trang tính Xaydung).</div>';
     else {
       h += '<div class="tbl-wrap"><table><thead><tr><th>TT</th><th>Danh mục</th><th>Tên công trình</th><th>Địa điểm</th><th>Mục tiêu</th><th>Sự cần thiết, lý do</th><th>Tiêu chuẩn, định mức</th><th>ĐVT</th><th class="num">Khối lượng</th><th class="num">Đơn giá</th><th class="num">Tổng kinh phí</th><th>Thời điểm</th><th></th></tr></thead><tbody>';
       D.muc_xd.forEach(m => { const lm = l.filter(x => x.muc === m[0]); if (!lm.length) return;
         h += '<tr style="background:#F3F6FC"><td colspan="13"><b>' + esc(m[0].replace('#2', '')) + '</b> – ' + esc(m[1]) + ' · <span class="note">' + tien(lm.reduce((a, x) => a + x.kinh_phi, 0)) + ' nghìn đ</span></td></tr>';
         lm.forEach((x, i) => { h += '<tr><td>' + (i + 1) + '</td>' + ['ten', 'cong_trinh', 'dia_diem', 'muc_tieu', 'ly_do', 'tieu_chuan', 'dvt'].map(k => '<td style="white-space:pre-line;' + ({ ten: 'min-width:240px', muc_tieu: 'min-width:200px', ly_do: 'min-width:180px', tieu_chuan: 'min-width:160px', cong_trinh: 'min-width:140px', dia_diem: 'min-width:110px' }[k] || '') + '">' + esc(x[k]) + '</td>').join('') +
-          '<td class="num">' + fmt(x.khoi_luong) + '</td><td class="num">' + tien(x.don_gia) + '</td><td class="num"><b>' + tien(x.kinh_phi) + '</b></td><td>' + esc(x.thoi_diem) + '</td>' +
-          '<td style="white-space:nowrap"><button class="btn o sm" data-xs="' + esc(x.id) + '" title="Sửa">✎</button><button class="btn o sm" data-xl="' + esc(x.id) + '" title="Lên">↑</button><button class="btn o sm" data-xx="' + esc(x.id) + '" title="Xuống">↓</button><button class="btn red o sm" data-xd="' + esc(x.id) + '" title="Xóa">✕</button></td></tr>'; }); });
+          '<td class="num">' + fmt(x.khoi_luong) + '</td><td class="num">' + tien(x.don_gia) + (x.so_ct ? '<div class="note" title="Đơn giá 1 bộ = tổng thành tiền các dòng chi tiết">= tổng chi tiết</div>' : '') + '</td><td class="num"><b>' + tien(x.kinh_phi) + '</b></td><td>' + esc(x.thoi_diem) + '</td>' +
+          '<td style="white-space:nowrap"><button class="btn o sm" data-xs="' + esc(x.id) + '" title="Sửa">✎</button><button class="btn o sm" data-xl="' + esc(x.id) + '" title="Lên">↑</button><button class="btn o sm" data-xx="' + esc(x.id) + '" title="Xuống">↓</button><button class="btn red o sm" data-xd="' + esc(x.id) + '" title="Xóa">✕</button><button class="btn o sm" data-xc="' + esc(x.id) + '" title="Thêm dòng chi tiết (bàn, ghế, tủ… của hạng mục)">+ chi tiết</button></td></tr>';
+          // dòng chi tiết 1.1, 1.2…: danh mục, ĐVT, khối lượng, đơn giá; thành tiền cộng vào đơn giá 1 bộ của hạng mục
+          ctCua(x.id).forEach((c, j) => { h += '<tr style="background:#FBFCFE"><td class="note">' + (i + 1) + '.' + (j + 1) + '</td><td colspan="6" style="white-space:pre-line;padding-left:22px">' + esc(c.ten) + (c.ghi_chu ? '<div class="note">' + esc(c.ghi_chu) + '</div>' : '') + '</td><td>' + esc(c.dvt) + '</td>' +
+            '<td class="num">' + fmt(c.khoi_luong) + '</td><td class="num">' + (c.don_gia ? tien(c.don_gia) : '<span class="note">—</span>') + '</td><td class="num">' + (c.kinh_phi ? tien(c.kinh_phi) : '') + '</td><td></td>' +
+            '<td style="white-space:nowrap"><button class="btn o sm" data-xs="' + esc(c.id) + '" title="Sửa">✎</button><button class="btn o sm" data-xl="' + esc(c.id) + '" title="Lên">↑</button><button class="btn o sm" data-xx="' + esc(c.id) + '" title="Xuống">↓</button><button class="btn red o sm" data-xd="' + esc(c.id) + '" title="Xóa">✕</button></td></tr>'; }); }); });
       h += '</tbody></table></div>';
     }
     const k = $('k-xd'); k.innerHTML = h;
     $('x-them').onclick = () => hopXD(null);
-    k.querySelectorAll('[data-xs]').forEach(b => { b.onclick = () => hopXD(l.find(x => x.id === b.dataset.xs)); });
+    k.querySelectorAll('[data-xs]').forEach(b => { b.onclick = () => hopXD(D.xd.find(x => x.id === b.dataset.xs)); });
+    k.querySelectorAll('[data-xc]').forEach(b => { b.onclick = () => hopXD({ cha: b.dataset.xc, dvt: 'Cái', khoi_luong: 1 }); });
     k.querySelectorAll('[data-xl],[data-xx]').forEach(b => { b.onclick = (e) => chay(e.target, async () => { await api('khn_xd_doi_cho', { id: b.dataset.xl || b.dataset.xx, huong: b.dataset.xl ? -1 : 1 }); await taiLai(); }); });
-    k.querySelectorAll('[data-xd]').forEach(b => { b.onclick = (e) => { if (!confirm('Xóa hạng mục này?')) return; chay(e.target, async () => { await api('khn_xd_xoa', { ids: [b.dataset.xd] }); toast('Đã xóa'); await taiLai(); }); }; });
+    k.querySelectorAll('[data-xd]').forEach(b => { b.onclick = (e) => { const n = ctCua(b.dataset.xd).length; if (!confirm(n ? 'Xóa hạng mục này và ' + n + ' dòng chi tiết?' : 'Xóa dòng này?')) return; chay(e.target, async () => { await api('khn_xd_xoa', { ids: [b.dataset.xd] }); toast('Đã xóa'); await taiLai(); }); }; });
   }
   function hopXD(x) {
     x = x || { muc: 'C.VI', dvt: 'Bộ', khoi_luong: 1, thoi_diem: 'Năm ' + D.nam };
+    if (x.cha) { // dòng chi tiết của hạng mục: danh mục, ĐVT, khối lượng, đơn giá (thành tiền cộng vào đơn giá 1 bộ của hạng mục)
+      const hm = D.xd.find(y => y.id === x.cha) || {};
+      moHop('<h2>' + (x.id ? 'Sửa dòng chi tiết' : 'Thêm dòng chi tiết') + '</h2><p class="note">Hạng mục: <b>' + esc(String(hm.ten || '').split('\n')[0]) + '</b></p><form id="k-f" class="form-grid">' +
+        o('ten', 'Danh mục (tên, kích thước, chất liệu…)', { area: 1, v: x.ten, req: 1, full: 1 }) + o('dvt', 'Đơn vị tính', { v: x.dvt }) + o('khoi_luong', 'Khối lượng', { type: 'number', v: x.khoi_luong || '', extra: ' min="0" step="any"' }) +
+        o('don_gia', 'Đơn giá (nghìn đồng) – thành tiền cộng vào đơn giá 1 bộ của hạng mục', { type: 'number', v: x.don_gia || '', extra: ' min="0" step="any"' }) + o('ghi_chu', 'Ghi chú (không in vào file)', { v: x.ghi_chu }) +
+        '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>', (m) => {
+        const f = m.querySelector('#k-f'); m.querySelectorAll('textarea').forEach(t => { t.rows = 4; });
+        f.onsubmit = async (e) => { e.preventDefault(); await chay(e.submitter, () => api('khn_xd_luu', { nam: D.nam, d: Object.assign(giaTri(f), { id: x.id || '', cha: x.cha, muc: hm.muc }) })); dongHop(); toast('Đã lưu'); await taiLai(); };
+      });
+      return;
+    }
     moHop('<h2>' + (x.id ? 'Sửa hạng mục' : 'Thêm hạng mục xây dựng – sửa chữa năm ' + esc(D.nam)) + '</h2><form id="k-f" class="form-grid">' +
       o('muc', 'Mục trong trang tính Xaydung', { select: D.muc_xd.map(m => [m[0], m[0].replace('#2', ' (2)') + ' – ' + m[1]]), v: x.muc, full: 1 }) +
       o('ten', 'Danh mục sửa chữa, cải tạo, nâng cấp, mở rộng, xây dựng mới', { area: 1, v: x.ten, req: 1, full: 1 }) + o('cong_trinh', 'Tên công trình', { v: x.cong_trinh }) + o('dia_diem', 'Địa điểm', { v: x.dia_diem }) +
       o('muc_tieu', 'Mục tiêu', { area: 1, v: x.muc_tieu, full: 1 }) + o('ly_do', 'Sự cần thiết, lý do thực hiện', { area: 1, v: x.ly_do, full: 1 }) + o('tieu_chuan', 'Tiêu chuẩn, định mức', { area: 1, v: x.tieu_chuan, full: 1 }) +
       o('dvt', 'Đơn vị tính', { v: x.dvt }) + o('khoi_luong', 'Khối lượng', { type: 'number', v: x.khoi_luong || '', extra: ' min="0" step="any"' }) +
-      o('don_gia', 'Đơn giá (nghìn đồng)', { type: 'number', v: x.don_gia || '', extra: ' min="0" step="any"' }) + '<div class="f"><span>Tổng kinh phí (nghìn đồng)</span><b id="k-kp" style="padding:8px 0">—</b></div>' +
+      (x.so_ct ? '<div class="f"><span>Đơn giá 1 bộ (nghìn đồng) = tổng thành tiền ' + x.so_ct + ' dòng chi tiết</span><b style="padding:8px 0">' + tien(x.don_gia) + '</b><input type="hidden" name="don_gia" value="' + (x.don_gia_goc || '') + '"></div>'
+        : o('don_gia', 'Đơn giá (nghìn đồng)', { type: 'number', v: x.don_gia || '', extra: ' min="0" step="any"' })) + '<div class="f"><span>Tổng kinh phí (nghìn đồng)</span><b id="k-kp" style="padding:8px 0">—</b></div>' +
       o('thoi_diem', 'Thời điểm dự kiến thực hiện', { v: x.thoi_diem }) + o('ghi_chu', 'Ghi chú (không in vào file)', { v: x.ghi_chu }) +
       '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>', (m) => {
-      const f = m.querySelector('#k-f'), ve = () => { const v = giaTri(f); m.querySelector('#k-kp').textContent = so(v.khoi_luong) && so(v.don_gia) ? tien(so(v.khoi_luong) * so(v.don_gia)) : '—'; };
+      const f = m.querySelector('#k-f'), ve = () => { const v = giaTri(f), dg = x.so_ct ? x.don_gia : so(v.don_gia); m.querySelector('#k-kp').textContent = so(v.khoi_luong) && dg ? tien(so(v.khoi_luong) * dg) : '—'; };
       f.oninput = ve; ve(); m.querySelectorAll('textarea').forEach(t => { t.rows = 3; });
       f.onsubmit = async (e) => { e.preventDefault(); await chay(e.submitter, () => api('khn_xd_luu', { nam: D.nam, d: Object.assign(giaTri(f), { id: x.id || '' }) })); dongHop(); toast('Đã lưu'); await taiLai(); };
     });
@@ -321,12 +338,17 @@
       if (/tong cong/.test(boDau(b))) break;
       let ma = ''; if (/^[A-E]$/.test(a)) { l0 = a; ma = a; } else if (/^[IVX]+$/.test(a) && l0) ma = l0 + '.' + a;
       if (ma) { gap[ma] = (gap[ma] || 0) + 1; cur = gap[ma] > 1 ? ma + '#' + gap[ma] : ma; continue; }
-      if (!cur || !b || /…\s*$/.test(b) || !(typeof r[0] === 'number' || /^\d+$/.test(a))) continue;
-      ds.push({ muc: cur, ten: b, cong_trinh: String(r[2]).trim(), dia_diem: String(r[3]).trim(), muc_tieu: String(r[4]).trim(), ly_do: String(r[5]).trim(), tieu_chuan: String(r[6]).trim(),
+      if (!cur || !b || /…\s*$/.test(b)) continue;
+      // TT số nguyên = hạng mục; TT dạng 1.1, 1.10 (chữ) hoặc số lẻ = dòng chi tiết của hạng mục trước đó
+      const laCon = /^\d+\.\d+$/.test(a) && (typeof r[0] !== 'number' || !Number.isInteger(r[0]));
+      if (!laCon && !(typeof r[0] === 'number' || /^\d+$/.test(a))) continue;
+      if (laCon && !(ds.length && ds[ds.length - 1].muc === cur)) continue;
+      ds.push({ muc: cur, la_con: laCon ? 1 : 0, ten: b, cong_trinh: String(r[2]).trim(), dia_diem: String(r[3]).trim(), muc_tieu: String(r[4]).trim(), ly_do: String(r[5]).trim(), tieu_chuan: String(r[6]).trim(),
         dvt: String(r[7]).trim(), khoi_luong: so(r[8]), don_gia: so(r[9]), thoi_diem: String(r[11]).trim() });
     }
     return ds;
   }
+  const slXd = (xd) => xd.filter(x => !x.la_con).length + ' hạng mục xây dựng – sửa chữa' + (xd.some(x => x.la_con) ? ' (' + xd.filter(x => x.la_con).length + ' dòng chi tiết)' : '');
   async function hopNhap(f) {
     try {
       const XLSX = await napXlsx(), wb = XLSX.read(await f.arrayBuffer(), { type: 'array' }), r = docFileKHN(XLSX, wb);
@@ -337,15 +359,15 @@
       const theoMuc = {}; r.dong.forEach(d => { theoMuc[d.muc] = theoMuc[d.muc] || [0, 0]; theoMuc[d.muc][0]++; theoMuc[d.muc][1] += (d.bo_sung + d.thay_moi + d.sua_chua + d.nang_cap) * d.dinh_muc; });
       const daCo = D.dong.length;
       const ca = r.dong.length && r.xd.length; // file đủ hai trang tính: chọn nhập cả hai / chỉ một trang
-      moHop('<h2>Nhập kế hoạch năm từ file</h2>' + (r.chiXd ? '<p class="note">' + esc(f.name) + ' · chỉ có trang tính <b>Xaydung</b>: <b>' + r.xd.length + '</b> hạng mục xây dựng – sửa chữa. Dòng thiết bị (trang tính Muasam) giữ nguyên.</p>' : '<p class="note">' + esc(f.name) + ' · trang tính <b>' + esc(r.ten) + '</b> · <b>' + r.dong.length + '</b> dòng (' + r.dong.filter(d => d.la_con).length + ' dòng con)' +
-        (Object.keys(r.kp).length ? ' · kinh phí khoán: ' + Object.keys(r.kp).map(k => k + ' ' + tien(r.kp[k])).join(', ') : '') + (r.loi ? ' · <b>' + r.loi + ' mục lạ</b> xếp vào mục gần nhất' : '') + (r.xd.length ? ' · trang tính Xaydung: <b>' + r.xd.length + '</b> hạng mục xây dựng – sửa chữa' : '') + '</p>' +
+      moHop('<h2>Nhập kế hoạch năm từ file</h2>' + (r.chiXd ? '<p class="note">' + esc(f.name) + ' · chỉ có trang tính <b>Xaydung</b>: <b>' + slXd(r.xd) + '</b>. Dòng thiết bị (trang tính Muasam) giữ nguyên.</p>' : '<p class="note">' + esc(f.name) + ' · trang tính <b>' + esc(r.ten) + '</b> · <b>' + r.dong.length + '</b> dòng (' + r.dong.filter(d => d.la_con).length + ' dòng con)' +
+        (Object.keys(r.kp).length ? ' · kinh phí khoán: ' + Object.keys(r.kp).map(k => k + ' ' + tien(r.kp[k])).join(', ') : '') + (r.loi ? ' · <b>' + r.loi + ' mục lạ</b> xếp vào mục gần nhất' : '') + (r.xd.length ? ' · trang tính Xaydung: <b>' + slXd(r.xd) + '</b>' : '') + '</p>' +
         '<div class="tbl-wrap"><table><thead><tr><th>Mục</th><th class="num">Số dòng</th><th class="num">Kinh phí (nghìn đ)</th></tr></thead><tbody>' +
         Object.keys(theoMuc).map(k => '<tr><td><b>' + esc(k) + '</b> ' + esc((D.muc.find(m => m[0] === k) || [])[3] || '') + '</td><td class="num">' + theoMuc[k][0] + '</td><td class="num">' + tien(theoMuc[k][1]) + '</td></tr>').join('') + '</tbody></table></div>') +
         '<form id="k-f" class="form-grid">' + o('nam', 'Nhập vào năm', { select: D.cac_nam.concat([String(+D.cac_nam[D.cac_nam.length - 1] + 1)]).filter((x, i, a) => a.indexOf(x) === i), v: (/(20\d\d)/.exec(f.name) || [])[1] && D.cac_nam.indexOf(/(20\d\d)/.exec(f.name)[1]) >= 0 ? /(20\d\d)/.exec(f.name)[1] : D.nam }) +
         (ca ? o('pham_vi', 'Trang tính nhập', { select: [['ca', 'Cả hai: Muasam (thiết bị) + Xaydung (xây dựng)'], ['tb', 'Chỉ Muasam – thiết bị (giữ nguyên hạng mục xây dựng)'], ['xd', 'Chỉ Xaydung – xây dựng (giữ nguyên dòng thiết bị)']], v: 'ca', full: 1 }) : '') +
         o('cach', 'Cách nhập', { select: [['them', 'Thêm vào danh sách đang có'], ['thay', r.chiXd ? 'Thay toàn bộ hạng mục xây dựng của năm (xóa hạng mục cũ)' : 'Thay toàn bộ danh sách của năm (xóa dòng cũ của phần được nhập)']], v: r.chiXd ? ((D.xd || []).length ? 'thay' : 'them') : daCo ? 'them' : 'thay' }) +
         '<p class="note full">Dòng nhập từ file có trạng thái "Đã duyệt" (cột N ghi "đã mua" → "Đã mua"). "Đơn vị sử dụng: …" ở cột lý do được tách thành bộ môn. Thời điểm thực hiện đổi theo năm nhập vào. Lần nhập ghi vào <b>Lịch sử tải file</b> (thu hồi được, lưu file gốc).</p>' +
-        '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">' + (r.chiXd ? 'Nhập ' + r.xd.length + ' hạng mục xây dựng' : 'Nhập từ file') + '</button></div></form>', (m) => {
+        '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">' + (r.chiXd ? 'Nhập ' + r.xd.filter(x => !x.la_con).length + ' hạng mục xây dựng' : 'Nhập từ file') + '</button></div></form>', (m) => {
         m.querySelector('#k-f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target), pv = r.chiXd ? 'xd' : v.pham_vi || 'ca';
           const phan = pv === 'xd' ? 'hạng mục xây dựng' : pv === 'tb' ? 'dòng thiết bị' : 'dòng thiết bị' + (r.xd.length ? ' và hạng mục xây dựng' : '');
           if (v.cach === 'thay' && !confirm('Xóa toàn bộ ' + phan + ' năm ' + v.nam + ' rồi nhập lại từ file?')) return;
@@ -498,15 +520,19 @@
     const doiDong = (v, cu, moi) => { const o2 = {}; Object.keys(v).forEach(c => { const x = v[c]; o2[c] = x && x.formula ? { formula: x.formula.replace(new RegExp('([A-Z]+)' + cu + '(?!\\d)', 'g'), '$1' + moi) } : x; }); return o2; };
     const kq = {};
     muc.forEach(m => {
-      const v = Object.assign({}, m.v); delete v[11]; const rm = ghi(m.m, v), dau = r; let tong = 0;
+      const v = Object.assign({}, m.v); delete v[11]; const rm = ghi(m.m, v), dau = r, rHM = []; let tong = 0;
       if (!laCha(m)) {
-        ds.filter(x => x.muc === m.ma).forEach((x, i) => {
-          ghi(mHM, { 1: i + 1, 2: x.ten, 3: x.cong_trinh, 4: x.dia_diem, 5: x.muc_tieu, 6: x.ly_do, 7: x.tieu_chuan, 8: x.dvt, 9: x.khoi_luong || '', 10: x.don_gia || '', 11: F('I' + r + '*J' + r, x.kinh_phi), 12: tdN(x.thoi_diem, nam) },
+        ds.filter(x => x.muc === m.ma && !x.cha).forEach((x, i) => {
+          // hạng mục có dòng chi tiết: J (đơn giá 1 bộ) = SUM(K các dòng chi tiết); dòng chi tiết K = I × J
+          const ct = ds.filter(c => c.cha === x.id), rh = r; rHM.push(rh);
+          ghi(mHM, { 1: i + 1, 2: x.ten, 3: x.cong_trinh, 4: x.dia_diem, 5: x.muc_tieu, 6: x.ly_do, 7: x.tieu_chuan, 8: x.dvt, 9: x.khoi_luong || '', 10: ct.length ? F('SUM(K' + (rh + 1) + ':K' + (rh + ct.length) + ')', x.don_gia) : x.don_gia || '', 11: F('I' + r + '*J' + r, x.kinh_phi), 12: tdN(x.thoi_diem, nam) },
             caoDong([[x.ten, 20], [x.muc_tieu, 18.8], [x.ly_do, 15.8], [x.tieu_chuan, 11.7], [x.cong_trinh, 12.5]]));
           tong += x.kinh_phi;
+          ct.forEach((c, j) => ghi(mHM, { 1: (i + 1) + '.' + (j + 1), 2: c.ten, 8: c.dvt, 9: c.khoi_luong || '', 10: c.don_gia || '', 11: F('I' + r + '*J' + r, c.kinh_phi) }, caoDong([[c.ten, 20]])));
         });
         (r > dau ? m.vd.filter(x => !x.so) : m.vd).forEach(x => ghi(x.m, doiDong(x.v, x.r, r)));
-        ws.getRow(rm).getCell(11).value = r > dau ? F('SUM(K' + dau + ':K' + (r - 1) + ')', tong) : null;
+        // mục có dòng chi tiết: cộng K các hạng mục (không cộng K dòng chi tiết – đã nằm trong đơn giá 1 bộ)
+        ws.getRow(rm).getCell(11).value = r > dau ? (ds.some(c => c.cha && c.muc === m.ma) ? F(rHM.map(k => 'K' + k).join('+'), tong) : F('SUM(K' + dau + ':K' + (r - 1) + ')', tong)) : null;
       }
       kq[m.ma] = { r: rm, t: tong };
     });
