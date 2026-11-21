@@ -345,8 +345,8 @@
   const napExcelJS = () => window.ExcelJS ? Promise.resolve(window.ExcelJS) : new Promise((ok, loi) => { const s = document.createElement('script'); s.src = EXCELJS; s.onload = () => ok(window.ExcelJS); s.onerror = () => loi(new Error('Không tải được thư viện Excel (cần mạng)')); document.head.appendChild(s); });
   function hopXuat() {
     moHop('<h2>Xuất kế hoạch năm ' + esc(D.nam) + ' theo file mẫu</h2><form id="k-f" class="form-grid">' +
-      o('pham_vi', 'Dòng đưa vào file', { select: [['duyet', 'Đã duyệt (kể cả đã mua, mua một phần) – gửi P.KHĐT'], ['tat_ca', 'Tất cả trừ "Không duyệt" (bản nháp tổng hợp)'], ['trong', 'Không dòng nào (file mẫu trống để điền tay)']], full: 1 }) +
-      '<p class="note full">File dựng từ mẫu "KẾ HOẠCH MUA SẮM NĂM" của Trường: giữ khung, định dạng, chữ ký, trang tính Xây dựng và Tool; công thức <b>D = SUM(E:H)</b>, <b>J = I × số lượng</b>, tổng từng mục và <b>Tổng cộng (A+B+C+D+E)</b> viết lại theo số dòng thực tế; mục chưa có thiết bị giữ nguyên các dòng ví dụ ("1 – Chương trình, kế hoạch…", "…") như file mẫu.</p>' +
+      o('pham_vi', 'Dòng đưa vào file', { select: [['duyet', 'Đã duyệt (kể cả đã mua, mua một phần) – gửi P.KHĐT'], ['con_lai', 'Phần còn phải mua (bỏ dòng đã mua đủ; mua thiếu → số lượng còn lại)'], ['tat_ca', 'Tất cả trừ "Không duyệt" (bản nháp tổng hợp)'], ['trong', 'Không dòng nào (file mẫu trống để điền tay)']], full: 1 }) +
+      '<p class="note full">File dựng từ mẫu "KẾ HOẠCH MUA SẮM NĂM" của Trường: giữ khung, định dạng, chữ ký, trang tính Xây dựng và Tool; công thức <b>D = SUM(E:H)</b>, <b>J = I × số lượng</b>, tổng từng mục và <b>Tổng cộng (A+B+C+D+E)</b> viết lại theo số dòng thực tế; mục chưa có thiết bị giữ nguyên các dòng ví dụ ("1 – Chương trình, kế hoạch…", "…") như file mẫu. <b>Phần còn phải mua</b>: lấy dòng Đã duyệt / Mua một phần còn thiếu, số lượng = kế hoạch − đã mua (trừ dần từ cột Bổ sung → Nâng cấp), kinh phí tính lại theo số còn lại; dòng Đã mua, Ngừng mua không đưa vào.</p>' +
       '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">⇩ Tải file Excel</button></div></form>', (m) => {
       m.querySelector('#k-f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target); await chay(e.submitter, () => xuatExcel(v.pham_vi)); dongHop(); };
     });
@@ -383,7 +383,10 @@
     // --- dòng đưa vào file ---
     const tt = phamVi === 'trong' ? [] : phamVi === 'tat_ca' ? ['Chờ duyệt', 'Đã duyệt', 'Mua một phần', 'Đã mua', 'Ngừng mua'] : ['Đã duyệt', 'Mua một phần', 'Đã mua', 'Ngừng mua'];
     const lay = D.dong.filter(d => tt.indexOf(d.trang_thai) >= 0), coCha = {}; lay.forEach(d => { if (!d.cha) coCha[d.id] = 1; });
-    const ds = lay.filter(d => !d.cha || coCha[d.cha]);
+    let ds = lay.filter(d => !d.cha || coCha[d.cha]);
+    // phần còn phải mua: chỉ dòng còn thiếu; dòng cha giữ lại khi còn dòng con
+    const conLai = phamVi === 'con_lai', coCon = (d) => D.dong.some(x => x.cha === d.id);
+    if (conLai) { ds = ds.filter(d => coCon(d) || (['Đã duyệt', 'Mua một phần'].indexOf(d.trang_thai) >= 0 && d.con_lai > 0)); ds = ds.filter(d => !coCon(d) || ds.some(x => x.cha === d.id)); }
     let r = 9;
     const ghi = (m, v, h) => { const row = ws.getRow(r); for (let c = 1; c <= 14; c++) { const o2 = row.getCell(c); o2.style = sao(m.st[c]) || {}; o2.value = v[c] === undefined || v[c] === '' ? null : v[c]; } row.height = h || m.h; return r++; };
     const F = (f, kq2) => ({ formula: f, result: kq2 });
@@ -396,9 +399,13 @@
         const so1 = d.cha ? (con < 10 ? parseFloat(stt + '.' + con) : stt + '.' + con) : stt, ly = [d.ly_do, d.bo_mon && 'Đơn vị sử dụng: ' + d.bo_mon].filter(Boolean).join('\n');
         const v = { 1: so1, 2: d.ten, 3: d.dvt, 11: d.yckt, 12: ly, 13: tdN(d.thoi_diem, nam), 14: d.trang_thai === 'Đã mua' ? 'đã mua' : d.sl_mua ? 'đã mua ' + fmt(d.sl_mua) + '/' + fmt(d.sl) : '' }; // cột N (ngoài vùng in): theo dõi
         if (!laCha) {
-          const co = NC.map((k, i) => [k, 5 + i]).filter(x => d[x[0]]), cot = co.length === 1 ? 'EFGH'[co[0][1] - 5] : co.length ? 'D' : 'E';
-          NC.forEach((k, i) => { v[5 + i] = d[k] || ''; });
-          v[4] = F('SUM(E' + r + ':H' + r + ')', d.sl); v[9] = d.dinh_muc || ''; v[10] = F('I' + r + '*' + cot + r, d.kinh_phi); tong += d.kinh_phi;
+          // phần còn phải mua: trừ số đã mua dần từ cột Bổ sung → Nâng cấp
+          let tru = conLai ? +d.sl_mua || 0 : 0; const sl = {}; NC.forEach(k => { const x = +d[k] || 0, b = Math.min(x, tru); tru -= b; sl[k] = Math.round((x - b) * 1000) / 1000; });
+          const co = NC.map((k, i) => [k, 5 + i]).filter(x => sl[x[0]]), cot = co.length === 1 ? 'EFGH'[co[0][1] - 5] : co.length ? 'D' : 'E';
+          const slx = conLai ? d.con_lai : d.sl, kp = conLai ? Math.round(d.con_lai * (+d.dinh_muc || 0) * 1000) / 1000 : d.kinh_phi;
+          if (conLai && d.sl_mua) v[14] = 'còn ' + fmt(d.con_lai) + '/' + fmt(d.sl) + ' (đã mua ' + fmt(d.sl_mua) + ')';
+          NC.forEach((k, i) => { v[5 + i] = sl[k] || ''; });
+          v[4] = F('SUM(E' + r + ':H' + r + ')', slx); v[9] = d.dinh_muc || ''; v[10] = F('I' + r + '*' + cot + r, kp); tong += kp;
         }
         ghi(d.cha ? M.con : laCha ? M.cha : M.tb, v, caoDong([[d.ten, 26.7], [d.yckt, 27.5], [ly, 15.5]]));
       });
@@ -440,7 +447,7 @@
     wb.calcProperties = Object.assign({}, wb.calcProperties, { fullCalcOnLoad: true });
     const buf = await wb.xlsx.writeBuffer(), a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
-    a.download = 'KE HOACH MUA SAM NAM ' + nam + (phamVi === 'trong' ? ' (mau trong)' : phamVi === 'tat_ca' ? ' (tong hop)' : '') + '.xlsx';
+    a.download = 'KE HOACH MUA SAM NAM ' + nam + (phamVi === 'trong' ? ' (mau trong)' : phamVi === 'tat_ca' ? ' (tong hop)' : phamVi === 'con_lai' ? ' (phan con phai mua)' : '') + '.xlsx';
     document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
     toast('Đã tạo file: ' + ds.length + ' dòng');
   }
