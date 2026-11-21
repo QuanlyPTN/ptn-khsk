@@ -378,7 +378,16 @@ tr.lv-qh td { background: #FFF6F5; }
 .lv-x { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 0 4px; }
 .the-don.lv { border-left-color: #2E7D5B; background: #F1FAF5; }
 @media (max-width: 640px) { .lv-o { min-height: 64px; } .lv-muc { font-size: 10.5px; } }
-#tb-don { position: fixed; top: 14px; right: 14px; z-index: 80; display: flex; flex-direction: column; gap: 8px; width: min(360px, calc(100vw - 28px)); }
+#tb-don { position: fixed; bottom: 16px; right: 16px; z-index: 80; display: flex; flex-direction: column; align-items: flex-end; width: min(380px, calc(100vw - 32px)); }
+#tb-don > .the-don { width: 100%; }
+.the-don .tb-noi { display: block; color: inherit; text-decoration: none; }
+.tb-dk { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px; font-size: 13px; color: var(--muted); }
+.tb-dk button { border: 1px solid var(--line, #D8DEE9); background: #fff; border-radius: 6px; padding: 2px 8px; font: inherit; color: var(--text); cursor: pointer; }
+.tb-dk button[data-tb="thu"] { margin-left: auto; }
+.tb-chuong { border: 0; border-radius: 999px; padding: 9px 16px; background: var(--mn); color: #fff; font: inherit; font-size: 15px; box-shadow: var(--sh-3); cursor: pointer; animation: hien .25s ease; }
+.tb-chuong.gap { background: #F08A24; }
+.tb-ds { display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow: auto; }
+.tb-ds .the-don { padding-right: 12px; }
 .the-don { position: relative; display: block; background: #fff; color: var(--text); text-decoration: none; border-left: 5px solid var(--mn); border-radius: 10px; padding: 10px 30px 10px 12px; box-shadow: var(--sh-3); font-size: 14.5px; line-height: 1.45; animation: hien .25s ease; }
 .the-don.gap { border-left-color: #F08A24; background: #FFF6EC; }
 .the-don .x { position: absolute; top: 4px; right: 8px; font-size: 20px; color: var(--muted); cursor: pointer; }

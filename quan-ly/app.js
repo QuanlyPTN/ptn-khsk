@@ -316,22 +316,56 @@
     S.kiemDon(); S.tdDon = setInterval(S.kiemDon, 15000);
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden && S.kiemDon && S.tk) S.kiemDon(); });
-  function baoDonMoi(ds) {
+  // thông báo nổi (đơn / phiếu mới, nhắc lịch – việc): chỉ 1 thẻ ở góc phải dưới, còn lại xếp hàng (‹ › 1/n); tự thu gọn thành nút 🔔 n sau 10 giây;
+  // đang gõ hoặc đang mở hộp nhập liệu → chỉ tăng số trên nút, không bung thẻ
+  const TB = { ds: [], i: 0, mo: false, hen: 0 };
+  function tbNoi(x) { // x = { id, tieu, than, href, gap, lv }
+    if (x.id && TB.ds.some(y => y.id === x.id)) return;
+    TB.ds.unshift(x); TB.ds.sort((a, b) => (b.gap ? 1 : 0) - (a.gap ? 1 : 0)); if (TB.ds.length > 40) TB.ds.length = 40;
+    const o = document.activeElement, ban = (o && /INPUT|TEXTAREA|SELECT/.test(o.tagName)) || !$('modal').classList.contains('hide');
+    if (!ban) { TB.mo = true; TB.i = TB.ds.indexOf(x); henThuTB(); }
+    veTB();
+  }
+  function henThuTB() { clearTimeout(TB.hen); TB.hen = setTimeout(() => { TB.mo = false; veTB(); }, 10000); }
+  function boTB(x) { TB.ds = TB.ds.filter(y => y !== x); veTB(); }
+  function veTB() {
     let hop = $('tb-don');
-    if (!hop) { hop = document.createElement('div'); hop.id = 'tb-don'; document.body.appendChild(hop); }
+    if (!hop) { hop = document.createElement('div'); hop.id = 'tb-don'; document.body.appendChild(hop);
+      hop.onmouseenter = () => clearTimeout(TB.hen); hop.onmouseleave = () => { if (TB.mo) henThuTB(); }; }
+    if (!TB.ds.length) { hop.innerHTML = ''; return; }
+    TB.i = Math.max(0, Math.min(TB.i, TB.ds.length - 1));
+    if (!TB.mo) {
+      hop.innerHTML = '<button type="button" class="tb-chuong' + (TB.ds.some(y => y.gap) ? ' gap' : '') + '" title="Mở thông báo">🔔 <b>' + TB.ds.length + '</b></button>';
+      hop.firstChild.onclick = () => { TB.mo = true; TB.i = 0; veTB(); henThuTB(); }; return;
+    }
+    const x = TB.ds[TB.i], n = TB.ds.length;
+    hop.innerHTML = '<div class="the-don' + (x.gap ? ' gap' : '') + (x.lv ? ' lv' : '') + '"><a class="tb-noi" href="' + esc(x.href) + '"><b>' + esc(x.tieu) + '</b><br>' + esc(x.than) + '</a>' +
+      '<div class="tb-dk">' + (n > 1 ? '<button type="button" data-tb="-1" title="Thông báo trước">‹</button><span>' + (TB.i + 1) + '/' + n + '</span><button type="button" data-tb="1" title="Thông báo sau">›</button>' : '') +
+      '<button type="button" data-tb="tat">Xem tất cả</button><button type="button" data-tb="het">Đóng hết</button><button type="button" data-tb="thu" title="Thu gọn">▾</button></div>' +
+      '<span class="x" title="Đóng thông báo này">×</span></div>';
+    hop.querySelector('.tb-noi').onclick = () => boTB(x);
+    hop.querySelector('.x').onclick = () => boTB(x);
+    hop.querySelectorAll('[data-tb]').forEach(b => { b.onclick = () => { const k = b.dataset.tb;
+      if (k === '-1' || k === '1') { TB.i = (TB.i + +k + n) % n; veTB(); }
+      else if (k === 'het') { TB.ds = []; veTB(); }
+      else if (k === 'thu') { TB.mo = false; veTB(); }
+      else if (k === 'tat') { TB.mo = false; veTB();
+        moHop('<h2>🔔 Thông báo (' + TB.ds.length + ')</h2><div class="tb-ds">' + TB.ds.map((y, j) => '<a class="the-don' + (y.gap ? ' gap' : '') + (y.lv ? ' lv' : '') + '" data-j="' + j + '" href="' + esc(y.href) + '"><b>' + esc(y.tieu) + '</b><br>' + esc(y.than) + '</a>').join('') + '</div>' +
+          '<div class="modal-foot"><button type="button" class="btn o" id="tb-het">Đóng hết</button><button type="button" class="btn o" data-dong>Đóng</button></div>', (m) => {
+          const l = TB.ds.slice(); m.querySelectorAll('[data-j]').forEach(a => { a.onclick = () => { boTB(l[+a.dataset.j]); dongHop(); }; });
+          m.querySelector('#tb-het').onclick = () => { TB.ds = []; veTB(); dongHop(); }; }); }
+    }; });
+  }
+  function baoDonMoi(ds) {
     const ten = (S.dm && S.dm.qr_don) || {}, gap = ds.some(d => QR_GAP.indexOf(d.qr) >= 0);
     ds.forEach(d => {
-      const the = document.createElement('a'), noi = (d.phong ? ' · ' + d.phong : '') + ' · ' + ngayVN(d.tg);
-      the.className = 'the-don' + (QR_GAP.indexOf(d.qr) >= 0 ? ' gap' : ''); the.href = /^GV-/.test(d.qr) ? '#/giang-vien/' + encodeURIComponent(d.id) : '#/don/' + d.qr + '/' + encodeURIComponent(d.id);
-      the.innerHTML = '<b>🔔 ' + (/^GV-/.test(d.qr) ? 'Phiếu mới ' : 'Đơn mới ') + esc(d.qr) + '</b> – ' + esc(ten[d.qr] || '') + '<br>' + esc(d.ho_ten || '') + esc(noi) + '<span class="x" title="Đóng">×</span>';
-      the.onclick = (e) => { if (e.target.classList.contains('x')) e.preventDefault(); the.remove(); };
-      hop.prepend(the);
+      const noi = (d.phong ? ' · ' + d.phong : '') + ' · ' + ngayVN(d.tg), href = /^GV-/.test(d.qr) ? '#/giang-vien/' + encodeURIComponent(d.id) : '#/don/' + d.qr + '/' + encodeURIComponent(d.id);
+      tbNoi({ id: 'don|' + d.id, tieu: '🔔 ' + (/^GV-/.test(d.qr) ? 'Phiếu mới ' : 'Đơn mới ') + d.qr + ' – ' + (ten[d.qr] || ''), than: (d.ho_ten || '') + noi, href, gap: QR_GAP.indexOf(d.qr) >= 0 });
       if ('Notification' in window && Notification.permission === 'granted') {
         try { const n = new Notification('Đơn mới ' + d.qr + ' – ' + (ten[d.qr] || ''), { body: (d.ho_ten || '') + noi, icon: '../icon-192.png', tag: d.id });
-          n.onclick = () => { window.focus(); location.hash = the.getAttribute('href'); n.close(); }; } catch (e) { /* máy không hỗ trợ */ }
+          n.onclick = () => { window.focus(); location.hash = href; n.close(); }; } catch (e) { /* máy không hỗ trợ */ }
       }
     });
-    while (hop.children.length > 6) hop.lastChild.remove();
     chuong(gap ? 2 : 1);
   }
   function chuong(lan) {
@@ -1670,6 +1704,6 @@
   function trangCongKhai() { return location.href.split('#')[0].replace(/[?].*$/, '').replace(/quan-ly\/(index\.html|chay-thu\.html)?$/, ''); }
   // dùng chung cho app-mo-rong.js
   window.PTN_QL = { S, $, api, chay, trang, moHop, dongHop, o, giaTri, esc, toast, ngayVN, homNay, congNgay, boDau, tien, fmt, tag, hanTag, laAdmin, quyen, coQuyen, dieuHuong, napXlsx, napQR,
-    hopTu, hopLsTu, guiTep, taiVe, docB64, dsPhongChon, phongTen, capNhatDanhMuc, lienKet, trangCongKhai, MENU, TUYEN, DEMO, ganDieuHuong, hopDonVaoBB, nhapFileHC, nhapFileDC, icon, docKeHoachVatTu, docPhieuDuTru, docDuTruNhom, hopFileExcel, ganGoiYVT };
+    hopTu, hopLsTu, tbNoi, guiTep, taiVe, docB64, dsPhongChon, phongTen, capNhatDanhMuc, lienKet, trangCongKhai, MENU, TUYEN, DEMO, ganDieuHuong, hopDonVaoBB, nhapFileHC, nhapFileDC, icon, docKeHoachVatTu, docPhieuDuTru, docDuTruNhom, hopFileExcel, ganGoiYVT };
   document.addEventListener('DOMContentLoaded', batDau);
 })();

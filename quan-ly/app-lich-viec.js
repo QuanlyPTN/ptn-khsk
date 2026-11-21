@@ -82,13 +82,10 @@
   function baoNhac(m) {
     const x = m.x, tieu = m.giao ? '📌 Việc mới được giao' : x.loai === 'lich' ? '⏰ Lịch hẹn ' + (m.ngay === homNay() ? 'hôm nay' : ngayVN(m.ngay)) : '⏰ Việc tới hạn ' + ngayVN(x.ngay);
     const than = x.tieu_de + (x.loai === 'lich' ? ' · ' + gioCua(x) + (x.dia_diem ? ' · ' + x.dia_diem : '') : '') + (m.giao && x.ten_giao ? ' · ' + x.ten_giao + ' giao' : '');
-    let hop = $('tb-don'); if (!hop) { hop = document.createElement('div'); hop.id = 'tb-don'; document.body.appendChild(hop); }
-    const the = document.createElement('a'); the.className = 'the-don lv'; the.href = '#/lich-viec/' + (x.loai === 'lich' ? 'lich' : 'viec') + '/' + encodeURIComponent(x.id);
-    the.innerHTML = '<b>' + esc(tieu) + '</b><br>' + esc(than) + '<span class="x" title="Đóng">×</span>';
-    the.onclick = (e) => { if (e.target.classList.contains('x')) e.preventDefault(); the.remove(); };
-    hop.prepend(the); while (hop.children.length > 6) hop.lastChild.remove();
+    const href = '#/lich-viec/' + (x.loai === 'lich' ? 'lich' : 'viec') + '/' + encodeURIComponent(x.id);
+    Q.tbNoi({ id: 'lv|' + x.id + '|' + (m.giao ? 'giao' : m.ngay || ''), tieu, than, href, lv: 1 }); // thông báo nổi dùng chung (chỉ 1 thẻ, xếp hàng)
     if ('Notification' in window && Notification.permission === 'granted') {
-      try { const n = new Notification(tieu, { body: than, icon: '../icon-192.png', tag: 'lv-' + x.id + (m.ngay || '') }); n.onclick = () => { window.focus(); location.hash = the.getAttribute('href'); n.close(); }; } catch (e) { /* máy không hỗ trợ */ }
+      try { const n = new Notification(tieu, { body: than, icon: '../icon-192.png', tag: 'lv-' + x.id + (m.ngay || '') }); n.onclick = () => { window.focus(); location.hash = href; n.close(); }; } catch (e) { /* máy không hỗ trợ */ }
     }
   }
   function batNhac() {
