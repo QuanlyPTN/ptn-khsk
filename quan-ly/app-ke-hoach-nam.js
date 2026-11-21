@@ -278,6 +278,9 @@
   // ---------- nhập từ file Excel đúng mẫu ----------
   const LA_MA = /^(I|II|III|IV|V|VI|VII|VIII|IX|X)$/;
   function docFileKHN(XLSX, wb) {
+    const laXd = (n) => /^xay\s*dung/i.test(boDau(n));
+    // file chỉ có trang tính Xaydung (không có Muasam): chỉ đọc hạng mục xây dựng
+    if (!wb.SheetNames.some(n => /^mua\s*sam/i.test(boDau(n))) && wb.SheetNames.some(laXd)) return { ten: '', dong: [], kp: {}, loi: 0, xd: docXaydung(XLSX, wb), chiXd: 1 };
     const ten = wb.SheetNames.find(n => /^mua\s*sam/i.test(boDau(n))) || wb.SheetNames[0], ws = wb.Sheets[ten];
     const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' });
     const hd = rows.findIndex(r => String(r[0]).trim() === 'TT' && /danh muc/.test(boDau(r[1])));
@@ -327,22 +330,29 @@
   async function hopNhap(f) {
     try {
       const XLSX = await napXlsx(), wb = XLSX.read(await f.arrayBuffer(), { type: 'array' }), r = docFileKHN(XLSX, wb);
+      if (r.chiXd && !laAdmin()) throw new Error('File chỉ có trang tính Xaydung – phần Xây dựng chỉ admin nhập');
       if (!laAdmin()) r.xd = []; // trang tính Xây dựng: chỉ admin
+      if (r.chiXd && !r.xd.length) throw new Error('Không đọc được hạng mục xây dựng nào trong trang tính Xaydung');
       if (!r.dong.length && !r.xd.length) throw new Error('Không đọc được dòng thiết bị nào trong file');
       const theoMuc = {}; r.dong.forEach(d => { theoMuc[d.muc] = theoMuc[d.muc] || [0, 0]; theoMuc[d.muc][0]++; theoMuc[d.muc][1] += (d.bo_sung + d.thay_moi + d.sua_chua + d.nang_cap) * d.dinh_muc; });
       const daCo = D.dong.length;
-      moHop('<h2>Nhập kế hoạch năm từ file</h2><p class="note">' + esc(f.name) + ' · trang tính <b>' + esc(r.ten) + '</b> · <b>' + r.dong.length + '</b> dòng (' + r.dong.filter(d => d.la_con).length + ' dòng con)' +
+      const ca = r.dong.length && r.xd.length; // file đủ hai trang tính: chọn nhập cả hai / chỉ một trang
+      moHop('<h2>Nhập kế hoạch năm từ file</h2>' + (r.chiXd ? '<p class="note">' + esc(f.name) + ' · chỉ có trang tính <b>Xaydung</b>: <b>' + r.xd.length + '</b> hạng mục xây dựng – sửa chữa. Dòng thiết bị (trang tính Muasam) giữ nguyên.</p>' : '<p class="note">' + esc(f.name) + ' · trang tính <b>' + esc(r.ten) + '</b> · <b>' + r.dong.length + '</b> dòng (' + r.dong.filter(d => d.la_con).length + ' dòng con)' +
         (Object.keys(r.kp).length ? ' · kinh phí khoán: ' + Object.keys(r.kp).map(k => k + ' ' + tien(r.kp[k])).join(', ') : '') + (r.loi ? ' · <b>' + r.loi + ' mục lạ</b> xếp vào mục gần nhất' : '') + (r.xd.length ? ' · trang tính Xaydung: <b>' + r.xd.length + '</b> hạng mục xây dựng – sửa chữa' : '') + '</p>' +
         '<div class="tbl-wrap"><table><thead><tr><th>Mục</th><th class="num">Số dòng</th><th class="num">Kinh phí (nghìn đ)</th></tr></thead><tbody>' +
-        Object.keys(theoMuc).map(k => '<tr><td><b>' + esc(k) + '</b> ' + esc((D.muc.find(m => m[0] === k) || [])[3] || '') + '</td><td class="num">' + theoMuc[k][0] + '</td><td class="num">' + tien(theoMuc[k][1]) + '</td></tr>').join('') + '</tbody></table></div>' +
+        Object.keys(theoMuc).map(k => '<tr><td><b>' + esc(k) + '</b> ' + esc((D.muc.find(m => m[0] === k) || [])[3] || '') + '</td><td class="num">' + theoMuc[k][0] + '</td><td class="num">' + tien(theoMuc[k][1]) + '</td></tr>').join('') + '</tbody></table></div>') +
         '<form id="k-f" class="form-grid">' + o('nam', 'Nhập vào năm', { select: D.cac_nam.concat([String(+D.cac_nam[D.cac_nam.length - 1] + 1)]).filter((x, i, a) => a.indexOf(x) === i), v: (/(20\d\d)/.exec(f.name) || [])[1] && D.cac_nam.indexOf(/(20\d\d)/.exec(f.name)[1]) >= 0 ? /(20\d\d)/.exec(f.name)[1] : D.nam }) +
-        o('cach', 'Cách nhập', { select: [['them', 'Thêm vào danh sách đang có'], ['thay', 'Thay toàn bộ danh sách của năm (xóa dòng cũ)']], v: daCo ? 'them' : 'thay' }) +
+        (ca ? o('pham_vi', 'Trang tính nhập', { select: [['ca', 'Cả hai: Muasam (thiết bị) + Xaydung (xây dựng)'], ['tb', 'Chỉ Muasam – thiết bị (giữ nguyên hạng mục xây dựng)'], ['xd', 'Chỉ Xaydung – xây dựng (giữ nguyên dòng thiết bị)']], v: 'ca', full: 1 }) : '') +
+        o('cach', 'Cách nhập', { select: [['them', 'Thêm vào danh sách đang có'], ['thay', r.chiXd ? 'Thay toàn bộ hạng mục xây dựng của năm (xóa hạng mục cũ)' : 'Thay toàn bộ danh sách của năm (xóa dòng cũ của phần được nhập)']], v: r.chiXd ? ((D.xd || []).length ? 'thay' : 'them') : daCo ? 'them' : 'thay' }) +
         '<p class="note full">Dòng nhập từ file có trạng thái "Đã duyệt" (cột N ghi "đã mua" → "Đã mua"). "Đơn vị sử dụng: …" ở cột lý do được tách thành bộ môn. Thời điểm thực hiện đổi theo năm nhập vào. Lần nhập ghi vào <b>Lịch sử tải file</b> (thu hồi được, lưu file gốc).</p>' +
-        '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Nhập ' + r.dong.length + ' dòng</button></div></form>', (m) => {
-        m.querySelector('#k-f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target);
-          if (v.cach === 'thay' && !confirm('Xóa toàn bộ danh sách năm ' + v.nam + ' rồi nhập lại từ file?')) return;
-          const k = await chay(e.submitter, () => api('khn_nhap', { nam: v.nam, thay: v.cach === 'thay' ? 1 : 0, dong: r.dong, xd: r.xd, kp_muc: r.kp, tep: f.name }));
-          dongHop(); toast('Đã nhập ' + k.n + ' dòng' + (k.xd ? ' + ' + k.xd + ' hạng mục xây dựng' : '') + (k.xoa ? ', thay ' + k.xoa + ' dòng cũ' : '')); location.hash = '#/ke-hoach-nam/' + k.nam; Q.dieuHuong(); };
+        '<div class="modal-foot full"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">' + (r.chiXd ? 'Nhập ' + r.xd.length + ' hạng mục xây dựng' : 'Nhập từ file') + '</button></div></form>', (m) => {
+        m.querySelector('#k-f').onsubmit = async (e) => { e.preventDefault(); const v = giaTri(e.target), pv = r.chiXd ? 'xd' : v.pham_vi || 'ca';
+          const phan = pv === 'xd' ? 'hạng mục xây dựng' : pv === 'tb' ? 'dòng thiết bị' : 'dòng thiết bị' + (r.xd.length ? ' và hạng mục xây dựng' : '');
+          if (v.cach === 'thay' && !confirm('Xóa toàn bộ ' + phan + ' năm ' + v.nam + ' rồi nhập lại từ file?')) return;
+          const k = await chay(e.submitter, () => api('khn_nhap', { nam: v.nam, thay: v.cach === 'thay' ? 1 : 0, dong: pv === 'xd' ? [] : r.dong, xd: pv === 'tb' ? [] : r.xd, kp_muc: pv === 'xd' ? null : r.kp, tep: f.name }));
+          dongHop(); toast(pv === 'xd' ? 'Đã nhập ' + k.xd + ' hạng mục xây dựng' + (k.xoa_xd ? ', thay ' + k.xoa_xd + ' hạng mục cũ' : '') + ' – dòng thiết bị giữ nguyên'
+            : 'Đã nhập ' + k.n + ' dòng' + (k.xd ? ' + ' + k.xd + ' hạng mục xây dựng' : '') + (k.xoa ? ', thay ' + k.xoa + ' dòng cũ' : ''));
+          location.hash = '#/ke-hoach-nam/' + k.nam + (pv === 'xd' ? '/xd' : ''); Q.dieuHuong(); };
       });
     } catch (err) { toast(err.message, true); }
     const x = $('x-file'); if (x) x.value = '';
