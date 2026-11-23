@@ -54,7 +54,7 @@
   // ---------------- Gọi máy chủ ----------------
   // Đơn QR (don_ds, don_ct, hom_nay, qr_ds…) luôn đọc mới để xử lý kịp thời.
   // Kết quả đọc giữ 60 giây trong trang (quay lại trang vừa xem hiện ngay); có thao tác ghi bất kỳ thì xóa hết để đọc lại dữ liệu mới
-  const API_DOC = /^(tong_quan|nd_ds|phong_ds|phong_ct|tb_ds|tb_ct|hk_ds|vt_ds|mon_ds|mon_tim|mon_ct|tu_ls|lop_ds|kh_tinh|bb_ds|bb_ct|phong_lich|hs_ds|hs_ct|kho_ds|vt_goi_y|dt_dot|dt_tinh|dtm_ma_ds|dtm_dn_ds|dtm_dn_ct|dt_cap_ds|dtm_tong|dtm_doi_chieu|dtm_phieu|dtm_ct|kho_lo|kho_so_ks|bc_tb|bc_thang|bc_khac|bc_da_luu|so_ds|so_tong)$/;
+  const API_DOC = /^(tong_quan|nd_ds|phong_ds|phong_ct|tb_ds|tb_ct|hk_ds|vt_ds|mon_ds|mon_tim|mon_ct|tu_ls|ccdc_ds|lop_ds|kh_tinh|bb_ds|bb_ct|phong_lich|hs_ds|hs_ct|kho_ds|vt_goi_y|dt_dot|dt_tinh|dtm_ma_ds|dtm_dn_ds|dtm_dn_ct|dt_cap_ds|dtm_tong|dtm_doi_chieu|dtm_phieu|dtm_ct|kho_lo|kho_so_ks|bc_tb|bc_thang|bc_khac|bc_da_luu|so_ds|so_tong)$/;
   const DEM = new Map();
   async function api(act, data) {
     if (!API_DOC.test(act)) { DEM.clear(); return goiMayChu(act, data); }
@@ -65,7 +65,7 @@
     return r;
   }
   // tên file vừa chọn ở hộp tải file (ô #x-file) → gửi kèm lệnh nhập để ghi vào Lịch sử tải file
-  const LENH_TAI_FILE = /^(lop_nhap|dm_nhap|vt_nhap|dtm_nhap|dt_nhap_cap|kho_nhap_ds|tb_nhap|khn_nhap)$/;
+  const LENH_TAI_FILE = /^(lop_nhap|dm_nhap|vt_nhap|dtm_nhap|dt_nhap_cap|kho_nhap_ds|tb_nhap|khn_nhap|ccdc_nhap)$/;
   document.addEventListener('change', (e) => { if (e.target && e.target.id === 'x-file' && e.target.files && e.target.files[0]) { S.tepFiles = [...e.target.files]; S.tepTai = S.tepFiles.map(f => f.name).join(', ').slice(0, 150); } });
   async function goiMayChu(act, data) {
     const body = Object.assign({ act, tk: S.tk }, data || {});
@@ -150,6 +150,7 @@
     'don': '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
     'de-tai': '<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>',
     'phong': '<path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 21v-6h6v6"/><path d="M9 8h.01M15 8h.01M9 11.5h.01M15 11.5h.01"/>',
+    'ccdc': '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-2.5z"/>',
     'tai-san': '<path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/>',
     'kiem-dinh': '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
     'hoa-chat': '<path d="M9 3h6"/><path d="M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/><path d="M7 15h10"/>',
@@ -234,7 +235,7 @@
 
   // ---------------- Khung trang ----------------
   const MENU = [
-    ['tong-quan', '◧', 'Hôm nay'], ['lich-viec', '◷', 'Lịch & việc của tôi'], ['don', '✉', 'Đơn đăng ký QR1 – QR8'], ['de-tai', '✎', 'Hồ sơ đề tài KLTN – NCKH'], ['nguoi-dung', '☺', 'Người dùng trang dùng chung'], ['thong-bao', '🔔', 'Thông báo'], ['phong', '▦', 'Phòng thí nghiệm'], ['lich-phong-th', '▦', 'Lịch phòng thực hành'], ['tu-hl', '▦', 'Tủ sắt hành lang'], ['tai-san', '⚙', 'Tài sản'],
+    ['tong-quan', '◧', 'Hôm nay'], ['lich-viec', '◷', 'Lịch & việc của tôi'], ['don', '✉', 'Đơn đăng ký QR1 – QR8'], ['de-tai', '✎', 'Hồ sơ đề tài KLTN – NCKH'], ['nguoi-dung', '☺', 'Người dùng trang dùng chung'], ['thong-bao', '🔔', 'Thông báo'], ['phong', '▦', 'Phòng thí nghiệm'], ['lich-phong-th', '▦', 'Lịch phòng thực hành'], ['tu-hl', '▦', 'Tủ sắt hành lang'], ['tai-san', '⚙', 'Tài sản'], ['ccdc', '⚒', 'Công cụ dụng cụ'],
     ['kiem-dinh', '✓', 'Kiểm định – bảo dưỡng'], ['ke-hoach-nam', '☑', 'Kế hoạch năm – dự trù TB'], ['hoa-chat', '⚗', 'Hóa chất – vật tư'], ['kho', '▣', 'Kho hóa chất D11.01'], ['kho-dl', '❀', 'Kho dược liệu D11'],
     ['bien-ban', '▤', 'Biên bản bàn giao'], ['bao-cao', '▥', 'Báo cáo – thống kê'], ['so', '☷', 'Sổ theo dõi – in ấn'], ['bieu-mau', '⎙', 'Biểu mẫu PTN'],
     ['giang-vien', '☺', 'Giảng viên'], ['lich-su-tai', '↺', 'Lịch sử tải file'], ['cai-dat', '⚑', 'Cài đặt – mã QR tổng', 1], ['can-bo', '☺', 'Cán bộ', 1], ['nhat-ky', '☰', 'Nhật ký', 1], ['tai-khoan', '⚿', 'Tài khoản']
@@ -256,7 +257,7 @@
     return q[muc] || '';
   }
   function coQuyen(muc, md) { const v = quyen(muc); return md === 'xu_ly' ? v === 'xu_ly' : !!v; }
-  const MUC_TRANG = { 'tu-hl': 'phong', 'ts-tong-quan': 'tai-san', 'lich-phong-th': 'phong', 'ban-giao-tb': 'tai-san' }; // trang con → mục phân quyền
+  const MUC_TRANG = { 'ccdc': 'tai-san', 'tu-hl': 'phong', 'ts-tong-quan': 'tai-san', 'lich-phong-th': 'phong', 'ban-giao-tb': 'tai-san' }; // trang con → mục phân quyền
   function khung() {
     document.body.classList.add('in');
     const n = S.toi.nguoi;
@@ -1089,7 +1090,7 @@
       '<div class="legend"><span><i></i>Trống</span><span><i style="background:var(--info-bg)"></i>Đang dùng</span><span><i style="background:var(--bad-bg)"></i>Hỏng</span><span><i style="outline:2px solid var(--warn)"></i>Quá hạn trả</span><span>Bấm vào tủ để giao / trả / báo hỏng</span></div></div>';
     if ((r.ban_giao_tb || []).length) h += '<div class="card"><h2>Biên bản bàn giao thiết bị (' + r.ban_giao_tb.length + ')</h2>' + r.ban_giao_tb.map(b => '<div><a href="#/ban-giao-tb/' + esc(b.id) + '"><b>' + esc(b.id) + '</b></a> · ' + ngayVN(b.ngay) + ' · ' + esc(b.ben_nhan) + ' · ' + b.so_tb + ' thiết bị · ' + esc(b.trang_thai) + (b.gv_xn ? ' · GV: ' + esc(b.gv_xn.ket_qua) : '') + '</div>').join('') + '</div>';
     h += '<div class="card"><h2>Thiết bị trong phòng (' + r.thiet_bi.filter(x => x.tinh_trang !== 'Đã thanh lý').length + ')</h2>' + bangTB(r.thiet_bi.filter(x => x.tinh_trang !== 'Đã thanh lý'), true) + '</div>';
-    h += '<div id="lich-phong"></div>';
+    h += '<div id="ccdc-phong"></div><div id="lich-phong"></div>';
     nd.innerHTML = h;
     ganBangTB(nd, r.thiet_bi);
     nd.querySelectorAll('.locker').forEach(el => { el.onclick = () => hopTu(r.tu.find(t => t.so === el.dataset.so)); });
@@ -1098,6 +1099,7 @@
       const n = prompt('Thêm bao nhiêu tủ cho phòng ' + ma + '? (đang có ' + r.tu.length + ' tủ; tủ mới đánh số tiếp theo)', '1'); if (!n) return;
       const x = await chay(e.target, () => api('tu_them', { phong: ma, so_luong: n })); toast('Đã thêm tủ ' + x.them.join(', ') + ' – phòng có ' + x.tong + ' tủ'); dieuHuong(); };
     if (window.PTN_QL.lichPhong) window.PTN_QL.lichPhong(ma, $('lich-phong'));
+    if (window.PTN_QL.ccdcPhong && (coQuyen('tai-san', 'xem') || coQuyen('phong', 'xem'))) window.PTN_QL.ccdcPhong(ma, $('ccdc-phong')); // sổ công cụ dụng cụ của phòng
     if ($('b-sua-phong')) $('b-sua-phong').onclick = () => hopPhong(p);
     $('b-them-tb').onclick = () => hopThietBi(null, ma);
   }
