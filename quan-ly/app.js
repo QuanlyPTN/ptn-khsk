@@ -1584,13 +1584,31 @@
     const k = bd ? 'bd_ke' : 'kd_ke', hn = homNay(), d30 = congNgay(30), d60 = congNgay(60), ten = bd ? 'bảo dưỡng' : 'kiểm định';
     const nhom = [['Quá hạn', x => x[k] && x[k] < hn], ['Trong 30 ngày', x => x[k] >= hn && x[k] <= d30], ['Trong 31 – 60 ngày', x => x[k] > d30 && x[k] <= d60],
       ['Sau 60 ngày', x => x[k] > d60], ['Chưa có lịch ' + ten, x => !x[k]]];
-    nd.innerHTML = nhom.map(([t, f]) => {
-      const l = ds.filter(f).sort((a, b) => (a[k] || '').localeCompare(b[k] || ''));
-      return '<div class="card"><h2>' + t + ' (' + l.length + ')</h2>' + (l.length ? '<div class="tbl-wrap"><table><thead><tr><th>Thiết bị</th><th>Mã TS</th><th>Phòng</th><th>Gần nhất</th><th>Kế tiếp</th><th></th></tr></thead><tbody>' +
-        l.map(x => '<tr><td><a href="#/tai-san/' + esc(x.id) + '">' + esc(x.ten) + '</a></td><td class="mono">' + esc(x.ma_ts) + '</td><td>' + esc(x.phong) + '</td><td>' + ngayVN(bd ? x.bd_gan : x.kd_gan) + '</td><td>' + hanTag(x[k]) + '</td>' +
-          '<td><button class="btn o sm" data-ghi="' + esc(x.id) + '">Ghi ' + ten + '</button></td></tr>').join('') + '</tbody></table></div>' : '<div class="note">Không có.</div>') + '</div>';
-    }).join('');
-    nd.querySelectorAll('[data-ghi]').forEach(b => { b.onclick = () => hopSuKien(ds.find(x => x.id === b.dataset.ghi), bd ? 'bao_duong' : 'kiem_dinh'); });
+    // tìm + lọc phòng / loại / tên thiết bị (gom các máy cùng tên: "Tủ sấy #1", "#2"…); nhớ bộ lọc khi đổi thẻ Kiểm định ↔ Bảo dưỡng
+    const tenGoc = (x) => String(x.ten || '').replace(/\s*#\d+$/, '').trim(), dem = (f) => { const o2 = {}; ds.forEach(x => { const v = f(x); if (v) o2[v] = (o2[v] || 0) + 1; }); return o2; };
+    const P = dem(x => x.phong), L = dem(x => x.loai), T = dem(tenGoc), chon = (id, nhan, o2, ten2) => '<select id="' + id + '"><option value="">' + nhan + '</option>' +
+      Object.keys(o2).sort((a, b) => a.localeCompare(b, 'vi')).map(v => '<option value="' + esc(v) + '">' + esc(ten2 ? ten2(v) : v) + ' (' + o2[v] + ')</option>').join('') + '</select>';
+    let loc = {}; try { loc = JSON.parse(sessionStorage.getItem('kd_loc') || '{}'); } catch (e) { /* trình duyệt chặn lưu */ }
+    nd.innerHTML = '<div class="tools"><input type="search" id="kd-q" placeholder="Tìm thiết bị: tên, mã tài sản, model, serial, hãng…">' + chon('kd-phong', 'Mọi phòng', P, v => v + (phongTen(v) ? ' – ' + phongTen(v) : '')) +
+      chon('kd-loai', 'Mọi loại thiết bị', L) + chon('kd-ten', 'Mọi thiết bị', T) + '<button class="btn o sm" id="kd-bo" hidden>✕ Bỏ lọc</button></div><div id="kd-tong" class="note" style="margin:4px 0 8px"></div><div id="kd-ds"></div>';
+    const ve = () => {
+      const q = boDau($('kd-q').value.trim()), ph = $('kd-phong').value, lo = $('kd-loai').value, tn = $('kd-ten').value;
+      try { sessionStorage.setItem('kd_loc', JSON.stringify({ q: $('kd-q').value, ph, lo, tn })); } catch (e) { /* trình duyệt chặn lưu */ }
+      const l0 = ds.filter(x => (!ph || x.phong === ph) && (!lo || x.loai === lo) && (!tn || tenGoc(x) === tn) && (!q || boDau([x.ten, x.ma_ts, x.model, x.serial, x.hang, x.phong, x.loai].join(' ')).indexOf(q) >= 0));
+      $('kd-bo').hidden = !(q || ph || lo || tn);
+      $('kd-tong').innerHTML = q || ph || lo || tn ? 'Đang lọc: <b>' + l0.length + '</b> / ' + ds.length + ' thiết bị' : ds.length + ' thiết bị (chưa thanh lý)';
+      $('kd-ds').innerHTML = nhom.map(([t, f]) => {
+        const l = l0.filter(f).sort((a, b) => (a[k] || '').localeCompare(b[k] || ''));
+        return '<div class="card"><h2>' + t + ' (' + l.length + ')</h2>' + (l.length ? '<div class="tbl-wrap"><table><thead><tr><th>Thiết bị</th><th>Mã TS</th><th>Phòng</th><th>Gần nhất</th><th>Kế tiếp</th><th></th></tr></thead><tbody>' +
+          l.map(x => '<tr><td><a href="#/tai-san/' + esc(x.id) + '">' + esc(x.ten) + '</a>' + (x.model || x.serial ? '<div class="note">' + esc([x.model, x.serial && 'SN ' + x.serial].filter(Boolean).join(' · ')) + '</div>' : '') + '</td><td class="mono">' + esc(x.ma_ts) + '</td><td>' + esc(x.phong) + '</td><td>' + ngayVN(bd ? x.bd_gan : x.kd_gan) + '</td><td>' + hanTag(x[k]) + '</td>' +
+            '<td><button class="btn o sm" data-ghi="' + esc(x.id) + '">Ghi ' + ten + '</button></td></tr>').join('') + '</tbody></table></div>' : '<div class="note">Không có.</div>') + '</div>';
+      }).join('');
+      nd.querySelectorAll('[data-ghi]').forEach(b => { b.onclick = () => hopSuKien(ds.find(x => x.id === b.dataset.ghi), bd ? 'bao_duong' : 'kiem_dinh'); });
+    };
+    $('kd-q').value = loc.q || ''; [['kd-phong', loc.ph], ['kd-loai', loc.lo], ['kd-ten', loc.tn]].forEach(([id, v]) => { const e = $(id); if (v && [...e.options].some(x => x.value === v)) e.value = v; });
+    $('kd-q').oninput = ve; ['kd-phong', 'kd-loai', 'kd-ten'].forEach(id => { $(id).onchange = ve; });
+    $('kd-bo').onclick = () => { $('kd-q').value = ''; ['kd-phong', 'kd-loai', 'kd-ten'].forEach(id => { $(id).value = ''; }); ve(); };
+    ve();
   }
 
   // ---------------- Cán bộ (admin): tài khoản Gmail + mật khẩu, phân quyền theo mục ----------------
