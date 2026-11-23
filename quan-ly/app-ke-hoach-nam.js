@@ -171,7 +171,8 @@
     $('k-all').onchange = (e) => { ds.querySelectorAll('[data-chon]').forEach(x => { x.checked = e.target.checked; }); capNhatChon(); };
     ds.querySelectorAll('[data-sua]').forEach(b => { b.onclick = () => hopSua(D.dong.find(d => d.id === b.dataset.sua)); });
     ds.querySelectorAll('[data-con]').forEach(b => { b.onclick = () => hopSua(null, b.dataset.con); });
-    ds.querySelectorAll('[data-len],[data-xuong]').forEach(b => { b.onclick = (e) => chay(e.target, async () => { await api('khn_doi_cho', { id: b.dataset.len || b.dataset.xuong, huong: b.dataset.len ? -1 : 1 }); await taiLai(); }); });
+    ds.querySelectorAll('[data-xuong]').forEach(b => { b.onclick = (e) => chay(e.target, async () => { await api('khn_doi_cho', { id: b.dataset.xuong, huong: 1 }); await taiLai(); }); });
+    ds.querySelectorAll('[data-len]').forEach(b => { b.onclick = () => hopLen(D.dong.find(x => x.id === b.dataset.len)); });
     ds.querySelectorAll('[data-tb]').forEach(b => { b.onclick = () => hopTaoTB(D.dong.find(d => d.id === b.dataset.tb)); });
     ds.querySelectorAll('[data-mua]').forEach(b => { b.onclick = () => hopMua(D.dong.find(d => d.id === b.dataset.mua)); });
   }
@@ -258,6 +259,19 @@
       nut.onclick = (e) => { const ap = hop().filter(x => x.checked).map(x => x.dataset.lk); if (!ap.length) return toast('Chưa chọn thay đổi nào', true);
         chay(e.target, async () => { const k = await api('khn_lk', { tu, den, chi, ap }); toast('Năm ' + den + ': thêm ' + k.them + ', đổi ' + k.doi + ', cắt ' + k.cat + ' dòng' + (k.xd_them || k.xd_cat ? '; xây dựng: thêm ' + k.xd_them + ', cắt ' + k.xd_cat + ' hạng mục' : '')); dongHop();
           if (den === D.nam) await taiLai(); else location.hash = '#/ke-hoach-nam/' + den; }); };
+    });
+  }
+  // ↑ Lên: chọn vị trí phía trên trong cùng mục, cùng cấp (dòng con: trong cùng thiết bị đồng bộ) → chuyển vào đó, các dòng từ vị trí ấy dời xuống
+  function hopLen(d) {
+    const cung = D.dong.filter(x => x.muc === d.muc && (x.cha || '') === (d.cha || '')).sort((a, b) => a.thu_tu - b.thu_tu), i = cung.indexOf(d), tren = cung.slice(0, i);
+    if (!tren.length) return toast('Dòng đã ở vị trí đầu ' + (d.cha ? 'của thiết bị đồng bộ' : 'mục ' + d.muc));
+    const sttCha = d.cha ? D.dong.filter(x => x.muc === d.muc && !x.cha).sort((a, b) => a.thu_tu - b.thu_tu).findIndex(x => x.id === d.cha) + 1 + '.' : '';
+    moHop('<h2>↑ Chuyển lên vị trí…</h2><p class="note"><b>' + esc(d.ten.split('\n')[0]) + '</b> đang ở vị trí <b>' + sttCha + (i + 1) + '</b> (mục ' + esc(d.muc) + '). Chọn vị trí mới: thiết bị vào đúng vị trí đó, các dòng từ vị trí ấy trở xuống dời xuống một bậc.</p>' +
+      '<div class="tbl-wrap" style="max-height:60vh"><table><thead><tr><th>Vị trí</th><th>Đang là</th><th class="num">SL</th><th></th></tr></thead><tbody>' +
+      tren.map((x, k) => '<tr><td><b>' + sttCha + (k + 1) + '</b></td><td>' + esc(x.ten.split('\n')[0]) + (x.bo_mon ? '<div class="note">' + esc(x.bo_mon) + '</div>' : '') + '</td><td class="num">' + fmt(x.sl) + '</td>' +
+        '<td><button type="button" class="btn sm" data-truoc="' + esc(x.id) + '">Đặt vào vị trí ' + sttCha + (k + 1) + '</button></td></tr>').reverse().join('') + '</tbody></table></div>' +
+      '<div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button></div>', (m) => {
+      m.querySelectorAll('[data-truoc]').forEach(b => { b.onclick = (e) => chay(e.target, async () => { await api('khn_doi_cho', { id: d.id, truoc: b.dataset.truoc }); dongHop(); toast('Đã chuyển lên vị trí ' + b.textContent.replace('Đặt vào vị trí ', '')); await taiLai(); }); });
     });
   }
   // ghi nhận mua: lịch sử từng lần mua, thêm lần mua, ngừng mua phần còn thiếu
