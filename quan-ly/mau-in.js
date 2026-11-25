@@ -28,7 +28,7 @@
     let nhom = '', stt = 0;
     r.tong.forEach(x => {
       if (x.nhom_in !== nhom) { nhom = x.nhom_in; t1.push({ cao: 18, o: [{ v: '', vien: 1 }, { v: '', vien: 1 }, { v: ' ' + nhom, b: 1, vien: 1 }, { v: '', vien: 1 }, { v: '', vien: 1 }, { v: '', vien: 1 }, { v: '', vien: 1 }] }); }
-      t1.push({ cao: caoChu(x.ten, 46, 11, caoChu(x.nsx, 12, 11, 18)), o: [{ v: ++stt, can: 'c', vien: 1 }, { v: x.ma_vt || 'Chưa MVT', can: 'c', vien: 1 }, { v: x.ten, vien: 1 }, { v: '', vien: 1 }, { v: x.nsx, can: 'c', vien: 1 }, { v: x.dvt, can: 'c', vien: 1 },
+      t1.push({ cao: caoChu(x.ten, 46, 11, caoChu(x.nsx, 12, 11, 18)), o: [{ v: ++stt, can: 'c', vien: 1 }, { v: x.ma_vt || 'Chưa MVT', can: 'c', vien: 1 }, { v: x.ten, vien: 1 }, { v: x.cong_thuc || '', can: 'c', vien: 1 }, { v: x.nsx, can: 'c', vien: 1 }, { v: x.dvt, can: 'c', vien: 1 },
         Object.assign({ can: 'r', vien: 1, b: 1 }, typeof sl(x) === 'object' ? sl(x) : { v: sl(x) })] });
     });
     t1.push(rong(n1), { cao: 16, o: [{ v: '', cs: 4 }, { v: 'TP. HCM, ' + ngayLap, cs: 3, can: 'c', i: 1 }] });
