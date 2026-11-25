@@ -6,6 +6,7 @@
   const rong = (n) => ({ cao: 8, o: [{ v: '', cs: n }] });
   const hk2 = (hk) => { const m = /^HK(\S*)\s+(\d{4}-\d{4})/.exec(hk || '') || []; return { ky: (m[1] || '').replace(/^H$/, 'hè'), nam: m[2] || '' }; };
   const tg = (s) => String(s || '').replace(/(\d{4})-(\d{2})-(\d{2})/g, '$3/$2/$1');
+  const CHUA_MVT = 'Chua MVT', NSX_MD = 'TQ/VN'; // dòng chưa có mã VT / NSX – ghi như các file kế hoạch vật tư
   const LE_TRAI = 0.79; // lề trái 2 cm (inch) cho các bản dự trù
   const ngayChu = (s) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ''); return m ? 'ngày ' + m[3] + ' tháng ' + m[2] + ' năm ' + m[1] : 'ngày …… tháng …… năm 20……'; };
 
@@ -28,7 +29,7 @@
     let nhom = '', stt = 0;
     r.tong.forEach(x => {
       if (x.nhom_in !== nhom) { nhom = x.nhom_in; t1.push({ cao: 18, o: [{ v: '', vien: 1 }, { v: '', vien: 1 }, { v: ' ' + nhom, b: 1, vien: 1 }, { v: '', vien: 1 }, { v: '', vien: 1 }, { v: '', vien: 1 }, { v: '', vien: 1 }] }); }
-      t1.push({ cao: caoChu(x.ten, 46, 11, caoChu(x.nsx, 12, 11, 18)), o: [{ v: ++stt, can: 'c', vien: 1 }, { v: x.ma_vt || 'Chưa MVT', can: 'c', vien: 1 }, { v: x.ten, vien: 1 }, { v: x.cong_thuc || '', can: 'c', vien: 1 }, { v: x.nsx, can: 'c', vien: 1 }, { v: x.dvt, can: 'c', vien: 1 },
+      t1.push({ cao: caoChu(x.ten, 46, 11, caoChu(x.nsx, 12, 11, 18)), o: [{ v: ++stt, can: 'c', vien: 1 }, { v: x.ma_vt || CHUA_MVT, can: 'c', vien: 1 }, { v: x.ten, vien: 1 }, { v: x.cong_thuc || '', can: 'c', vien: 1 }, { v: x.nsx || NSX_MD, can: 'c', vien: 1 }, { v: x.dvt, can: 'c', vien: 1 },
         Object.assign({ can: 'r', vien: 1, b: 1 }, typeof sl(x) === 'object' ? sl(x) : { v: sl(x) })] });
     });
     t1.push(rong(n1), { cao: 16, o: [{ v: '', cs: 4 }, { v: 'TP. HCM, ' + ngayLap, cs: 3, can: 'c', i: 1 }] });
@@ -55,7 +56,7 @@
         else o.push({ v: '', vien: 1 }, { v: '', vien: 1 }, { v: '', vien: 1 });
         if (x) {
           const s2 = typeof sl(x) === 'object' ? sl(x) : { v: sl(x) };
-          o.push({ v: i + 1, can: 'c', vien: 1 }, { v: x.ten, vien: 1 }, { v: x.ma_vt || (x.dm !== '' ? 'Chưa MVT' : ''), can: 'c', vien: 1 }, { v: x.nsx || '', can: 'c', vien: 1 }, { v: x.dvt || '', can: 'c', vien: 1 },
+          o.push({ v: i + 1, can: 'c', vien: 1 }, { v: x.ten, vien: 1 }, { v: x.ma_vt || (x.dm !== '' ? CHUA_MVT : ''), can: 'c', vien: 1 }, { v: x.nsx || (x.dm !== '' ? NSX_MD : ''), can: 'c', vien: 1 }, { v: x.dvt || '', can: 'c', vien: 1 },
             { v: x.dm === '' ? '' : r3(x.dm), can: 'r', vien: 1 }, Object.assign({ can: 'r', vien: 1 }, x.sl === '' ? { v: '' } : s2), { v: '', vien: 1, co: 9, i: 1 });
         } else for (let j = 0; j < 8; j++) o.push({ v: '', vien: 1 });
         t2.push({ cao: x ? caoChu(x.ten, 42, 11, caoChu(x.nsx, 11, 11, 19)) : 19, o });
@@ -216,7 +217,7 @@
     let stt = 0, soKhoan = 0;
     const dongDM = (d) => { stt++; const r = hang.length + 1, dm = d.dm === '' || d.dm == null ? '' : r3(d.dm);
       hang.push({ cao: Math.max(18, Math.ceil(String(d.ten || '').length / 40) * 15 + 3), o: [{ v: stt, can: 'c', vien: 1 }, { v: d.ten || '', vien: 1 }, { v: d.cong_thuc || '', can: 'c', vien: 1, co: 10 },
-        { v: d.ma_vt || (d.ten ? 'Chưa MVT' : ''), can: 'c', vien: 1, co: 10 }, { v: d.nsx || '', can: 'c', vien: 1, co: 10 }, { v: d.dvt || '', can: 'c', vien: 1 },
+        { v: d.ma_vt || (d.ten ? CHUA_MVT : ''), can: 'c', vien: 1, co: 10 }, { v: d.nsx || (d.ten ? NSX_MD : ''), can: 'c', vien: 1, co: 10 }, { v: d.dvt || '', can: 'c', vien: 1 },
         { v: dm, can: 'c', vien: 1, b: 1 }, { v: +o.si_so || 0, f: '$C$' + hTong, can: 'c', vien: 1 },
         { v: dm === '' ? '' : r3(dm * (+o.si_so || 0)), f: 'IF(G' + r + '="","",ROUND(G' + r + '*H' + r + ',3))', can: 'c', vien: 1, b: 1 }, { v: d.ghi_chu || '', vien: 1, co: 10 }] }); };
     const theoNhom = [[], [], [], []]; (o.dm || []).forEach(d => theoNhom[nhomDuTru(d)].push(d));
@@ -228,7 +229,7 @@
     hang.push({ cao: 15, o: [{ v: 'Tổng số khoản:', cs: 2, b: 1 }, { v: soKhoan, can: 'c', b: 1 }, { v: '(' + theoNhom.map((x, k) => NHOM_DT[k].slice(3).toLowerCase() + ': ' + x.length).join(' · ') + ')', cs: 7, i: 1, co: 10 }] },
       { cao: 15, o: [{ v: '', cs: n }] },
       { cao: 62, o: [{ v: 'Ghi chú:\n- ĐM 1 SV: lượng dùng cho 01 sinh viên trong cả học phần (đủ các bài thực hành). SL dự trù = ĐM 1 SV × tổng số sinh viên (tự tính).\n' +
-        '- Tên, mã VT, ĐVT ghi theo danh mục vật tư của Trường (chưa có mã ghi "Chưa MVT") để đối chiếu với biên bản bàn giao hóa chất.\n- Hóa chất, vật tư cần thêm ghi vào dòng trống cuối mỗi nhóm; hóa chất kiểm soát đặc biệt ghi rõ ở cột Ghi chú.', cs: n, i: 1, co: 10, doc: 't' }] },
+        '- Tên, mã VT, ĐVT ghi theo danh mục vật tư của Trường (chưa có mã ghi "Chua MVT", chưa rõ NSX ghi "TQ/VN") để đối chiếu với biên bản bàn giao hóa chất.\n- Hóa chất, vật tư cần thêm ghi vào dòng trống cuối mỗi nhóm; hóa chất kiểm soát đặc biệt ghi rõ ở cột Ghi chú.', cs: n, i: 1, co: 10, doc: 't' }] },
       { cao: 15, o: [{ v: '', cs: n }] },
       { cao: 25.25, o: [{ v: 'GV PHỤ TRÁCH MÔN', cs: 3, can: 'c', b: 1 }, { v: 'TRƯỞNG BỘ MÔN', cs: 3, can: 'c', b: 1 }, { v: 'TRƯỞNG KHOA', cs: 4, can: 'c', b: 1 }] },
       { cao: 15, o: [{ v: '(Ký, ghi rõ họ tên)', cs: 3, can: 'c', i: 1, co: 10 }, { v: '(Ký, ghi rõ họ tên)', cs: 3, can: 'c', i: 1, co: 10 }, { v: '(Ký, ghi rõ họ tên)', cs: 4, can: 'c', i: 1, co: 10 }] });

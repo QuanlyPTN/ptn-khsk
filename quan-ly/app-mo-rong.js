@@ -1624,7 +1624,7 @@
       (r.dot === '1' ? ' · đợt 1 tối thiểu ' + r.ty_le + '% nhu cầu cả học kỳ' : '') + '</p>' +
       ((r.tam_tinh || []).length ? '<p class="err">Đợt ' + r.tam_tinh.join(', ') + ' chưa nhập danh sách nhận hàng – đang tạm trừ đúng số đã dự trù của đợt đó. Nhập danh sách nhận hàng để trừ theo số thực nhận.</p>' : '') +
       '<div class="tbl-wrap" style="max-height:460px"><table><thead><tr><th>Mã VT</th><th>Tên vật tư – hóa chất</th><th>ĐVT</th><th class="num">Nhu cầu HK</th>' + (caHK ? '' : '<th class="num">Trừ đã nhận</th>') + '<th class="num">Dự trù</th><th>Môn</th></tr></thead><tbody>' +
-      r.tong.map((t, i) => (i === 0 || r.tong[i - 1].nhom_in !== t.nhom_in ? '<tr><td colspan="' + (caHK ? 6 : 7) + '" class="nhom-dong">' + esc(t.nhom_in) + '</td></tr>' : '') + '<tr><td class="mono">' + esc(t.ma_vt || 'Chưa MVT') + '</td><td>' + esc(t.ten) + '</td><td>' + esc(t.dvt) + '</td><td class="num">' + fmt(t.can_hk) + '</td>' +
+      r.tong.map((t, i) => (i === 0 || r.tong[i - 1].nhom_in !== t.nhom_in ? '<tr><td colspan="' + (caHK ? 6 : 7) + '" class="nhom-dong">' + esc(t.nhom_in) + '</td></tr>' : '') + '<tr><td class="mono">' + esc(t.ma_vt || 'Chua MVT') + '</td><td>' + esc(t.ten) + '</td><td>' + esc(t.dvt) + '</td><td class="num">' + fmt(t.can_hk) + '</td>' +
         (caHK ? '' : '<td class="num">' + (fmt(t.tru) || '') + '</td>') + '<td class="num"><b>' + (fmt(t.sl) || 0) + '</b></td><td class="note">' + esc(t.mon.join(', ')) + '</td></tr>').join('') +
       '</tbody></table></div>' + (r.con_du.length ? '<p class="note">Còn ' + r.con_du.length + ' vật tư đã nhận dư so với nhu cầu (chưa dùng hết).</p>' : '') + '</div>';
     $('b-in-kq').onclick = (e) => chay(e.target, async () => window.PTN_IN.xemTruoc(await fileDuTru(r.hk, r.dot, r)));
