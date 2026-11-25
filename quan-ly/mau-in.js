@@ -28,14 +28,14 @@
     let nhom = '', stt = 0;
     r.tong.forEach(x => {
       if (x.nhom_in !== nhom) { nhom = x.nhom_in; t1.push({ cao: 18, o: [{ v: '', vien: 1 }, { v: '', vien: 1 }, { v: ' ' + nhom, b: 1, vien: 1 }, { v: '', vien: 1 }, { v: '', vien: 1 }, { v: '', vien: 1 }, { v: '', vien: 1 }] }); }
-      t1.push({ cao: 18, o: [{ v: ++stt, can: 'c', vien: 1 }, { v: x.ma_vt || 'Chưa MVT', can: 'c', vien: 1 }, { v: x.ten, vien: 1 }, { v: '', vien: 1 }, { v: x.nsx, can: 'c', vien: 1 }, { v: x.dvt, can: 'c', vien: 1 },
+      t1.push({ cao: caoChu(x.ten, 46, 11, caoChu(x.nsx, 12, 11, 18)), o: [{ v: ++stt, can: 'c', vien: 1 }, { v: x.ma_vt || 'Chưa MVT', can: 'c', vien: 1 }, { v: x.ten, vien: 1 }, { v: '', vien: 1 }, { v: x.nsx, can: 'c', vien: 1 }, { v: x.dvt, can: 'c', vien: 1 },
         Object.assign({ can: 'r', vien: 1, b: 1 }, typeof sl(x) === 'object' ? sl(x) : { v: sl(x) })] });
     });
     t1.push(rong(n1), { cao: 16, o: [{ v: '', cs: 4 }, { v: 'TP. HCM, ' + ngayLap, cs: 3, can: 'c', i: 1 }] });
     IN.chuKy(n1, [['TRƯỞNG KHOA', '', r.ky.truong_khoa], ['NGƯỜI LẬP BIỂU', '', r.ky.nguoi_lap]], 4).forEach(x => t1.push(x));
-    const s1 = { ten: caHK ? 'Tong hop ' + r.hk : 'Tong hop dot ' + r.dot, huong: 'doc', cot: [6, 14.2, 46.4, 31.2, 9.2, 8, 15], lapLai: [6, 6], hang: t1, le: [0.6, 0.55, 0.6, LE_TRAI] };
+    const s1 = { ten: caHK ? 'Tong hop ' + r.hk : 'Tong hop dot ' + r.dot, huong: 'doc', cot: [5, 10, 46, 21, 12, 7, 11], lapLai: [6, 6], hang: t1, le: [0.6, 0.55, 0.6, LE_TRAI] };
 
-    // Sheet 2 – Kế hoạch theo môn (mẫu "KSK. 10 2026", khổ ngang, tỷ lệ 75%)
+    // Sheet 2 – Kế hoạch theo môn (mẫu "KSK. 10 2026", khổ ngang; cột thu gọn để in co ~81%)
     const n2 = 13, t2 = [rong(n2),
       { cao: 18, o: [{ v: 'TRƯỜNG ĐẠI HỌC CÔNG NGHIỆP THÀNH PHỐ HỒ CHÍ MINH', cs: 6, b: 1 }, { v: 'KẾ HOẠCH VẬT TƯ ' + ky, cs: 6, can: 'c', b: 1, co: 14 }, { v: '' }] },
       { cao: 16, o: [{ v: 'ĐƠN VỊ: KHOA KHOA HỌC SỨC KHỎE', cs: 5, b: 1 }, { v: '', cs: 8 }] },
@@ -47,7 +47,9 @@
       const dong = b.dong.length ? b.dong : [{ ten: '(chưa có định mức)', dm: '', sl: '' }], nHang = Math.max(dong.length, b.lop.length + 1);
       for (let i = 0; i < nHang; i++) {
         const l = b.lop[i], x = dong[i], o = [];
-        o.push({ v: i === 0 ? so + '. ' + b.ten_mon + (b.moi ? '\n(môn chưa dự trù ở đợt trước)' : '') : '', b: i === 0, vien: 1, doc: 't' }, { v: '', vien: 1 });
+        // tên môn gộp dọc cả khối (cột hẹp – chữ xuống dòng không bị cắt)
+        if (i === 0) o.push({ v: so + '. ' + b.ten_mon + (b.moi ? '\n(môn chưa dự trù ở đợt trước)' : ''), rs: nHang, b: 1, vien: 1, doc: 't' });
+        o.push({ v: '', vien: 1 });
         if (l) o.push({ v: l.lop, can: 'c', vien: 1 }, { v: l.ma_lhp, can: 'c', vien: 1 }, { v: l.si_so, can: 'c', vien: 1 });
         else if (i === b.lop.length) o.push({ v: '', vien: 1 }, { v: '', vien: 1 }, { v: b.si_so, f: '=SUM(E' + (t2.length + 1 - b.lop.length) + ':E' + t2.length + ')', can: 'c', b: 1, vien: 1 });
         else o.push({ v: '', vien: 1 }, { v: '', vien: 1 }, { v: '', vien: 1 });
@@ -56,13 +58,13 @@
           o.push({ v: i + 1, can: 'c', vien: 1 }, { v: x.ten, vien: 1 }, { v: x.ma_vt || (x.dm !== '' ? 'Chưa MVT' : ''), can: 'c', vien: 1 }, { v: x.nsx || '', can: 'c', vien: 1 }, { v: x.dvt || '', can: 'c', vien: 1 },
             { v: x.dm === '' ? '' : r3(x.dm), can: 'r', vien: 1 }, Object.assign({ can: 'r', vien: 1 }, x.sl === '' ? { v: '' } : s2), { v: '', vien: 1, co: 9, i: 1 });
         } else for (let j = 0; j < 8; j++) o.push({ v: '', vien: 1 });
-        t2.push({ cao: 19, o });
+        t2.push({ cao: x ? caoChu(x.ten, 42, 11, caoChu(x.nsx, 11, 11, 19)) : 19, o });
       }
     });
     t2.push(rong(n2), { cao: 18, o: [{ v: 'HIỆU TRƯỞNG', cs: 3, can: 'c', b: 1 }, { v: '', cs: 3 }, { v: 'TRƯỞNG KHOA', can: 'c', b: 1 }, { v: '', cs: 2 }, { v: 'NGƯỜI LẬP BIỂU', cs: 4, can: 'c', b: 1 }] });
     for (let i = 0; i < 5; i++) t2.push({ cao: 15, o: [{ v: '', cs: n2 }] });
     t2.push({ cao: 16, o: [{ v: r.ky.hieu_truong || '', cs: 3, can: 'c', b: 1 }, { v: '', cs: 3 }, { v: r.ky.truong_khoa || '', can: 'c', b: 1 }, { v: '', cs: 2 }, { v: r.ky.nguoi_lap || '', cs: 4, can: 'c', b: 1 }] });
-    const s2 = { ten: tenSheet, huong: 'ngang', cot: [26.6, 7.6, 16.4, 21.2, 7.6, 7.8, 37.4, 16.8, 7.6, 11.8, 14.2, 10.2, 18], lapLai: [5, 5], hang: t2, le: [0.4, 0.17, 0.4, LE_TRAI] };
+    const s2 = { ten: tenSheet, huong: 'ngang', cot: [24, 5, 13, 15, 6, 5, 42, 10.5, 11, 7, 9, 9, 14.5], lapLai: [5, 5], hang: t2, le: [0.4, 0.17, 0.4, LE_TRAI] };
     return { ten: (caHK ? 'KH vat tu ' + r.hk : 'KH vat tu dot ' + r.dot + ' ' + r.hk), trang: [s1, s2], s1, s2 };
   }
   // File dự trù một đợt – 3 sheet: (1) tổng dự trù cả học kỳ theo lớp thực hành, (2) dự trù đợt theo môn – lớp, (3) tổng hợp hóa chất – vật tư – dược liệu của đợt
