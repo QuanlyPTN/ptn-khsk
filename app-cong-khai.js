@@ -803,7 +803,7 @@
       '<div class="note">Dọn sạch tủ, trả chìa khóa cho PTN khi hết hạn hoặc kết thúc đợt thực hành / đề tài.</div></div>';
     const theHS = (x) => '<div class="card"><div class="dong-don"><b>' + esc(x.id) + '</b>' + tagTT(x.trang_thai) + '</div><div>' + esc(x.ten) + '</div><div class="note">' +
       esc(x.ten_loai + ' · GVHD ' + x.gvhd + ' · ' + x.nhom.length + ' thành viên' + (x.phong ? ' · ' + x.phong : '') + (x.den_ngay ? ' · đến ' + ngayVN(x.den_ngay) : '')) + '</div>' +
-      (x.le_phi ? '<div class="note">Lệ phí: ' + esc(x.le_phi) + (x.thu_phi ? ' – <b>đã thu ' + Number(x.thu_phi.so_tien).toLocaleString('vi-VN') + ' đ</b>' : ' – chưa thu') + '</div>' : '') +
+      (x.le_phi ? '<div class="note">Lệ phí: ' + esc(x.le_phi) + (x.thu_phi ? ' – <b>đã thu ' + Number(x.thu_phi.so_tien).toLocaleString('en-US') + ' đ</b>' : ' – chưa thu') + '</div>' : '') +
       (x.tep.length ? '<div class="note">Minh chứng: ' + x.tep.map(t => esc(t.ten)).join(', ') + '</div>' : '') +
       ((x.tu_hl_giao || []).length ? '<div class="note">🗄 Tủ sắt hành lang của nhóm: ' + x.tu_hl_giao.map(t => esc(t.phong.replace(/^HL-(.+)-(\d+)$/, 'HL $1 – Tủ $2')) + ' – ô ' + esc(t.so) + (t.han ? ' (hạn ' + ngayVN(t.han) + ')' : '')).join(', ') + '</div>' : '') + khoiDon(x).replace('<div class="card">', '<div>') +
       (x.trang_thai === 'Đã đóng' ? '<div class="dong-don"><span>📄 <b>Giấy xác nhận hoàn thành nghĩa vụ trả phòng, thiết bị và dụng cụ</b><br><span class="note">In, nộp GV quản lý phòng ký xác nhận rồi nộp kèm báo cáo</span></span><span><button type="button" class="nho" data-xn="' + esc(x.id) + '">Xem – in</button></span></div>' : '') +

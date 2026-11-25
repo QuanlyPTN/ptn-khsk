@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const D = window.PTN_DON, { R, GT, P, TRONG, bang, ky, chan, dsSo, ngay } = D;
-  const gio = (s) => String(s || '').slice(11, 16), soVN = (n) => n === '' || n == null ? '' : (Math.round(+n * 1000) / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 3 });
+  const gio = (s) => String(s || '').slice(11, 16), soVN = (n) => n === '' || n == null ? '' : (Math.round(+n * 1000) / 1000).toLocaleString('en-US', { maximumFractionDigits: 3 });
   const buoc = (d, re) => (d.xu_ly || []).filter(x => re.test(x.hd)).pop(); // bước xử lý gần nhất khớp tên
   // ngày ghi cuối đơn: ngày duyệt; đơn không qua bước duyệt (QR5, giao thẳng) → ngày giao / ngày sử dụng; chưa xử lý → để chấm
   function ngayKy(d) {

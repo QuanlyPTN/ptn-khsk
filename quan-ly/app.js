@@ -12,7 +12,7 @@
   function homNay() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function congNgay(n) { const d = new Date(Date.now() + n * 864e5); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function ngayVN(s) { const m = /^(\d{4})-(\d{2})-(\d{2})(.*)$/.exec(s || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] + m[4] : (s || ''); }
-  function tien(s) { const n = parseInt(String(s || '').replace(/\D/g, ''), 10); return n ? n.toLocaleString('vi-VN') + ' đ' : ''; }
+  function tien(s) { const n = parseInt(String(s || '').replace(/\D/g, ''), 10); return n ? n.toLocaleString('en-US') + ' đ' : ''; }
   function boDau(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase(); }
   function toast(msg, bad) { const t = $('toast'); t.textContent = msg; t.className = 'toast' + (bad ? ' bad' : ''); clearTimeout(toast._t); toast._t = setTimeout(() => { t.className = 'toast hide'; }, bad ? 5000 : 2600); }
   function tenMay() {
@@ -566,7 +566,7 @@
   }
 
   // ---------------- Hóa chất – vật tư ----------------
-  const fmt = (n) => { const x = Math.round((+n || 0) * 100) / 100; return x ? x.toLocaleString('vi-VN') : ''; };
+  const fmt = (n) => { const x = Math.round((+n || 0) * 100) / 100; return x ? x.toLocaleString('en-US') : ''; };
   const hkMacDinh = () => S.hk || (S.dm.hoc_ky || [])[0] || '';
   function chonHK(id) { return '<select id="' + id + '">' + (S.dm.hoc_ky || []).map(h => '<option' + (h === hkMacDinh() ? ' selected' : '') + '>' + esc(h) + '</option>').join('') + '</select>'; }
   async function capNhatDanhMuc() { const r = await api('toi'); S.toi = r; S.dm = r.danh_muc; luuToi(r); }

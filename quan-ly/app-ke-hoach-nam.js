@@ -12,7 +12,7 @@
   const xl = () => coQuyen('ke-hoach-nam', 'xu_ly');
   const NC = ['bo_sung', 'thay_moi', 'sua_chua', 'nang_cap'];
   const so = (v) => { if (typeof v === 'number') return v; const s = String(v == null ? '' : v).trim(); if (!s) return 0;
-    const n = parseFloat(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s) ? s.replace(/\./g, '').replace(',', '.') : s.replace(',', '.')); return isNaN(n) ? 0 : n; };
+    const n = parseFloat(/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(s) ? s.replace(/,/g, '') : /^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s) ? s.replace(/\./g, '').replace(',', '.') : s.replace(',', '.')); /* 1,234.5 (đang dùng) hoặc 1.234,5 (file cũ) */ return isNaN(n) ? 0 : n; };
   const tien = (v) => v ? fmt(Math.round(v * 1000) / 1000) : '';
   let D = null; // dữ liệu năm đang xem
   const tdN = (s, nam) => { s = String(s || '').trim(); return s ? s.replace(/20\d\d/g, nam) : 'Năm ' + nam; }; // thời điểm thực hiện theo năm kế hoạch

@@ -7,7 +7,7 @@
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const pad = (n) => String(n).padStart(2, '0');
   const homNay = () => { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
-  const soVN = (n) => n === '' || n == null ? '' : (Math.round(+n * 1000) / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 3 });
+  const soVN = (n) => n === '' || n == null ? '' : (Math.round(+n * 1000) / 1000).toLocaleString('en-US', { maximumFractionDigits: 3 });
 
   const LOAI = {
     'GV-BH': { ten: 'Báo hỏng thiết bị', mo_ta: 'Báo thiết bị hư hỏng, sự cố về Phòng thí nghiệm', mau: 'Bieu-mau-bao-hong-thiet-bi.docx' },

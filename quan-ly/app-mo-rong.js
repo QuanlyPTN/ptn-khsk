@@ -1194,7 +1194,7 @@
       xem('<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><title>De nghi thanh ly</title><style>' + CSS_IN + '</style></head><body>' + dauTrang + '<p class="r"><i>TP. Hồ Chí Minh, ngày …… tháng …… năm 20……</i></p><h1>GIẤY ĐỀ NGHỊ THANH LÝ TÀI SẢN</h1>' +
         '<p>Kính gửi: Phòng Kế hoạch – Đầu tư; Ban Giám hiệu Trường Đại học Công nghiệp TP. Hồ Chí Minh.</p><p>Khoa Khoa học Sức khỏe đề nghị thanh lý các tài sản sau:</p>' +
         '<table class="ds"><tr><th>STT</th><th>Tên tài sản</th><th>Mã tài sản</th><th>Hãng – model</th><th>Năm đưa vào SD</th><th>Nguyên giá (đ)</th><th>Tình trạng</th><th>Lý do</th></tr>' +
-        chon.map((x, i) => '<tr><td class="c">' + (i + 1) + '</td><td>' + esc(x.ten) + '</td><td>' + esc(x.ma_ts) + '</td><td>' + esc([x.hang, x.model].filter(Boolean).join(' – ')) + '</td><td class="c">' + esc((x.ngay_nhan || '').slice(0, 4)) + '</td><td class="r">' + (x.nguyen_gia ? Number(x.nguyen_gia).toLocaleString('vi-VN') : '') + '</td><td>' + esc(x.tinh_trang) + '</td><td>' + esc(x.ly) + '</td></tr>').join('') + '</table>' +
+        chon.map((x, i) => '<tr><td class="c">' + (i + 1) + '</td><td>' + esc(x.ten) + '</td><td>' + esc(x.ma_ts) + '</td><td>' + esc([x.hang, x.model].filter(Boolean).join(' – ')) + '</td><td class="c">' + esc((x.ngay_nhan || '').slice(0, 4)) + '</td><td class="r">' + (x.nguyen_gia ? Number(x.nguyen_gia).toLocaleString('en-US') : '') + '</td><td>' + esc(x.tinh_trang) + '</td><td>' + esc(x.ly) + '</td></tr>').join('') + '</table>' +
         oKy([['NGƯỜI LẬP', window.PTN_KY.nguoi_lap || Q.S.toi.nguoi.ten], ['TRƯỞNG KHOA', window.PTN_KY.truong_khoa]]) + '</body></html>');
     };
   }

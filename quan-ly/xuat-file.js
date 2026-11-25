@@ -37,8 +37,8 @@
   const canh = (v) => !v ? '' : v === true || v === 1 ? 'tlbr' : String(v); // các cạnh có viền
   const soHien = (v, dd) => {
     if (typeof v !== 'number') return v == null ? '' : String(v);
-    if (dd === '0') return Math.round(v).toLocaleString('vi-VN');
-    return (Math.round(v * 1000) / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 3 });
+    if (dd === '0') return Math.round(v).toLocaleString('en-US');
+    return (Math.round(v * 1000) / 1000).toLocaleString('en-US', { maximumFractionDigits: 3 });
   };
 
   // ---------- Excel ----------
