@@ -17,7 +17,7 @@
     .filter(w => w && !BO.has(w) && !/^\d+([.,]\d+)?(ml|l|g|kg|mg|mm|cm)$/.test(w)).map(w => DONG[w] || w);
   const so = (a) => a.filter(w => /^\d+$/.test(w)).join(' ');
   // chữ dạng công thức (cuso4, c12h22o11…) trong tên mã VT không tính vào độ dài nếu tên định mức không có – "Saccharose" = "C12H22O11 (saccharose)"
-  const laCT = (w) => /[a-z]/.test(w) && /\d/.test(w);
+  const laCT = (w) => /^[a-z][a-z0-9]*\d/.test(w); // bắt đầu bằng chữ, có số: cuso4, c12h22o11 (không tính 5ly, 500ml)
   // mức giống 0..1: tỷ lệ chữ chung (Dice); mọi chữ của tên định mức có trong tên mã VT → ≥ 0,5 + 0,4 × phần chung của tên mã VT
   // (tên mã VT dài hơn nhiều – "Gạo" / "Cám gạo" – không lên cao); cùng ĐVT +0,05; khác số (Cồn 96 / Cồn 70) ×0,6
   function diem(a, b) {
@@ -56,6 +56,9 @@
       '<p class="note">So với <b>' + vt.length + '</b> mã trong <a href="#/hoa-chat/vat-tu">Tra cứu mã vật tư</a>. Gán mã cho tên nào thì mọi môn có cùng tên được gán theo; dự trù, biên bản cùng tên cũng tự nhận mã. Thu hồi được ở Lịch sử tải file.</p>' +
       '<p><b>' + dien.length + '</b> dòng đã có mã VT nhưng thiếu NSX / ĐVT → bấm <b>Áp dụng</b> sẽ tự điền theo Tra cứu mã vật tư.</p>' +
       '<p><b>' + nhom.length + '</b> tên hóa chất chưa có mã VT (' + nhom.reduce((a, g) => a + g.id.length, 0) + ' dòng ở các môn), <b>' + coGoiY + '</b> tên có gợi ý. Gợi ý ≥ 90% được chọn sẵn – kiểm lại rồi bấm Áp dụng; biết mã thì gõ vào ô "Mã khác".</p>' +
+      (coGoiY ? '<div class="btns" style="margin:6px 0;align-items:center"><button type="button" class="btn sm" id="dv-tu" title="Chọn gợi ý cao nhất cho mọi tên đạt ngưỡng (ô đang Không gán) – kiểm lại rồi bấm Áp dụng">⚡ Tự động gán</button>' +
+        '<label class="note">gợi ý từ <select id="dv-ng" class="sm"><option value="0.9">90%</option><option value="0.8" selected>80%</option><option value="0.7">70%</option><option value="0.6">60%</option><option value="0">mọi mức</option></select> trở lên</label>' +
+        '<button type="button" class="btn o sm" id="dv-bo">Bỏ chọn tất cả</button></div>' : '') +
       (nhom.length ? '<div class="tbl-wrap" style="max-height:52vh"><table><thead><tr><th>Tên trong định mức</th><th>Mã VT gợi ý</th><th>Mã khác</th></tr></thead><tbody>' +
         nhom.map((g, i) => '<tr><td style="min-width:180px"><b>' + esc(g.ten) + '</b>' + (g.dvt ? ' <span class="note">(' + esc(g.dvt) + ')</span>' : '') +
           '<div class="note">' + g.id.length + ' dòng · ' + esc(g.mon.slice(0, 3).join(', ') + (g.mon.length > 3 ? ' và ' + (g.mon.length - 3) + ' môn khác' : '')) + '</div></td>' +
@@ -64,6 +67,15 @@
           '<td><input data-m="' + i + '" inputmode="numeric" placeholder="Mã VT" style="width:90px"></td></tr>').join('') + '</tbody></table></div>' : '') +
       '<div class="modal-foot"><button type="button" class="btn o" id="dv-xuat"' + (nhom.length ? '' : ' disabled') + '>⇩ Excel danh sách chưa có mã</button><button type="button" class="btn o" data-dong>Hủy</button><button type="button" class="btn" id="dv-ap">Áp dụng</button></div>', (m) => {
       m.parentNode.style.maxWidth = 'min(1100px, 96vw)';
+      const sel = (i) => m.querySelector('[data-g="' + i + '"]');
+      if (m.querySelector('#dv-tu')) {
+        m.querySelector('#dv-tu').onclick = () => { const ng = +m.querySelector('#dv-ng').value; let n = 0;
+          nhom.forEach((g, i) => { const s = sel(i); if (!s || s.value || !g.goi_y[0] || g.goi_y[0].d < ng) return;
+            s.value = g.goi_y[0].x.ma_vt; const tr = s.closest('tr'); tr.classList.remove('nhay'); void tr.offsetWidth; tr.classList.add('nhay'); n++; });
+          const tong = nhom.filter((g, i) => sel(i) && sel(i).value).length;
+          toast(n ? 'Đã tự chọn thêm ' + n + ' tên (đang chọn ' + tong + ' tên) – kiểm lại rồi bấm Áp dụng' : 'Không còn tên nào đạt ngưỡng ' + Math.round(ng * 100) + '%'); };
+        m.querySelector('#dv-bo').onclick = () => { nhom.forEach((g, i) => { if (sel(i)) sel(i).value = ''; }); toast('Đã bỏ chọn tất cả'); };
+      }
       m.querySelector('#dv-xuat').onclick = () => { const IN = window.PTN_IN;
         IN.taiExcel({ ten: 'Dinh muc chua co ma VT ' + homNay(), trang: [IN.duLieu('Chua co ma VT', ['TÊN TRONG ĐỊNH MỨC', 'ĐVT', 'SỐ DÒNG', 'CÁC MÔN', 'GỢI Ý GẦN NHẤT'],
           nhom.map(g => [g.ten, g.dvt, g.id.length, g.mon.join(', '), g.goi_y[0] ? nhan(g.goi_y[0]) : '']))] }); };
