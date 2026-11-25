@@ -21,11 +21,15 @@
     const nam = /^\d{4}$/.test(p[1] || '') ? p[1] : '', tabXd = p[2] === 'xd';
     const nd = trang('Danh sách thiết bị dự trù năm', '', '<a href="#/tai-san">Tài sản</a> ›');
     D = await api('khn_ds', nam ? { nam } : {});
+    if (!nam) history.replaceState(null, '', '#/ke-hoach-nam/' + D.nam + (tabXd ? '/xd' : '')); // địa chỉ luôn ghi năm: tải lại trang vẫn đúng năm đang xem
     D.leaf = D.muc.filter(m => m[4]);
     $('main').querySelector('h1').innerHTML = 'Danh sách thiết bị dự trù năm <select id="k-nam" class="sm" style="font-size:inherit;font-weight:700">' +
       D.cac_nam.concat([String(+D.cac_nam[D.cac_nam.length - 1] + 1)]).filter((x, i, a) => a.indexOf(x) === i).map(n => '<option' + (n === D.nam ? ' selected' : '') + '>' + n + '</option>').join('') +
       (xl() ? '<option value="+">+ Tạo năm…</option>' : '') + '</select>';
-    $('k-nam').onchange = (e) => { if (e.target.value === '+') { e.target.value = D.nam; return hopTaoNam(); } location.hash = '#/ke-hoach-nam/' + e.target.value; };
+    // đổi năm phải xác nhận: ô năm đang chọn có thể bị đổi nhầm bằng phím mũi tên / cuộn → không tự chuyển trang
+    $('k-nam').onchange = (e) => { const v = e.target.value; e.target.value = D.nam; e.target.blur();
+      if (v === '+') return hopTaoNam();
+      if (v !== D.nam && confirm('Chuyển từ danh sách năm ' + D.nam + ' sang danh sách năm ' + v + '?')) location.hash = '#/ke-hoach-nam/' + v; };
     const c = D.cau_hinh, mo = D.nam === D.nam_mo;
     nd.innerHTML = '<div class="card note" style="border-color:#E8C77A;background:#FFFBEF">Năm <b>' + esc(D.nam) + '</b>: ' +
       (mo ? 'đang nhận đề xuất từ giảng viên (phiếu <b>GV-BS – Kế hoạch năm – dự trù thiết bị</b> ở trang dùng chung tự vào danh sách, trạng thái "Chờ duyệt")' + (c.han ? ' · hạn nộp <b>' + ngayVN(c.han) + '</b>' + (c.han < Q.homNay() ? ' <span class="tag t-gray">đã hết hạn</span>' : '') : ' · chưa đặt hạn nộp') :
@@ -142,26 +146,27 @@
     const l = D.dong.filter(d => chaHien[d.cha || d.id]);
     if (!l.length) { $('k-ds').innerHTML = '<div class="card empty">' + (D.dong.length ? 'Không có dòng phù hợp bộ lọc.' : 'Chưa có thiết bị dự trù năm ' + esc(D.nam) + '.' + (xl() ? ' Bấm "+ Thêm dòng", "Nhập từ file Excel" hoặc chờ giảng viên gửi phiếu GV-BS.' : '')) + '</div>'; return; }
     let h = '<div class="tbl-wrap"><table class="k-bang"><thead><tr>' + (xl() ? '<th><input type="checkbox" id="k-all" title="Chọn tất cả"></th>' : '') +
-      '<th>TT</th><th>Danh mục – yêu cầu kỹ thuật</th><th>ĐVT</th><th>Nhu cầu</th><th class="num">SL</th><th class="num">Định mức</th><th class="num">Kinh phí</th><th>Đơn vị sử dụng – lý do</th><th>Thời điểm</th><th>Hiện có</th><th>Trạng thái</th><th>Đề xuất của GV</th>' + (xl() ? '<th></th>' : '') + '</tr></thead><tbody>';
+      '<th>TT</th><th>Danh mục – yêu cầu kỹ thuật</th><th class="num">SL</th><th class="num">Kinh phí (nghìn đ)</th><th>Đơn vị sử dụng – lý do – thời điểm</th><th>Trạng thái – hiện có – đề xuất GV</th>' + (xl() ? '<th></th>' : '') + '</tr></thead><tbody>';
     D.leaf.forEach(m => {
       const lm = l.filter(d => d.muc === m[0]); if (!lm.length) return;
-      h += '<tr style="background:#F3F6FC"><td colspan="' + (xl() ? 14 : 12) + '"><b>' + esc(m[0]) + '</b> – ' + esc(m[3]) + ' · <span class="note">' + lm.filter(d => !d.cha).length + ' dòng · ' + tien(tinhTong(lm.filter(d => d.trang_thai !== 'Không duyệt'))) + ' nghìn đ</span></td></tr>';
+      h += '<tr style="background:#F3F6FC"><td colspan="' + (xl() ? 8 : 6) + '"><b>' + esc(m[0]) + '</b> – ' + esc(m[3]) + ' · <span class="note">' + lm.filter(d => !d.cha).length + ' dòng · ' + tien(tinhTong(lm.filter(d => d.trang_thai !== 'Không duyệt'))) + ' nghìn đ</span></td></tr>';
       let stt = 0, con = 0;
       lm.forEach(d => {
         if (d.cha) con++; else { stt++; con = 0; }
         const ht = d.hien_trang || { co: 0, hong: 0 }, laCha = !d.cha && conCua(d.id).length;
         h += '<tr' + (d.trang_thai === 'Không duyệt' ? ' style="opacity:.55"' : '') + '>' + (xl() ? '<td><input type="checkbox" data-chon="' + esc(d.id) + '"></td>' : '') +
-          '<td>' + (d.cha ? stt + '.' + con : stt) + '</td><td style="max-width:340px' + (d.cha ? ';padding-left:22px' : '') + '"><b>' + esc(d.ten) + '</b>' + (d.yckt ? '<div class="note" style="white-space:pre-line;max-height:5.6em;overflow:hidden" title="' + esc(d.yckt) + '">' + esc(d.yckt) + '</div>' : '') + '</td>' +
-          '<td>' + esc(d.dvt) + '</td><td>' + NC.filter(k => d[k]).map(k => esc(D.nhu_cau[k])).join(', ') + '</td><td class="num">' + (laCha ? '' : fmt(d.sl) + (d.sl_mua ? '<div class="note" title="Đã mua / kế hoạch">mua ' + fmt(d.sl_mua) + '/' + fmt(d.sl) + '</div>' : '')) + '</td><td class="num">' + (laCha ? '' : tien(d.dinh_muc)) + '</td>' +
-          '<td class="num"><b>' + tien(kp(d)) + '</b></td><td style="max-width:220px;white-space:pre-line">' + esc([d.bo_mon, d.ly_do].filter(Boolean).join('\n')) + '</td><td>' + esc(d.thoi_diem) + '</td>' +
-          '<td>' + (ht.co ? '<span title="Thiết bị cùng tên trong Tài sản">' + ht.co + ' cái</span>' + (ht.hong ? ' · <b style="color:#B42318">' + ht.hong + ' hỏng</b>' : '') : '<span class="note">—</span>') + '</td>' +
-          '<td>' + tagTT(d.trang_thai) + (d.ngung ? '<div class="note">' + esc(d.ngung) + '</div>' : '') + (d.khdt ? '<div class="note" style="color:#1E4FC2" title="' + esc(d.khdt.ghi_chu || '') + '">P.KHĐT duyệt ' + fmt(d.sl_khdt) + '/' + fmt(d.sl) + (d.khdt.ngay ? ' · ' + ngayVN(d.khdt.ngay) : '') + '</div>' : '') +
+          '<td>' + (d.cha ? stt + '.' + con : stt) + '</td><td class="k-ten"' + (d.cha ? ' style="padding-left:22px"' : '') + '><b>' + esc(d.ten) + '</b>' + (d.yckt ? '<div class="note" style="white-space:pre-line;max-height:5.6em;overflow:hidden" title="' + esc(d.yckt) + '">' + esc(d.yckt) + '</div>' : '') + '</td>' +
+          // gộp cột cho vừa khung: SL + ĐVT + nhu cầu · kinh phí + định mức · đơn vị + lý do + thời điểm · trạng thái + hiện có + đề xuất GV
+          '<td class="num" style="white-space:nowrap">' + (laCha ? esc(d.dvt) : fmt(d.sl) + ' ' + esc(d.dvt)) + '<div class="note">' + NC.filter(k => d[k]).map(k => esc(D.nhu_cau[k])).join(', ') + '</div>' + (!laCha && d.sl_mua ? '<div class="note" title="Đã mua / kế hoạch">mua ' + fmt(d.sl_mua) + '/' + fmt(d.sl) + '</div>' : '') + '</td>' +
+          '<td class="num" style="white-space:nowrap"><b>' + tien(kp(d)) + '</b>' + (laCha ? '' : '<div class="note" title="Định mức (nghìn đồng / đơn vị)">ĐM ' + tien(d.dinh_muc) + '</div>') + '</td>' +
+          '<td class="k-ly-do"><div>' + esc(d.bo_mon) + '</div>' + (d.ly_do ? '<div class="note" title="' + esc(d.ly_do) + '">' + esc(d.ly_do) + '</div>' : '') + (d.thoi_diem ? '<div class="note">⏱ ' + esc(d.thoi_diem) + '</div>' : '') + '</td>' +
+          '<td>' + tagTT(d.trang_thai) + (ht.co ? '<div class="note" title="Thiết bị cùng tên trong Tài sản">Hiện có ' + ht.co + ' cái' + (ht.hong ? ' · <b style="color:#B42318">' + ht.hong + ' hỏng</b>' : '') + '</div>' : '') + (d.ngung ? '<div class="note">' + esc(d.ngung) + '</div>' : '') + (d.khdt ? '<div class="note" style="color:#1E4FC2" title="' + esc(d.khdt.ghi_chu || '') + '">P.KHĐT duyệt ' + fmt(d.sl_khdt) + '/' + fmt(d.sl) + (d.khdt.ngay ? ' · ' + ngayVN(d.khdt.ngay) : '') + '</div>' : '') +
           (d.tu_nam ? '<div class="note" title="Liên kết với dòng năm ' + esc(d.tu_nam) + ' – cập nhật bằng nút ⇄">↳ từ năm ' + esc(d.tu_nam) + '</div>' : '') + (d.chuyen && d.chuyen.length ? '<div class="note">→ đã chuyển sang ' + d.chuyen.map(esc).join(', ') + '</div>' : '') + (d.tb_moi.length ? '<div class="note">Đã tạo ' + d.tb_moi.length + ' TB</div>' : '') + '</td>' +
-          '<td class="note">' + d.nguon.map(n => '<a href="#/giang-vien/' + esc(n.don) + '">' + esc(n.don) + '</a> ' + esc(n.gv) + ' · ' + fmt(n.sl)).join('<br>') + '</td>' +
-          (xl() ? '<td style="white-space:nowrap"><button class="btn o sm" data-sua="' + esc(d.id) + '" title="Sửa">✎</button><button class="btn o sm" data-len="' + esc(d.id) + '" title="Lên">↑</button><button class="btn o sm" data-xuong="' + esc(d.id) + '" title="Xuống">↓</button>' +
+          (d.nguon.length ? '<div class="note">' + d.nguon.map(n => '<a href="#/giang-vien/' + esc(n.don) + '">' + esc(n.don) + '</a> ' + esc(n.gv) + ' · ' + fmt(n.sl)).join('<br>') + '</div>' : '') + '</td>' +
+          (xl() ? '<td class="k-nut"><div><button class="btn o sm" data-sua="' + esc(d.id) + '" title="Sửa">✎</button><button class="btn o sm" data-len="' + esc(d.id) + '" title="Lên">↑</button><button class="btn o sm" data-xuong="' + esc(d.id) + '" title="Xuống">↓</button>' +
             (d.cha ? '' : '<button class="btn o sm" data-con="' + esc(d.id) + '" title="Thêm dòng con (hạng mục của thiết bị đồng bộ)">+ con</button>') +
             (!laCha && ['Chờ duyệt', 'Không duyệt'].indexOf(d.trang_thai) < 0 ? '<button class="btn o sm" data-mua="' + esc(d.id) + '" title="Ghi nhận mua (từng lần: ngày, số lượng, đơn giá thực tế), ngừng mua phần còn thiếu">🛒 Mua</button>' : '') +
-            (!laCha && Math.floor(d.sl_mua) > d.tb_moi.length ? '<button class="btn o sm" data-tb="' + esc(d.id) + '" title="Tạo hồ sơ thiết bị trong Tài sản cho số đã mua">→ Tài sản</button>' : '') + '</td>' : '') + '</tr>';
+            (!laCha && Math.floor(d.sl_mua) > d.tb_moi.length ? '<button class="btn o sm" data-tb="' + esc(d.id) + '" title="Tạo hồ sơ thiết bị trong Tài sản cho số đã mua">→ Tài sản</button>' : '') + '</div></td>' : '') + '</tr>';
       });
     });
     $('k-ds').innerHTML = h + '</tbody></table></div>';
@@ -271,7 +276,8 @@
       tren.map((x, k) => '<tr><td><b>' + sttCha + (k + 1) + '</b></td><td>' + esc(x.ten.split('\n')[0]) + (x.bo_mon ? '<div class="note">' + esc(x.bo_mon) + '</div>' : '') + '</td><td class="num">' + fmt(x.sl) + '</td>' +
         '<td><button type="button" class="btn sm" data-truoc="' + esc(x.id) + '">Đặt vào vị trí ' + sttCha + (k + 1) + '</button></td></tr>').reverse().join('') + '</tbody></table></div>' +
       '<div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button></div>', (m) => {
-      m.querySelectorAll('[data-truoc]').forEach(b => { b.onclick = (e) => chay(e.target, async () => { await api('khn_doi_cho', { id: d.id, truoc: b.dataset.truoc }); dongHop(); toast('Đã chuyển lên vị trí ' + b.textContent.replace('Đặt vào vị trí ', '')); await taiLai(); }); });
+      m.querySelectorAll('[data-truoc]').forEach(b => { b.onclick = (e) => chay(e.target, async () => { await api('khn_doi_cho', { id: d.id, truoc: b.dataset.truoc }); dongHop(); toast('Đã chuyển lên vị trí ' + b.textContent.replace('Đặt vào vị trí ', ''));
+        await taiLai(); const n = document.querySelector('#k-ds [data-len="' + d.id + '"]'); if (n) n.closest('tr').classList.add('nhay'); }); }); // giữ chỗ đang xem; dòng vừa chuyển nháy màu
     });
   }
   // ghi nhận mua: lịch sử từng lần mua, thêm lần mua, ngừng mua phần còn thiếu

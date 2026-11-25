@@ -23,6 +23,16 @@ svg.i { width: 18px; height: 18px; flex: none; }
 .spin { width: 30px; height: 30px; border: 3px solid #D7DEEC; border-top-color: var(--brand); border-radius: 50%; animation: s .9s linear infinite; }
 @keyframes s { to { transform: rotate(360deg); } }
 @keyframes hien { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes nhay { 0%, 60% { background: #FFF4C2; } 100% { background: transparent; } }
+tr.nhay > td { animation: nhay 2.4s ease; }
+/* Kế hoạch năm: bảng thiết bị vừa khung, không phải trượt ngang */
+table.k-bang th { white-space: normal; padding: 10px 8px; letter-spacing: .2px; }
+table.k-bang td { padding: 8px; }
+table.k-bang td.k-ten { min-width: 220px; }
+table.k-bang td.k-ly-do { min-width: 150px; }
+table.k-bang td.k-ly-do > .note[title] { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+table.k-bang td.k-nut > div { display: flex; flex-wrap: wrap; gap: 4px; width: 112px; }
+table.k-bang td.k-nut .btn.sm { padding: 4px 8px; font-size: 14px; }
 
 /* ---------- Đăng nhập: chia đôi – khối thương hiệu | form ---------- */
 .login { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); background: var(--card); }
