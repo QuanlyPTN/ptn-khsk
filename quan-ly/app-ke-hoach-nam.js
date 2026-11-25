@@ -35,7 +35,7 @@
       (mo ? 'đang nhận đề xuất từ giảng viên (phiếu <b>GV-BS – Kế hoạch năm – dự trù thiết bị</b> ở trang dùng chung tự vào danh sách, trạng thái "Chờ duyệt")' + (c.han ? ' · hạn nộp <b>' + ngayVN(c.han) + '</b>' + (c.han < Q.homNay() ? ' <span class="tag t-gray">đã hết hạn</span>' : '') : ' · chưa đặt hạn nộp') :
         'không phải năm đang nhận đề xuất (năm nhận đề xuất: ' + esc(D.nam_mo) + ')') + '. Số tiền tính theo <b>nghìn đồng</b> như file của Trường.' +
       (c.khoa ? '<br><b>🔒 Năm ' + esc(D.nam) + ' đã khóa</b>: chỉ xem, xuất file, ghi nhận mua; không thêm / sửa / xóa / duyệt / nhập / chuyển (mở khóa ở "⚙ Hạn nộp – kinh phí khoán").' : '') + '</div>' +
-      '<div class="btns" style="margin:10px 0">' + (xl() ? '<button class="btn sm" id="k-them">+ Thêm dòng</button><label class="btn o sm">⇪ Nhập từ file Excel<input type="file" id="x-file" accept=".xlsx,.xls" hidden></label>' : '') +
+      '<div class="btns" style="margin:10px 0">' + (xl() ? '<button class="btn sm" id="k-them">+ Thêm thiết bị</button><label class="btn o sm">⇪ Nhập từ file Excel<input type="file" id="x-file" accept=".xlsx,.xls" hidden></label>' : '') +
       '<button class="btn o sm" id="k-xuat">⇩ Xuất file Excel theo mẫu</button><button class="btn o sm" id="k-bc">📊 Báo cáo thực hiện</button>' + (xl() ? '<button class="btn o sm" id="k-chep">⇄ Chuyển / cập nhật từ năm khác</button><button class="btn o sm" id="k-ch">⚙ Hạn nộp – kinh phí khoán</button>' : '') + '</div>' +
       (D.xd ? '<div class="btns" style="margin:0 0 10px"><a class="btn sm ' + (tabXd ? 'o' : 'chon') + '" href="#/ke-hoach-nam/' + D.nam + '">Mua sắm thiết bị (trang tính Muasam)</a>' +
         '<a class="btn sm ' + (tabXd ? 'chon' : 'o') + '" href="#/ke-hoach-nam/' + D.nam + '/xd">🔒 Xây dựng – sửa chữa công trình (trang tính Xaydung, chỉ admin)</a></div><div id="k-xd"' + (tabXd ? '' : ' hidden') + '></div>' : '') +
@@ -149,7 +149,8 @@
       '<th>TT</th><th>Danh mục – yêu cầu kỹ thuật</th><th class="num">SL</th><th class="num">Kinh phí (nghìn đ)</th><th>Đơn vị sử dụng – lý do – thời điểm</th><th>Trạng thái – hiện có – đề xuất GV</th>' + (xl() ? '<th></th>' : '') + '</tr></thead><tbody>';
     D.leaf.forEach(m => {
       const lm = l.filter(d => d.muc === m[0]); if (!lm.length) return;
-      h += '<tr style="background:#F3F6FC"><td colspan="' + (xl() ? 8 : 6) + '"><b>' + esc(m[0]) + '</b> – ' + esc(m[3]) + ' · <span class="note">' + lm.filter(d => !d.cha).length + ' dòng · ' + tien(tinhTong(lm.filter(d => d.trang_thai !== 'Không duyệt'))) + ' nghìn đ</span></td></tr>';
+      h += '<tr style="background:#F3F6FC"><td colspan="' + (xl() ? 8 : 6) + '"><b>' + esc(m[0]) + '</b> – ' + esc(m[3]) + ' · <span class="note">' + lm.filter(d => !d.cha).length + ' dòng · ' + tien(tinhTong(lm.filter(d => d.trang_thai !== 'Không duyệt'))) + ' nghìn đ</span>' +
+        (xl() ? ' <button class="btn sm" style="margin-left:8px" data-them-muc="' + esc(m[0]) + '" title="Thêm thiết bị mới vào mục ' + esc(m[0]) + ' (thêm ở cuối mục, dùng ↑ để đổi vị trí)">+ Thêm thiết bị</button>' : '') + '</td></tr>';
       let stt = 0, con = 0;
       lm.forEach(d => {
         if (d.cha) con++; else { stt++; con = 0; }
@@ -176,6 +177,7 @@
     $('k-all').onchange = (e) => { ds.querySelectorAll('[data-chon]').forEach(x => { x.checked = e.target.checked; }); capNhatChon(); };
     ds.querySelectorAll('[data-sua]').forEach(b => { b.onclick = () => hopSua(D.dong.find(d => d.id === b.dataset.sua)); });
     ds.querySelectorAll('[data-con]').forEach(b => { b.onclick = () => hopSua(null, b.dataset.con); });
+    ds.querySelectorAll('[data-them-muc]').forEach(b => { b.onclick = () => hopSua(null, null, b.dataset.themMuc); });
     ds.querySelectorAll('[data-xuong]').forEach(b => { b.onclick = (e) => chay(e.target, async () => { await api('khn_doi_cho', { id: b.dataset.xuong, huong: 1 }); await taiLai(); }); });
     ds.querySelectorAll('[data-len]').forEach(b => { b.onclick = () => hopLen(D.dong.find(x => x.id === b.dataset.len)); });
     ds.querySelectorAll('[data-tb]').forEach(b => { b.onclick = () => hopTaoTB(D.dong.find(d => d.id === b.dataset.tb)); });
@@ -183,8 +185,8 @@
   }
 
   // ---------- thêm / sửa một dòng ----------
-  function hopSua(d, cha) {
-    const c = cha ? D.dong.find(x => x.id === cha) : null, x = d || { muc: c ? c.muc : '', trang_thai: 'Đã duyệt', dvt: 'Cái', thoi_diem: 'Năm ' + D.nam };
+  function hopSua(d, cha, muc) {
+    const c = cha ? D.dong.find(x => x.id === cha) : null, x = d || { muc: c ? c.muc : muc || '', trang_thai: 'Đã duyệt', dvt: 'Cái', thoi_diem: 'Năm ' + D.nam };
     moHop('<h2>' + (d ? 'Sửa dòng' : c ? 'Thêm dòng con của "' + esc(c.ten) + '"' : 'Thêm thiết bị dự trù năm ' + esc(D.nam)) + '</h2><form id="k-f" class="form-grid">' +
       (c || (d && d.cha) ? '' : o('muc', 'Mục trong file kế hoạch', { select: [['', '— Tự gợi ý theo đơn giá / nhu cầu —']].concat(D.leaf.map(m => [m[0], m[0] + ' – ' + m[3]])), v: x.muc, full: 1 })) +
       o('ten', 'Danh mục (tên thiết bị)', { v: x.ten, req: 1, full: 1 }) + o('dvt', 'Đơn vị', { v: x.dvt }) + o('trang_thai', 'Trạng thái', { select: TT_TAY.concat(TT_TAY.indexOf(x.trang_thai) < 0 ? [x.trang_thai] : []), v: x.trang_thai }) +
