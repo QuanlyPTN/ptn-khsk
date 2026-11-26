@@ -472,9 +472,10 @@
       st(t.kiem_dinh.trong_30, 'Kiểm định trong 30 ngày', t.kiem_dinh.trong_30 ? 'warn' : '', '#/kiem-dinh') +
       st(t.bao_duong.qua_han + t.bao_duong.trong_30, 'Bảo dưỡng quá hạn / 30 ngày', (t.bao_duong.qua_han + t.bao_duong.trong_30) ? 'warn' : '', '#/kiem-dinh?bd=1') +
       st(t.thieu_ma_ts, 'Thiết bị chưa có mã tài sản', t.thieu_ma_ts ? 'warn' : 'ok', '#/tai-san?thieu=1') + st(t.chua_ban_giao || 0, 'Thiết bị chưa có biên bản bàn giao cho phòng', t.chua_ban_giao ? 'warn' : 'ok', '#/ban-giao-tb') + '</div>';
-    if (t.qua_han_tra.length || t.tu_qua_han.length || (t.tu_chua_thu || []).length) {
+    if (t.qua_han_tra.length || t.tu_qua_han.length || (t.tu_chua_thu || []).length || (t.bg_bao || []).length) {
       h += '<div class="card"><h2>Cần xử lý</h2>';
       t.qua_han_tra.forEach(x => { h += '<div>⚠ <a href="#/tai-san/' + esc(x.id) + '">' + esc(x.ten) + '</a> – ' + esc(x.nguoi_muon) + ' quá hạn trả ' + hanTag(x.han_tra) + '</div>'; });
+      (t.bg_bao || []).forEach(x => { h += '<div>⚠ GV ' + esc(x.ben_nhan) + ' báo biên bản bàn giao <a href="#/ban-giao-tb/' + esc(x.id) + '">' + esc(x.id) + '</a> (phòng ' + esc(x.phong) + ') sai / thiếu: ' + esc(x.noi_dung) + '</div>'; });
       (t.tu_chua_thu || []).forEach(x => { h += '<div>⚠ Tủ <a href="#/bien-ban/' + esc(x.bb) + '">' + esc(x.phong) + ' – ' + esc(x.so) + '</a> giao kèm biên bản ' + esc(x.bb) + ' đã xong – chưa thu tủ</div>'; });
       t.tu_qua_han.forEach(x => { h += '<div>⚠ Tủ <a href="#/phong/' + esc(x.phong) + '">' + esc(x.phong) + ' – ' + esc(x.so) + '</a> – ' + esc(x.nguoi) + ' quá hạn ' + hanTag(x.han) + '</div>'; });
       h += '</div>';
@@ -1171,12 +1172,26 @@
     const nut = root.querySelector('[data-tb-dat]'); if (nut) nut.onclick = async () => { await dat(nut, chon().map(c => c.dataset.tbChon), root.querySelector('[data-tb-muc]').value); chon().forEach(c => { c.checked = false; }); if (het) het.checked = false; dem(); };
     const nutCh = root.querySelector('[data-tb-chuyen]'); if (nutCh) nutCh.onclick = () => hopChuyenTB(chon().map(c => c.dataset.tbChon));
   }
-  // điều chuyển nhiều thiết bị (admin)
-  function hopChuyenTB(ids) {
-    moHop('<h2>Điều chuyển ' + ids.length + ' thiết bị</h2><form id="f">' + o('den', 'Chuyển đến phòng', { select: dsPhongChon('— Chọn phòng —'), req: 1 }) + o('ngay', 'Ngày', { type: 'date', v: homNay(), req: 1 }) +
+  // điều chuyển nhiều thiết bị (admin); "Lập biên bản" → biên bản bàn giao cho GV quản lý phòng nhận (xác nhận ngay, mở in để GV ký; đính kèm bản ký ở trang biên bản)
+  async function hopChuyenTB(ids) {
+    const dm = await api('bgtb_dm');
+    const gvOpt = (p) => { const g = (p && p.gv) || {}, l = [['', '— Chưa có GV quản lý phòng (ghi tay khi ký) —']].concat(dm.gv.map(x => [x.ma_so + '|' + x.ho_ten, x.ho_ten + (x.bo_mon ? ' – ' + x.bo_mon : '')]));
+      if (g.ten && !g.ma_so) l.splice(1, 0, ['|' + g.ten, g.ten + ' (chưa đăng ký trang dùng chung)']);
+      return l.map(x => '<option value="' + esc(x[0]) + '"' + ((g.ma_so ? x[0].split('|')[0] === g.ma_so : g.ten && x[0] === '|' + g.ten) ? ' selected' : '') + '>' + esc(x[1]) + '</option>').join(''); };
+    moHop('<h2>Điều chuyển ' + ids.length + ' thiết bị</h2><form id="f">' + o('den', 'Chuyển đến phòng', { select: dsPhongChon('— Chọn phòng —'), req: 1 }) +
+      '<label class="check" style="margin:4px 0 8px"><input type="checkbox" name="bien_ban" checked> Lập biên bản bàn giao cho GV quản lý phòng nhận (in để GV ký)</label>' +
+      '<label class="f" id="f-gv"><span>GV quản lý phòng – bên nhận</span><select name="gv">' + gvOpt(null) + '</select><small class="note" id="gv-note">Chọn phòng để điền GV quản lý phòng.</small></label>' +
+      o('ngay', 'Ngày', { type: 'date', v: homNay(), req: 1 }) +
       o('noi_dung', 'Lý do / nội dung', { area: 1 }) + '<div class="modal-foot"><button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Điều chuyển</button></div></form>');
-    $('f').onsubmit = async (e) => {
-      e.preventDefault(); const v = giaTri(e.target), r = await chay(e.submitter, () => api('tb_chuyen', Object.assign(v, { ids })));
+    const f = $('f');
+    f.den.onchange = () => { const p = dm.phong.find(x => x.ma === f.den.value), g = (p && p.gv) || {}; f.gv.innerHTML = gvOpt(p);
+      $('gv-note').textContent = g.ten ? 'GV quản lý phòng ' + p.ma + ': ' + g.ten + (g.ma_so ? ' – nhận thông báo, xem biên bản ở Đơn của tôi' : ' – chưa đăng ký trang dùng chung, không nhận thông báo') : 'Phòng chưa ghi GV quản lý – chọn GV hoặc để trống (ghi tay khi ký).'; };
+    f.bien_ban.onchange = () => { $('f-gv').hidden = !f.bien_ban.checked; };
+    f.onsubmit = async (e) => {
+      e.preventDefault(); const v = giaTri(e.target), [ms, ten] = String(v.gv || '').split('|');
+      const r = await chay(e.submitter, () => api('tb_chuyen', { ids, den: v.den, ngay: v.ngay, noi_dung: v.noi_dung, bien_ban: f.bien_ban.checked ? 1 : '', ben_nhan: ten || '', ma_so_nhan: ms || '' }));
+      if (r.bgtb) { dongHop(); toast('Đã điều chuyển ' + r.so + ' thiết bị – lập biên bản ' + r.bgtb + (r.bo_qua.length ? '; bỏ qua ' + r.bo_qua.length + ': ' + r.bo_qua.join('; ') : ''));
+        S.inBG = r.bgtb; location.hash = '#/ban-giao-tb/' + r.bgtb; return; }
       if (!r.bo_qua.length) { dongHop(); toast('Đã điều chuyển ' + r.so + ' thiết bị'); return dieuHuong(); }
       moHop('<h2>Đã điều chuyển ' + r.so + ' thiết bị</h2><p>Bỏ qua ' + r.bo_qua.length + ' thiết bị:</p><ul class="note">' + r.bo_qua.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul><div class="modal-foot"><button class="btn" data-dong>Đóng</button></div>');
       dieuHuong();

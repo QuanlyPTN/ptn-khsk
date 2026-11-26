@@ -51,6 +51,10 @@
         '</dl></div>' +
       '<div class="card"><h2>Bản ký, tệp (' + b.tep.length + ')</h2>' + (b.tep.length ? '<ul class="files">' + b.tep.map(f => '<li><span>📄 ' + esc(f.ten) + '</span><button class="btn o sm" data-tai="' + esc(f.id) + '">Tải về</button></li>').join('') + '</ul>' : '<div class="note">Chưa có.</div>') +
       '<h2 style="margin-top:12px">Lịch sử</h2>' + b.xu_ly.slice().reverse().map(x => '<div class="note">' + ngayVN(x.tg) + ' ' + String(x.tg).slice(11, 16) + ' · <b>' + esc(x.hd) + '</b> · ' + esc(x.nguoi) + (x.nd ? ' – ' + esc(x.nd) : '') + '</div>').join('') + '</div></div>' +
+      (b.gv_xn.length ? '<div class="card" style="border-color:#E8C77A"><h2>Phản hồi của GV (' + b.gv_xn.length + ')</h2>' + b.gv_xn.map((x, i) => '<div class="dong-don" style="padding:6px 0;border-bottom:1px solid var(--line-2)"><span>' +
+        (x.xong ? '<span class="tag t-ok">Đã xử lý</span> ' : '<span class="tag t-warn">Chưa xử lý</span> ') + '<b>' + esc(x.ho_ten) + '</b> · ' + ngayVN(x.tg) + ' ' + String(x.tg).slice(11, 16) + ': ' + esc(x.noi_dung) +
+        (x.xong ? '<div class="note">' + esc(x.nguoi_xl) + ' xử lý ' + ngayVN(x.xong) + (x.ghi_chu_xl ? ' – ' + esc(x.ghi_chu_xl) : '') + '</div>' : '') + '</span>' +
+        (!x.xong && xl() ? '<span><button class="btn o sm" data-xl-bao="' + i + '">✓ Đã xử lý</button></span>' : '') + '</div>').join('') + '</div>' : '') +
       (b.tra.length ? '<div class="card"><h2>Thiết bị GV đã trả (' + b.tra.length + ')</h2><div class="tbl-wrap"><table><thead><tr><th>Ngày trả</th><th>Thiết bị</th><th>Trả về</th><th>Tình trạng khi trả</th><th>Ghi chú</th><th>Người nhận</th></tr></thead><tbody>' +
         b.tra.map(x => '<tr><td>' + ngayVN(x.ngay) + '</td><td><a href="#/tai-san/' + esc(x.tb) + '">' + esc(x.ten) + '</a></td><td>' + esc(x.ve) + '</td><td>' + esc(x.tinh_trang) + '</td><td>' + esc(x.ghi_chu) + '</td><td>' + esc(x.nguoi) + '</td></tr>').join('') + '</tbody></table></div></div>' : '') +
       '<div class="card"><h2>Danh mục thiết bị bàn giao</h2><div class="tbl-wrap"><table><thead><tr><th>STT</th><th>Tên thiết bị</th><th>Model</th><th>ĐVT</th><th class="num">SL</th><th>Tình trạng lúc bàn giao</th><th>Ghi chú</th><th>Thiết bị trong Tài sản</th></tr></thead><tbody>' +
@@ -59,6 +63,9 @@
       '</tbody></table></div></div>';
     nd.querySelectorAll('[data-tai]').forEach(x => { x.onclick = (e) => chay(e.target, () => taiVe(x.dataset.tai)); });
     $('b-in').onclick = (e) => chay(e.target, () => inBB(b));
+    nd.querySelectorAll('[data-xl-bao]').forEach(x => { x.onclick = (e) => { const gc = prompt('Ghi chú xử lý (gửi GV, có thể để trống):', ''); if (gc === null) return;
+      chay(e.target, async () => { await api('bgtb_bao_xl', { id: b.id, i: +x.dataset.xlBao, ghi_chu: gc }); toast('Đã đánh dấu xử lý – GV nhận thông báo'); dieuHuong(); }); }; });
+    if (S.inBG === b.id) { S.inBG = ''; chay($('b-in'), () => inBB(b)); } // vừa điều chuyển có lập biên bản → mở in ngay
     $('b-word').onclick = (e) => chay(e.target, () => inBB(b, 1));
     if ($('b-xoa')) $('b-xoa').onclick = async (e) => { if (!confirm(nhap ? 'Xóa biên bản nháp ' + b.id + '?' : 'Xóa biên bản ' + b.id + ' (GV đã trả hết thiết bị)?\n\n• Thiết bị không thay đổi.\n• Bản scan đính kèm bị xóa, thông báo đã gửi GV được gỡ.\n• Không khôi phục được.')) return; await chay(e.target, () => api('bgtb_xoa', { id: b.id })); toast('Đã xóa'); location.hash = '#/ban-giao-tb'; };
     if ($('b-xn')) $('b-xn').onclick = async () => {
