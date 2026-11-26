@@ -159,7 +159,8 @@
       return '';
     }).join('');
   }
-  const CSS = '@page{size:A4;margin:' + LE.tren + 'mm ' + LE.ben + 'mm ' + LE.duoi + 'mm}body{margin:0;background:#E9ECF2;font-family:"Times New Roman",Times,serif;color:#000}' +
+  const CSS = '@page{size:A4;margin:' + LE.tren + 'mm ' + LE.ben + 'mm ' + LE.duoi + 'mm;' + // ô lề trang rỗng: trình duyệt không in dòng ngày giờ, tiêu đề, địa chỉ trang
+    '@top-left{content:""}@top-center{content:""}@top-right{content:""}@bottom-left{content:""}@bottom-center{content:""}@bottom-right{content:""}}body{margin:0;background:#E9ECF2;font-family:"Times New Roman",Times,serif;color:#000}' +
     '.trang{position:relative;width:210mm;min-height:297mm;box-sizing:border-box;padding:' + LE.tren + 'mm ' + LE.ben + 'mm ' + (LE.duoi + CHAN_MM) + 'mm;margin:14px auto;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.18)}' +
     '.chan{position:absolute;right:' + LE.ben + 'mm;bottom:' + LE.duoi + 'mm;display:flex;align-items:flex-end;gap:3mm}.chan .chu{text-align:right;line-height:1.25}.chan .chu span{font-size:11pt !important}' +
     'img.qr{width:' + QR_MM + 'mm;height:' + QR_MM + 'mm;display:block}' +

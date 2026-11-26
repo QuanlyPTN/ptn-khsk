@@ -171,7 +171,7 @@
       P(R('III. DANH MỤC THIẾT BỊ BÀN GIAO', { b: 1 })),
       bang([560, 2700, 1200, 700, 600, 2111, 1200], ['STT', 'Tên thiết bị', 'Model', 'ĐVT', 'SL', 'Tình trạng thiết bị lúc bàn giao', 'Ghi chú'], dong),
       P(R('IV. LƯU Ý', { b: 1 }))].concat(LUU_Y_BG.map(t => P('-  ' + t, { al: 'both' })),
-      [TRONG, ky([['BÊN NHẬN', bb.ben_nhan], ['BÊN GIAO', bb.ben_giao], ['BAN LÃNH ĐẠO KHOA', (window.PTN_KY || {}).truong_khoa || '']], 4),
+      [TRONG, ky([['BÊN NHẬN', /^[….\s]*$/.test(bb.ben_nhan || '') ? '' : bb.ben_nhan], ['BÊN GIAO', bb.ben_giao], ['BAN LÃNH ĐẠO KHOA', (window.PTN_KY || {}).truong_khoa || '']], 5),
         chan([R('Biên bản bàn giao thiết bị', { b: 1, i: 1 })], [R('Mã: ', { i: 1 }), R(bb.id || '……………', { b: 1 })])]);
   }
   const tlBanGiaoTB = (bb, qr) => ({ ten: 'Biên bản bàn giao thiết bị · ' + bb.id, tep: 'BBBG_thiet_bi_' + bb.id, trang: [khoiBanGiaoTB(bb)], qr });
