@@ -1049,18 +1049,38 @@
     const ds = await api('phong_ds');
     nd.innerHTML = '<div class="grid g3">' + ds.map(p => '<div class="card room" data-href="#/phong/' + esc(p.ma) + '"><div class="code">' + esc(p.ma) + '</div><div>' + esc(p.ten) + '</div>' +
       '<div class="meta"><span>⚙ ' + p.so_tb + ' thiết bị</span><span>▣ ' + p.tu_dung + '/' + p.tu_tong + ' tủ đang dùng</span></div>' +
-      (p.phu_trach ? '<div class="note" style="margin-top:6px">Phụ trách: ' + esc(p.phu_trach) + '</div>' : '') + '</div>').join('') + '</div>';
+      ((p.gv_ql || []).length ? '<div class="note" style="margin-top:6px">Phụ trách: ' + p.gv_ql.map(g => '<span title="' + (g.ma_so ? 'Đã đăng ký trang dùng chung – nhận thông báo, xem biên bản' : 'Chưa đăng ký trang dùng chung') + '">' + (g.ma_so ? '✓ ' : '⚠ ') + esc(g.ten) + '</span>').join(', ') + '</div>' : '') + '</div>').join('') + '</div>';
     nd.querySelectorAll('[data-href]').forEach(el => { el.onclick = () => { location.hash = el.dataset.href; }; });
     if ($('b-them-phong')) $('b-them-phong').onclick = () => hopPhong(null);
   }
-  function hopPhong(p) {
+  // GV quản lý phòng: chọn từ GV đã đăng ký trang dùng chung (✓ nhận thông báo, xem biên bản bàn giao) hoặc gõ tên GV chưa đăng ký (⚠); nhiều GV cách nhau " / "
+  const tenGVk = (s) => boDau(s).replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(w => ['ths', 'ts', 'pgs', 'gs', 'cn', 'ks', 'ds', 'bs', 'tskh'].indexOf(w) < 0).join(' ');
+  function oGVPhong(f, dsGV, ds) {
+    const ve = () => { f.phu_trach.value = ds.join(' / ');
+      $('pt-ds').innerHTML = ds.length ? ds.map((n, i) => { const dk = dsGV.some(g => tenGVk(g.ho_ten) === tenGVk(n));
+        return '<span class="tag ' + (dk ? 't-ok' : 't-warn') + '" title="' + (dk ? 'Đã đăng ký trang dùng chung' : 'Chưa đăng ký trang dùng chung – không nhận thông báo') + '">' + (dk ? '✓ ' : '⚠ ') + esc(n) +
+          ' <a href="#" data-bo-gv="' + i + '" title="Bỏ" style="text-decoration:none">✕</a></span>'; }).join(' ') : '<span class="note">Chưa có GV quản lý phòng.</span>';
+      $('pt-ds').querySelectorAll('[data-bo-gv]').forEach(a => { a.onclick = (e) => { e.preventDefault(); ds.splice(+a.dataset.boGv, 1); ve(); }; }); };
+    const them = (n) => { n = String(n || '').trim(); if (n && !ds.some(x => tenGVk(x) === tenGVk(n))) ds.push(n); ve(); };
+    $('pt-chon').onchange = (e) => { them(e.target.value); e.target.value = ''; };
+    $('pt-them').onclick = () => { them($('pt-tay').value); $('pt-tay').value = ''; };
+    $('pt-tay').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); $('pt-them').click(); } };
+    ve();
+  }
+  async function hopPhong(p) {
     const moi = !p; p = p || { so_tu: 20 };
+    const dsGV = ((await api('bgtb_dm').catch(() => null)) || { gv: [] }).gv;
     moHop('<h2>' + (moi ? 'Thêm phòng' : 'Sửa thông tin phòng ' + esc(p.ma)) + '</h2><form id="f"><div class="form-grid">' +
       o('ma', 'Mã phòng', { v: p.ma, req: 1, ph: 'D11.02', extra: moi ? '' : ' readonly' }) + o('so_tu', 'Số tủ', { type: 'number', v: p.so_tu, help: 'Tăng số tủ sẽ tạo thêm tủ; không tự xóa tủ đang có' }) +
       o('ten', 'Tên phòng', { v: p.ten, req: 1, full: 1 }) + o('vi_tri', 'Vị trí', { v: p.vi_tri }) + o('dien_tich', 'Diện tích (m²)', { v: p.dien_tich }) +
-      o('phu_trach', 'Cán bộ phụ trách', { v: p.phu_trach, full: 1 }) + o('chuc_nang', 'Chức năng', { v: p.chuc_nang, area: 1, full: 1 }) + o('ghi_chu', 'Ghi chú', { v: p.ghi_chu, full: 1 }) +
+      '<div class="f full"><span>GV quản lý phòng (cán bộ phụ trách)</span><input type="hidden" name="phu_trach"><div id="pt-ds" class="btns" style="margin:4px 0;gap:6px"></div>' +
+        '<div class="btns" style="align-items:center;gap:6px;margin:0"><select id="pt-chon" style="max-width:320px"><option value="">＋ Chọn GV đã đăng ký…</option>' +
+        dsGV.map(g => '<option value="' + esc(g.ho_ten) + '">' + esc(g.ho_ten + (g.bo_mon ? ' – ' + g.bo_mon : '')) + '</option>').join('') + '</select>' +
+        '<input id="pt-tay" placeholder="hoặc gõ tên GV chưa đăng ký" style="flex:1;min-width:160px"><button type="button" class="btn o sm" id="pt-them">Thêm</button></div>' +
+        '<small class="note">✓ đã đăng ký trang dùng chung – nhận thông báo, xem biên bản bàn giao ở Đơn của tôi; ⚠ chưa đăng ký. Phòng nhiều GV thì thêm từng người.</small></div>' + o('chuc_nang', 'Chức năng', { v: p.chuc_nang, area: 1, full: 1 }) + o('ghi_chu', 'Ghi chú', { v: p.ghi_chu, full: 1 }) +
       '</div><div class="modal-foot">' + (moi ? '' : '<button type="button" class="btn red o" id="b-xoa-phong">Xóa phòng</button><button type="button" class="btn o" id="b-doi-ma" style="margin-right:auto">Đổi mã phòng</button>') +
       '<button type="button" class="btn o" data-dong>Hủy</button><button class="btn">Lưu</button></div></form>');
+    oGVPhong($('f'), dsGV, String(p.phu_trach || '').split('/').map(x => x.trim()).filter(Boolean));
     $('f').onsubmit = async (e) => {
       e.preventDefault();
       await chay(e.submitter, () => api('phong_luu', { moi, phong: giaTri(e.target) }));
