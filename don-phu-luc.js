@@ -15,7 +15,7 @@
   // các đơn cần in cho một hồ sơ: PB → B, TB → C, DC → A
   function danhSach(hs) {
     if (hs.pl === 3) return [{ ma: '3', ten: 'Phụ lục 3 – Đơn đăng ký sử dụng PTN (SV ngoài đơn vị)' }];
-    const don = String(hs.don || '').split(','), out = [];
+    const don = String(hs.don || '').split(','), out = [{ ma: 'HD', ten: 'Hướng dẫn các bước thực hiện (đọc trước khi in đơn)' }];
     [['PB', 'B'], ['TB', 'C'], ['DC', 'A']].forEach(([k, c]) => { if (don.indexOf(k) >= 0) out.push({ ma: hs.pl + c, ten: 'Phụ lục ' + hs.pl + c + ' – ' + MO_TA[c] }); });
     return out;
   }
@@ -75,7 +75,36 @@
     return 'TP. Hồ Chí Minh, ngày ' + (m ? m[3] + ' tháng ' + m[2] + ' năm ' + m[1] : '…… tháng …… năm 20……');
   }
 
+  // Hướng dẫn các bước (Quy trình 20 – Quy định quản lý, sử dụng PTN): in đơn → lấy chữ ký → nộp PTN → nhận dụng cụ → sử dụng → trả → giấy xác nhận hoàn thành
+  const NOI_NOP = 'phòng D11.01'; // phòng nộp đơn đã ký, nhận – trả dụng cụ
+  function khoiHD(hs) {
+    const doAn = hs.loai === 'do_an', viec = doAn ? 'đồ án' : hs.pl === 1 ? 'khóa luận tốt nghiệp / luận văn' : 'đề tài nghiên cứu khoa học', don = danhSach(hs).filter(d => d.ma !== 'HD');
+    const B = (so, ten) => P([R('Bước ' + so + '. ', { b: 1 }), R(ten, { b: 1 })], { al: 'both', sau: 40 }), L = (chu) => P(['– '].concat(chu), { al: 'both', ind: { left: 425 } });
+    const ds = phongMuon(hs.phong).split(', ').filter(Boolean).map(m => (hs.phong_ds || []).find(p => p.ma === m) || { ma: m });
+    const k = [{ hd: 1 }, chan([R('Hướng dẫn thực hiện', { b: 1, i: 1 })], [R('Mã hồ sơ: ', { i: 1 }), R(hs.id || '……………', { b: 1 })]),
+      P(R('HƯỚNG DẪN CÁC BƯỚC THỰC HIỆN', { b: 1, sz: 28 }), { al: 'center' }),
+      P(R('Mượn phòng, thiết bị, dụng cụ thực hiện ' + viec + ' (theo Quy trình 20 – Quy định quản lý, sử dụng PTN Khoa KHSK 2026)', { i: 1 }), { al: 'center' }),
+      P(['Mã hồ sơ: ', R(hs.id || '……………', { b: 1 }), '   Đề tài: ', GT(hs.ten, 30)], { al: 'both' }),
+      P(['GVHD: ', GT(hs.gvhd, 20), '   Thời gian: ', R(ngay(hs.tu_ngay), { b: 1 }), ' – ', R(ngay(hs.den_ngay), { b: 1 })], { al: 'both' }),
+      B(1, 'In đơn'), L('In đủ các đơn hệ thống đã tạo: ' + (don.map(d => d.ten.replace(/^Phụ lục \w+ – /, '')).join('; ') || '…') + '. Cần thay đổi nội dung thì sửa hồ sơ trên hệ thống (QR7) rồi in lại.'),
+      B(2, 'Lấy chữ ký trên đơn'), L('Đại diện nhóm ký mục "Đại diện bên mượn" ở tất cả các đơn.'), L(['Giảng viên hướng dẫn ', GT(hs.gvhd, 14), ' ký mục "Giảng viên hướng dẫn" ở tất cả các đơn.'])];
+    if (ds.length) k.push(L('Đơn mượn phòng: giảng viên quản lý phòng ký ở bảng phòng – ' + ds.map(p => 'phòng ' + p.ma + ': ' + (String(p.phu_trach || '').replace(/ \/ /g, ', ') || 'hỏi PTN giảng viên quản lý phòng')).join('; ') + '.'));
+    if ((hs.ten_tb || []).length) k.push(L('Đơn mượn thiết bị: giảng viên quản lý phòng đặt thiết bị ký cột "Xác nhận GV QLP"; quản lý PTN ký khi nhận đơn.'));
+    if (don.some(d => /A$/.test(d.ma))) k.push(L('Đơn mượn dụng cụ: quản lý PTN ký khi nhận đơn.'));
+    k.push(B(3, 'Nộp đơn đã ký'), L(['Nộp bản gốc các đơn đã ký đủ về ', R(NOI_NOP, { b: 1 }), ' (giờ hành chính); nên chụp ảnh hoặc photo bộ đơn để giữ. PTN duyệt xong thì hồ sơ khóa sửa – cần thay đổi liên hệ PTN.']),
+      B(4, 'Hẹn lịch nhận dụng cụ'), L('PTN soạn dụng cụ và hẹn ngày bàn giao (xem thông báo ở mục "Đơn của tôi" trên trang dùng chung). Đến nhận đúng hẹn, kiểm tra số lượng, tình trạng dụng cụ và ký biên bản bàn giao.'),
+      B(5, 'Trong thời gian thực hiện'), L('Mỗi ngày sử dụng phòng: quét mã QR1 đăng ký mượn chìa khóa / phòng; cuối giờ báo trả phòng tại PTN.'),
+      L('Chỉ sử dụng thiết bị đã đăng ký trong đơn; khi sử dụng thiết bị quét mã QR5 để ghi nhật ký sử dụng.'),
+      L(['Cần mượn thêm dụng cụ: quét mã QR8 → chọn "Đồ án – KLTN – NCKH" → nhập mã hồ sơ ', R(hs.id || '……………', { b: 1 }), '.']),
+      L('Làm ngoài giờ (sau 16 giờ): giảng viên hướng dẫn đăng ký mã QR1 và chịu trách nhiệm phòng trong thời gian làm thí nghiệm.'),
+      L(['Hết hạn ', R(ngay(hs.den_ngay), { b: 1 }), ' mà chưa xong: liên hệ PTN gia hạn trước ngày hết hạn.']),
+      B(6, 'Kết thúc và trả phòng, thiết bị, dụng cụ'), L('Vệ sinh phòng, thiết bị; hủy bỏ mẫu lưu; rửa sạch, sấy khô dụng cụ. Trả đủ dụng cụ, thiết bị, chìa khóa tủ; mời giảng viên quản lý phòng và PTN kiểm tra, xác nhận đã trả.'),
+      B(7, 'Giấy xác nhận hoàn thành'), L('PTN đóng hồ sơ sau khi đã trả đủ. Vào "Đơn của tôi" › QR7 in Giấy xác nhận hoàn thành, lấy đủ chữ ký, photo 2 bản: 1 bản đóng sau cuốn báo cáo, 1 bản nộp PTN lưu.'),
+      P([R('Theo dõi hồ sơ: ', { b: 1 }), 'trạng thái, thông báo, lịch hẹn ở mục "Đơn của tôi" trên trang dùng chung (quét mã QR tổng của PTN).'], { al: 'both' }));
+    return k;
+  }
   function khoi(ma, hs) {
+    if (ma === 'HD') return khoiHD(hs);
     const t = TEN[ma], tn = (hs.nhom || [])[0] || {}, kltn = t[1] === 1, doAn = hs.loai === 'do_an';
     const viec = doAn ? 'đồ án' : kltn ? 'khóa luận tốt nghiệp/luận văn' : 'nghiên cứu khoa học';
     // chân trang góc phải (cuối trang A4): "Phụ lục …", mã hồ sơ (SV dùng khi mượn thêm dụng cụ – QR8) và mã QR
@@ -264,8 +293,8 @@
     return d;
   }
   // Đơn Phụ lục của hồ sơ đề tài (QR7)
-  const tlPhuLuc = (dsMa, hs, qr) => { dsMa = [].concat(dsMa); return { ten: (dsMa.length === 1 ? 'Phụ lục ' + dsMa[0] : dsMa.length + ' đơn') + ' · ' + hs.id,
-    tep: (dsMa.length === 1 ? 'PL' + dsMa[0] : 'Don PL ' + dsMa.join('-')) + '_' + hs.id, trang: dsMa.map(ma => khoi(ma, hs)), qr }; };
+  const tlPhuLuc = (dsMa, hs, qr) => { dsMa = [].concat(dsMa); return { ten: (dsMa.length === 1 ? (dsMa[0] === 'HD' ? 'Hướng dẫn thực hiện' : 'Phụ lục ' + dsMa[0]) : dsMa.length + ' đơn') + ' · ' + hs.id,
+    tep: (dsMa.length === 1 ? (dsMa[0] === 'HD' ? 'Huong dan thuc hien' : 'PL' + dsMa[0]) : 'Don PL ' + dsMa.join('-')) + '_' + hs.id, trang: dsMa.map(ma => khoi(ma, hs)), qr }; };
   const html = (dsMa, hs, qr) => htmlTL(tlPhuLuc(dsMa, hs, qr)), docx = (dsMa, hs, qr) => docxTL(tlPhuLuc(dsMa, hs, qr));
   const taiWord = (dsMa, hs, qr) => taiWordTL(tlPhuLuc(dsMa, hs, qr)), xemTruoc = (dsMa, hs, qr) => xemTruocTL(tlPhuLuc(dsMa, hs, qr));
   window.PTN_PHU_LUC = { danhSach, khoi, html, docx, taiWord, xemTruoc };
