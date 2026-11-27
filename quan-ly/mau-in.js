@@ -319,7 +319,9 @@
   // p = {ma, ten, phu_trach, tb: [{id, ma_ts, ten, hang, model, serial, tinh_trang, bgtb}]}; kq (tùy chọn) = phiếu GV đã gửi {dong: [{tb, kq, ghi_chu}], ngoai_ds, ho_ten, tg} → in kết quả
   // trống: cột CÓ MẶT ☐, TÌNH TRẠNG THỰC TẾ, GHI CHÚ để GV ghi tay; 3 dòng kẻ ghi thiết bị có ở phòng ngoài danh sách
   function phieuKiemKePhong(p, kq) {
-    const n = 8, cot = [5, 11, 34, 13, 9, 7, 14, 14], ds = p.tb || [], theo = {}; ((kq && kq.dong) || []).forEach(x => { theo[x.tb] = x; });
+    const n = 8, cot = [5, 11, 34, 13, 9, 7, 14, 14], theo = {}; ((kq && kq.dong) || []).forEach(x => { theo[x.tb] = x; });
+    // phiếu kết quả: đúng các máy trong phiếu lúc GV gửi (lấy thêm hãng, model, serial, biên bản từ danh sách hiện tại nếu còn)
+    const ds = kq && kq.dong ? kq.dong.map(x => Object.assign({}, (p.tb || []).find(t => t.id === x.tb) || {}, { id: x.tb, ten: x.ten, ma_ts: x.ma_ts, tinh_trang: x.tinh_trang })) : p.tb || [];
     const KQ = { co: ['✓', 'Tốt'], hong: ['✓', 'Hỏng'], khong: ['✗', 'Không thấy'] }, dem = (k) => ((kq && kq.dong) || []).filter(x => x.kq === k).length;
     const gv = String(p.phu_trach || '').replace(/ \/ /g, ', '), ngayKK = kq ? String(kq.tg || '').slice(0, 10) : '';
     const o = (v, x) => Object.assign({ v, vien: 1, co: 11 }, x || {}), c = (v, x) => o(v, Object.assign({ can: 'c' }, x || {}));

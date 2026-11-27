@@ -744,13 +744,13 @@
     nut.disabled = false; nut.textContent = cu;
   }
   // phiếu kiểm kê thiết bị phòng (trống, để in ghi tay hoặc tải Excel) – GV quản lý phòng
-  async function inPhieuKK(p, nut) {
+  async function inPhieuKK(p, nut, kq) {
     if (!p) return;
     const cu = nut.textContent; nut.disabled = true; nut.textContent = 'Đang tạo…';
     try {
       if (!window.PTN_IN) await napJS('quan-ly/xuat-file.js');
       if (!window.PTN_MAU) await napJS('quan-ly/mau-in.js');
-      xemInTL({ ten: 'Phieu kiem ke phong ' + p.ma, trang: [window.PTN_MAU.phieuKiemKePhong(p)] }, 'Phiếu kiểm kê thiết bị phòng ' + p.ma);
+      xemInTL({ ten: 'Phieu kiem ke phong ' + p.ma + (kq ? ' ' + kq.id : ''), trang: [window.PTN_MAU.phieuKiemKePhong(p, kq)] }, 'Phiếu kiểm kê ' + (kq ? kq.id + ' – ' : '') + 'phòng ' + p.ma);
     } catch (e) { toast(e.message, true); }
     nut.disabled = false; nut.textContent = cu;
   }
@@ -797,12 +797,20 @@
         '<button type="button" class="nho o" data-kk-dt="' + esc(p.ma) + '">✅ Kiểm kê trên điện thoại</button></div>' +
         (p.tb.length ? p.tb.map((t, i) => '<div class="dong-don" data-tim="' + esc([t.ten, t.ma_ts, t.hang, t.model, t.serial].join(' ').toLowerCase()) + '" style="align-items:flex-start"><span><b>' + (i + 1) + '. ' + esc(t.ten) + '</b>' +
           '<div class="note">' + esc([t.ma_ts, [t.hang, t.model].filter(Boolean).join(' – '), t.serial ? 'SN ' + t.serial : ''].filter(Boolean).join(' · ') || 'Chưa có mã tài sản') + (t.bgtb ? ' · biên bản ' + esc(t.bgtb) : '') + '</div></span>' +
-          '<span class="note" style="white-space:nowrap;font-weight:600;color:' + mau(t.tinh_trang) + '">' + esc(t.tinh_trang) + '</span></div>').join('') : '<div class="note">Phòng chưa có thiết bị trên hệ thống.</div>') + '</div>').join('') :
+          '<span class="note" style="white-space:nowrap;font-weight:600;color:' + mau(t.tinh_trang) + '">' + esc(t.tinh_trang) + '</span></div>').join('') : '<div class="note">Phòng chưa có thiết bị trên hệ thống.</div>') +
+        // phiếu kiểm kê đã gửi: xem lại từng máy, phản hồi PTN, in / Excel phiếu kết quả
+        ((p.kk_ds || []).length ? '<div style="margin-top:12px;font-weight:700">Phiếu kiểm kê đã gửi (' + p.kk_ds.length + ')</div>' + p.kk_ds.map(k => '<details style="border-top:1px solid #E3E7EF;padding:6px 0"><summary style="cursor:pointer"><b>' + esc(k.id) + '</b> · ' + ngayVN(k.tg) +
+          ' · <span style="color:' + (k.trang_thai === 'Đã xử lý' ? '#1B7A3D' : '#9A6200') + ';font-weight:600">' + esc(k.trang_thai) + '</span> · ' + k.so_tb + ' máy' + (+k.so_hong ? ', ' + k.so_hong + ' hỏng' : '') + (+k.so_khong ? ', ' + k.so_khong + ' không thấy' : '') + '</summary>' +
+          (k.ghi_chu_xl || k.tg_xl ? '<div class="note" style="margin:4px 0">PTN: ' + esc(k.ghi_chu_xl || 'đã xem') + (k.tg_xl ? ' (' + ngayVN(k.tg_xl) + ')' : '') + '</div>' : '') +
+          k.dong.map((x, i) => '<div class="note">' + (i + 1) + '. ' + esc(x.ten) + ' – <b style="color:' + (x.kq === 'co' ? '#1B7A3D' : x.kq === 'hong' ? '#9A6200' : '#B42318') + '">' + ({ co: 'Có, tốt', hong: 'Hỏng', khong: 'Không thấy' }[x.kq] || '') + '</b>' + (x.ghi_chu ? ': ' + esc(x.ghi_chu) : '') + '</div>').join('') +
+          (k.ngoai_ds ? '<div class="note">Ngoài danh sách: ' + esc(k.ngoai_ds) + '</div>' : '') +
+          '<div style="margin-top:6px"><button type="button" class="nho o" data-kk-kq="' + esc(p.ma) + '|' + esc(k.id) + '">🖨 In / Excel phiếu này</button></div></details>').join('') : '') + '</div>').join('') :
       '<div class="card note">Thầy/Cô chưa được ghi là GV quản lý phòng nào. PTN ghi GV quản lý phòng theo đúng họ tên Thầy/Cô đã đăng ký trên trang này – liên hệ PTN nếu cần bổ sung.</div>') +
       '<a class="btn o" href="#/">Về trang chủ</a>');
     if ($('pt-q')) $('pt-q').oninput = (e) => { const q = e.target.value.trim().toLowerCase();
       document.querySelectorAll('[data-tim]').forEach(x => { x.style.display = !q || x.dataset.tim.indexOf(q) >= 0 ? '' : 'none'; }); };
     document.querySelectorAll('[data-ds-in]').forEach(b => { b.onclick = () => inDsTB(ds.find(x => x.ma === b.dataset.dsIn), b); });
+    document.querySelectorAll('[data-kk-kq]').forEach(b => { b.onclick = () => { const [m, id] = b.dataset.kkKq.split('|'), p = ds.find(x => x.ma === m); inPhieuKK(p, b, (p.kk_ds || []).find(k => k.id === id)); }; });
     document.querySelectorAll('[data-kk-in]').forEach(b => { b.onclick = () => inPhieuKK(ds.find(x => x.ma === b.dataset.kkIn), b); });
     document.querySelectorAll('[data-kk-dt]').forEach(b => { b.onclick = () => { location.hash = '#/kiem-ke/' + encodeURIComponent(b.dataset.kkDt); }; });
   }
