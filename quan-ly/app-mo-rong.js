@@ -45,6 +45,10 @@
     t.qua_han_tra.forEach(x2 => canh.push('⚠ <a href="#/tai-san/' + esc(x2.id) + '">' + esc(x2.ten) + '</a> – ' + esc(x2.nguoi_muon) + ' quá hạn trả ' + hanTag(x2.han_tra)));
     (t.tu_chua_thu || []).forEach(x2 => canh.push('⚠ Tủ <a href="#/bien-ban/' + esc(x2.bb) + '">' + esc(x2.phong) + ' – ' + esc(x2.so) + '</a> giao kèm biên bản ' + esc(x2.bb) + ' đã xong – chưa thu tủ'));
     t.tu_qua_han.forEach(x2 => canh.push('⚠ Tủ <a href="#/phong/' + esc(x2.phong) + '">' + esc(x2.phong) + ' – ' + esc(x2.so) + '</a> – ' + esc(x2.nguoi) + ' quá hạn ' + hanTag(x2.han)));
+    // GV báo biên bản bàn giao thiết bị sai / thiếu; GV quản lý phòng gửi phiếu kiểm kê (22_BanGiaoTB.gs)
+    (t.bg_bao || []).forEach(x2 => canh.push('⚠ GV ' + esc(x2.ben_nhan) + ' báo biên bản bàn giao <a href="#/ban-giao-tb/' + esc(x2.id) + '">' + esc(x2.id) + '</a> (phòng ' + esc(x2.phong) + ') sai / thiếu: ' + esc(x2.noi_dung)));
+    (t.kk_moi || []).forEach(x2 => canh.push((x2.so_hong || x2.so_khong ? '⚠' : '•') + ' GV ' + esc(x2.ho_ten) + ' gửi phiếu kiểm kê phòng ' + esc(x2.phong) + ' <a href="#/kiem-ke-phong/' + esc(x2.id) + '">' + esc(x2.id) + '</a>: ' +
+      (x2.so_hong || x2.so_khong ? x2.so_hong + ' hỏng, ' + x2.so_khong + ' không thấy' : 'đủ, tốt') + ' – chờ PTN xem'));
     if (t.kiem_dinh.qua_han) canh.push('⚠ <a href="#/kiem-dinh">' + t.kiem_dinh.qua_han + ' thiết bị quá hạn kiểm định</a>');
     if (t.kiem_dinh.trong_30) canh.push('• <a href="#/kiem-dinh">' + t.kiem_dinh.trong_30 + ' thiết bị kiểm định trong 30 ngày</a>');
     const hong = (tt['Hỏng – chờ sửa'] || 0) + (tt['Đang sửa'] || 0); if (hong) canh.push('⚠ <a href="#/tai-san?tt=hong">' + hong + ' thiết bị hỏng / đang sửa</a>');

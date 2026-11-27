@@ -103,10 +103,25 @@ header{background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,
   // Mở tệp trên máy (file://) khi chưa có link máy chủ thật → tự chuyển sang chạy thử (lệnh open của macOS có thể bỏ mất "?demo=1").
   if (location.protocol === 'file:' && !/[?&]demo=1/.test(location.search) && !/^https?:/.test(window.PTN_API || '')) location.replace(location.pathname + '?demo=1' + location.hash);
   if (/[?&]demo=1/.test(location.search)) document.write('<script src="quan-ly/demo/may-chu-gia-lap.js"><\/script>');
-  else if ('serviceWorker' in navigator) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  else if ('serviceWorker' in navigator) window.addEventListener('load', function () {
+    // app mở sẵn từ nền vẫn chạy bản cũ: mỗi lần mở lại (và 30 phút / lần) hỏi máy chủ bản mới; có bản mới → thanh "bấm để cập nhật" (không tự tải lại, tránh mất phần đang điền)
+    var daCo = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (!daCo) { daCo = true; return; } // lần cài đầu, không phải bản mới
+      if (document.getElementById('ban-moi')) return;
+      var d = document.createElement('div'); d.id = 'ban-moi'; d.textContent = '🔄 Đã có bản mới của trang – bấm để cập nhật';
+      d.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:99999;background:#1E4FC2;color:#fff;padding:10px 16px;border-radius:24px;box-shadow:0 4px 14px rgba(0,0,0,.25);font:600 15px/1.3 system-ui,sans-serif;cursor:pointer;max-width:92vw;text-align:center';
+      d.onclick = function () { location.reload(); }; document.body.appendChild(d);
+    });
+    navigator.serviceWorker.register('sw.js').then(function (r) {
+      var kt = function () { r.update().catch(function () {}); };
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) kt(); });
+      setInterval(kt, 30 * 60e3);
+    }).catch(function () {});
+  });
 </script>
 <script src="don-phu-luc.js?v=56d82c9b"></script>
 <script src="don-qr.js?v=3e1c58ff"></script>
 <script src="phieu-gv.js?v=e67250e4"></script>
-<script src="app-cong-khai.js?v=0cd1f8a7"></script>
+<script src="app-cong-khai.js?v=0984f00a"></script>
 </body></html>

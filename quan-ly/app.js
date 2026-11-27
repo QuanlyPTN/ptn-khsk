@@ -54,7 +54,7 @@
   // ---------------- Gọi máy chủ ----------------
   // Đơn QR (don_ds, don_ct, hom_nay, qr_ds…) luôn đọc mới để xử lý kịp thời.
   // Kết quả đọc giữ 60 giây trong trang (quay lại trang vừa xem hiện ngay); có thao tác ghi bất kỳ thì xóa hết để đọc lại dữ liệu mới
-  const API_DOC = /^(tong_quan|nd_ds|phong_ds|phong_ct|tb_ds|tb_ct|hk_ds|vt_ds|dm_thieu_vt|mon_ds|mon_tim|mon_ct|tu_ls|ccdc_ds|lop_ds|kh_tinh|bb_ds|bb_ct|phong_lich|hs_ds|hs_ct|kho_ds|vt_goi_y|dt_dot|dt_tinh|dtm_ma_ds|dtm_dn_ds|dtm_dn_ct|dt_cap_ds|dtm_tong|dtm_doi_chieu|dtm_phieu|dtm_ct|kho_lo|kho_so_ks|bc_tb|bc_thang|bc_khac|bc_da_luu|so_ds|so_tong)$/;
+  const API_DOC = /^(tong_quan|nd_ds|phong_ds|phong_ct|tb_ds|tb_ct|hk_ds|vt_ds|dm_thieu_vt|kkp_ds|mon_ds|mon_tim|mon_ct|tu_ls|ccdc_ds|lop_ds|kh_tinh|bb_ds|bb_ct|phong_lich|hs_ds|hs_ct|kho_ds|vt_goi_y|dt_dot|dt_tinh|dtm_ma_ds|dtm_dn_ds|dtm_dn_ct|dt_cap_ds|dtm_tong|dtm_doi_chieu|dtm_phieu|dtm_ct|kho_lo|kho_so_ks|bc_tb|bc_thang|bc_khac|bc_da_luu|so_ds|so_tong)$/;
   const DEM = new Map();
   async function api(act, data) {
     if (!API_DOC.test(act)) { DEM.clear(); return goiMayChu(act, data); }
@@ -258,7 +258,7 @@
     return q[muc] || '';
   }
   function coQuyen(muc, md) { const v = quyen(muc); return md === 'xu_ly' ? v === 'xu_ly' : !!v; }
-  const MUC_TRANG = { 'ccdc': 'tai-san', 'tu-hl': 'phong', 'ts-tong-quan': 'tai-san', 'lich-phong-th': 'phong', 'ban-giao-tb': 'tai-san' }; // trang con → mục phân quyền
+  const MUC_TRANG = { 'ccdc': 'tai-san', 'kiem-ke-phong': 'tai-san', 'tu-hl': 'phong', 'ts-tong-quan': 'tai-san', 'lich-phong-th': 'phong', 'ban-giao-tb': 'tai-san' }; // trang con → mục phân quyền
   function khung() {
     document.body.classList.add('in');
     const n = S.toi.nguoi;
@@ -472,9 +472,10 @@
       st(t.kiem_dinh.trong_30, 'Kiểm định trong 30 ngày', t.kiem_dinh.trong_30 ? 'warn' : '', '#/kiem-dinh') +
       st(t.bao_duong.qua_han + t.bao_duong.trong_30, 'Bảo dưỡng quá hạn / 30 ngày', (t.bao_duong.qua_han + t.bao_duong.trong_30) ? 'warn' : '', '#/kiem-dinh?bd=1') +
       st(t.thieu_ma_ts, 'Thiết bị chưa có mã tài sản', t.thieu_ma_ts ? 'warn' : 'ok', '#/tai-san?thieu=1') + st(t.chua_ban_giao || 0, 'Thiết bị chưa có biên bản bàn giao cho phòng', t.chua_ban_giao ? 'warn' : 'ok', '#/ban-giao-tb') + '</div>';
-    if (t.qua_han_tra.length || t.tu_qua_han.length || (t.tu_chua_thu || []).length || (t.bg_bao || []).length) {
+    if (t.qua_han_tra.length || t.tu_qua_han.length || (t.tu_chua_thu || []).length || (t.bg_bao || []).length || (t.kk_moi || []).length) {
       h += '<div class="card"><h2>Cần xử lý</h2>';
       t.qua_han_tra.forEach(x => { h += '<div>⚠ <a href="#/tai-san/' + esc(x.id) + '">' + esc(x.ten) + '</a> – ' + esc(x.nguoi_muon) + ' quá hạn trả ' + hanTag(x.han_tra) + '</div>'; });
+      (t.kk_moi || []).forEach(x => { h += '<div>' + (x.so_hong || x.so_khong ? '⚠' : '✅') + ' GV ' + esc(x.ho_ten) + ' gửi phiếu kiểm kê phòng ' + esc(x.phong) + ' <a href="#/kiem-ke-phong/' + esc(x.id) + '">' + esc(x.id) + '</a>' + (x.so_hong || x.so_khong ? ': ' + x.so_hong + ' hỏng, ' + x.so_khong + ' không thấy' : ': đủ, tốt') + ' – chờ PTN xem</div>'; });
       (t.bg_bao || []).forEach(x => { h += '<div>⚠ GV ' + esc(x.ben_nhan) + ' báo biên bản bàn giao <a href="#/ban-giao-tb/' + esc(x.id) + '">' + esc(x.id) + '</a> (phòng ' + esc(x.phong) + ') sai / thiếu: ' + esc(x.noi_dung) + '</div>'; });
       (t.tu_chua_thu || []).forEach(x => { h += '<div>⚠ Tủ <a href="#/bien-ban/' + esc(x.bb) + '">' + esc(x.phong) + ' – ' + esc(x.so) + '</a> giao kèm biên bản ' + esc(x.bb) + ' đã xong – chưa thu tủ</div>'; });
       t.tu_qua_han.forEach(x => { h += '<div>⚠ Tủ <a href="#/phong/' + esc(x.phong) + '">' + esc(x.phong) + ' – ' + esc(x.so) + '</a> – ' + esc(x.nguoi) + ' quá hạn ' + hanTag(x.han) + '</div>'; });
@@ -1113,7 +1114,7 @@
       '<div class="legend"><span><i></i>Trống</span><span><i style="background:var(--info-bg)"></i>Đang dùng</span><span><i style="background:var(--bad-bg)"></i>Hỏng</span><span><i style="outline:2px solid var(--warn)"></i>Quá hạn trả</span><span>Bấm vào tủ để giao / trả / báo hỏng</span></div></div>';
     if ((r.ban_giao_tb || []).length) h += '<div class="card"><h2>Biên bản bàn giao thiết bị (' + r.ban_giao_tb.length + ')</h2>' + r.ban_giao_tb.map(b => '<div><a href="#/ban-giao-tb/' + esc(b.id) + '"><b>' + esc(b.id) + '</b></a> · ' + ngayVN(b.ngay) + ' · ' + esc(b.ben_nhan) + ' · ' + b.so_tb + ' thiết bị · ' + esc(b.trang_thai) + (b.gv_xn ? ' · GV: ' + esc(b.gv_xn.ket_qua) : '') + '</div>').join('') + '</div>';
     h += '<div class="card"><h2>Thiết bị trong phòng (' + r.thiet_bi.filter(x => x.tinh_trang !== 'Đã thanh lý').length + ')</h2>' + bangTB(r.thiet_bi.filter(x => x.tinh_trang !== 'Đã thanh lý'), true) + '</div>';
-    h += '<div id="ccdc-phong"></div><div id="lich-phong"></div>';
+    h += '<div id="kk-phong"></div><div id="ccdc-phong"></div><div id="lich-phong"></div>';
     nd.innerHTML = h;
     ganBangTB(nd, r.thiet_bi);
     nd.querySelectorAll('.locker').forEach(el => { el.onclick = () => hopTu(r.tu.find(t => t.so === el.dataset.so)); });
@@ -1122,7 +1123,8 @@
       const n = prompt('Thêm bao nhiêu tủ cho phòng ' + ma + '? (đang có ' + r.tu.length + ' tủ; tủ mới đánh số tiếp theo)', '1'); if (!n) return;
       const x = await chay(e.target, () => api('tu_them', { phong: ma, so_luong: n })); toast('Đã thêm tủ ' + x.them.join(', ') + ' – phòng có ' + x.tong + ' tủ'); dieuHuong(); };
     if (window.PTN_QL.lichPhong) window.PTN_QL.lichPhong(ma, $('lich-phong'));
-    if (window.PTN_QL.ccdcPhong && (coQuyen('tai-san', 'xem') || coQuyen('phong', 'xem'))) window.PTN_QL.ccdcPhong(ma, $('ccdc-phong')); // sổ công cụ dụng cụ của phòng
+    if (window.PTN_QL.ccdcPhong && (coQuyen('tai-san', 'xem') || coQuyen('phong', 'xem'))) window.PTN_QL.ccdcPhong(ma, $('ccdc-phong'));
+    if (window.PTN_QL.kkPhong && (coQuyen('tai-san', 'xem') || coQuyen('phong', 'xem'))) window.PTN_QL.kkPhong(ma, $('kk-phong')); // kiểm kê thiết bị của phòng // sổ công cụ dụng cụ của phòng
     if ($('b-sua-phong')) $('b-sua-phong').onclick = () => hopPhong(p);
     $('b-them-tb').onclick = () => hopThietBi(null, ma);
   }
@@ -1220,7 +1222,7 @@
 
   async function manTaiSan() {
     const q = new URLSearchParams((location.hash.split('?')[1]) || '');
-    const nd = trang('Tài sản Khoa', '<a class="btn o sm" href="#/ban-giao-tb">📋 Bàn giao thiết bị</a><button class="btn o sm" id="b-xuat">Xem trước – in / Excel</button><button class="btn o sm" id="b-nhap">Nhập từ Excel</button><button class="btn sm" id="b-them">+ Thêm thiết bị</button>');
+    const nd = trang('Tài sản Khoa', '<a class="btn o sm" href="#/ban-giao-tb">📋 Bàn giao thiết bị</a><a class="btn o sm" href="#/kiem-ke-phong">✅ Kiểm kê phòng</a><button class="btn o sm" id="b-xuat">Xem trước – in / Excel</button><button class="btn o sm" id="b-nhap">Nhập từ Excel</button><button class="btn sm" id="b-them">+ Thêm thiết bị</button>');
     const ds = await api('tb_ds'); S.cache.tb = ds;
     const ttMacDinh = q.get('tt') || '';
     nd.innerHTML = '<div class="tools"><input type="search" id="q" placeholder="Tìm tên, mã tài sản, hãng, model, serial…">' +

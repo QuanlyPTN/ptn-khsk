@@ -737,11 +737,28 @@
     try {
       if (!window.PTN_IN) await napJS('quan-ly/xuat-file.js');
       if (!window.PTN_MAU) await napJS('quan-ly/mau-in.js');
-      const tl = { ten: 'Giay xac nhan hoan thanh ' + hs.id, trang: [window.PTN_MAU.giayXacNhan(hs, await anhQRHoSo(hs))] };
+      xemInTL({ ten: 'Giay xac nhan hoan thanh ' + hs.id, trang: [window.PTN_MAU.giayXacNhan(hs, await anhQRHoSo(hs))] }, 'Giấy xác nhận hoàn thành – ' + hs.id);
+    } catch (e) { toast(e.message, true); }
+    nut.disabled = false; nut.textContent = cu;
+  }
+  // phiếu kiểm kê thiết bị phòng (trống, để in ghi tay hoặc tải Excel) – GV quản lý phòng
+  async function inPhieuKK(p, nut) {
+    if (!p) return;
+    const cu = nut.textContent; nut.disabled = true; nut.textContent = 'Đang tạo…';
+    try {
+      if (!window.PTN_IN) await napJS('quan-ly/xuat-file.js');
+      if (!window.PTN_MAU) await napJS('quan-ly/mau-in.js');
+      xemInTL({ ten: 'Phieu kiem ke phong ' + p.ma, trang: [window.PTN_MAU.phieuKiemKePhong(p)] }, 'Phiếu kiểm kê thiết bị phòng ' + p.ma);
+    } catch (e) { toast(e.message, true); }
+    nut.disabled = false; nut.textContent = cu;
+  }
+  // xem trước bản in (PTN_IN): In / Tải Excel / Đóng; điện thoại thu nhỏ trang A4 cho vừa màn hình
+  function xemInTL(tl, tieuDe) {
+    {
       const d = document.createElement('div'); d.id = 'xem-don';
       d.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#E9ECF2;display:flex;flex-direction:column;font-family:"Times New Roman",Times,serif';
       const kieu = 'padding:8px 14px;border-radius:8px;border:1px solid #1E4FC2;font:inherit;font-size:15px;cursor:pointer;';
-      d.innerHTML = '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12)"><b style="font-size:16px">Giấy xác nhận hoàn thành – ' + esc(hs.id) + '</b><span style="flex:1"></span>' +
+      d.innerHTML = '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12)"><b style="font-size:16px">' + esc(tieuDe) + '</b><span style="flex:1"></span>' +
         '<button data-x="in" style="' + kieu + 'background:#1E4FC2;color:#fff">🖨 In</button><button data-x="excel" style="' + kieu + 'background:#fff;color:#1E4FC2">Tải Excel</button><button data-x="dong" style="' + kieu + 'background:#fff;color:#333;border-color:#bbb">Đóng</button></div>' +
         '<iframe title="Giấy xác nhận" style="flex:1;border:0;width:100%"></iframe>';
       document.body.appendChild(d);
@@ -753,8 +770,44 @@
       d.querySelector('[data-x=in]').onclick = () => f.contentWindow.print();
       d.querySelector('[data-x=excel]').onclick = async (e) => { const b = e.target, t = b.textContent; b.disabled = true; b.textContent = 'Đang tạo…'; try { await window.PTN_IN.taiExcel(tl); } catch (err) { toast(err.message, true); } b.disabled = false; b.textContent = t; };
       d.querySelector('[data-x=dong]').onclick = () => d.remove();
-    } catch (e) { toast(e.message, true); }
-    nut.disabled = false; nut.textContent = cu;
+    }
+  }
+  // Kiểm kê thiết bị phòng trên điện thoại (GV quản lý phòng): đánh dấu từng máy ✓ Có, tốt / ⚠ Hỏng / ✕ Không thấy + ghi chú; tự lưu nháp trên máy; gửi PTN (ck_kk_gui)
+  async function trangKiemKe(ma) {
+    const r = await api('ck_cua_toi', { khoa: may().khoa }), p = (r.tb_phong || []).find(x => x.ma === ma);
+    if (!p) return M('<div class="warn">Thầy/Cô không phải GV quản lý phòng ' + esc(ma) + ' trên hệ thống (PTN ghi GV quản lý phòng theo họ tên Thầy/Cô đã đăng ký).</div><a class="btn o" href="#/don-cua-toi">Về Đơn của tôi</a>');
+    const K = 'khsk_kk_' + ma, nhap = doc(K) || {}, kq = nhap.kq || {}, gc = nhap.gc || {};
+    const luu = () => ghi(K, { kq, gc, ngoai: ($('kk-ngoai') || {}).value || '' });
+    const NUT = [['co', '✓ Có, tốt', '#E7F6EC', '#1B7A3D'], ['hong', '⚠ Hỏng', '#FFF4DB', '#9A6200'], ['khong', '✕ Không thấy', '#FDECEC', '#B42318']];
+    const nutHtml = (id) => NUT.map(([k, t, nen, mau]) => '<button type="button" class="nho' + (kq[id] === k ? '' : ' o') + '" data-kq="' + k + '"' + (kq[id] === k ? ' style="background:' + nen + ';color:' + mau + ';border-color:' + mau + '"' : '') + '>' + t + '</button>').join('');
+    M('<h2>Kiểm kê thiết bị phòng ' + esc(p.ma) + '</h2><p class="note">' + esc(p.ten || '') + (p.dot ? ' · Đợt <b>' + esc(p.dot.ten) + '</b>' + (p.dot.han ? ' – hạn ' + ngayVN(p.dot.han) : '') : '') + '</p>' +
+      '<div class="card"><div class="note">Đi quanh phòng, đánh dấu từng thiết bị theo thực tế. Kết quả tự lưu trên máy này – làm dở, lần sau mở lại vẫn còn.</div>' +
+      '<div class="dong-don"><span id="kk-dem"></span><span><button type="button" class="nho o" id="kk-tat">✓ Các máy còn lại: Có, tốt</button></span></div></div>' +
+      (p.tb.length ? '' : '<div class="card note">Phòng chưa có thiết bị trên hệ thống – ghi thiết bị đang có ở phòng vào ô bên dưới.</div>') +
+      p.tb.map((t, i) => '<div class="card" data-the="' + esc(t.id) + '"><div><b>' + (i + 1) + '. ' + esc(t.ten) + '</b></div><div class="note">' + esc([t.ma_ts, t.hang, t.model, t.serial ? 'SN ' + t.serial : ''].filter(Boolean).join(' · ')) +
+        ' · trên hệ thống: ' + esc(t.tinh_trang || '') + '</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0" data-nut="' + esc(t.id) + '">' + nutHtml(t.id) + '</div>' +
+        '<input data-gc="' + esc(t.id) + '" placeholder="Ghi chú (bắt buộc khi Hỏng / Không thấy)" value="' + esc(gc[t.id] || '') + '" style="width:100%;box-sizing:border-box"></div>').join('') +
+      '<div class="card"><b>Thiết bị có ở phòng nhưng chưa có trong danh sách</b><textarea id="kk-ngoai" rows="3" maxlength="1000" placeholder="Tên, số lượng, tình trạng – để trống nếu không có" style="width:100%;box-sizing:border-box;margin-top:6px">' + esc(nhap.ngoai || '') + '</textarea></div>' +
+      '<div id="err" class="err"></div><button class="btn" id="kk-gui">Gửi kết quả kiểm kê cho PTN</button> <a class="btn o" href="#/don-cua-toi">Để sau</a>');
+    const ve = () => { $('kk-dem').innerHTML = 'Đã đánh dấu <b>' + p.tb.filter(t => kq[t.id]).length + '/' + p.tb.length + '</b> thiết bị'; };
+    const ganNut = (id) => { const o = document.querySelector('[data-nut="' + id + '"]'); o.querySelectorAll('[data-kq]').forEach(b => { b.onclick = () => { kq[id] = b.dataset.kq; o.innerHTML = nutHtml(id); ganNut(id); luu(); ve(); }; }); };
+    p.tb.forEach(t => ganNut(t.id));
+    document.querySelectorAll('[data-gc]').forEach(i => { i.oninput = () => { gc[i.dataset.gc] = i.value; luu(); }; });
+    $('kk-ngoai').oninput = luu;
+    $('kk-tat').onclick = () => { p.tb.forEach(t => { if (!kq[t.id]) { kq[t.id] = 'co'; document.querySelector('[data-nut="' + t.id + '"]').innerHTML = nutHtml(t.id); ganNut(t.id); } }); luu(); ve(); };
+    ve();
+    $('kk-gui').onclick = async (e) => {
+      const den = (t, m) => { $('err').textContent = m; const x = document.querySelector('[data-the="' + t.id + '"]'); if (x) x.scrollIntoView({ block: 'center' }); };
+      const chua = p.tb.filter(t => !kq[t.id]); if (chua.length) return den(chua[0], 'Còn ' + chua.length + ' thiết bị chưa đánh dấu: ' + chua.slice(0, 3).map(t => t.ten).join(', ') + (chua.length > 3 ? '…' : ''));
+      const thieu = p.tb.filter(t => kq[t.id] !== 'co' && !String(gc[t.id] || '').trim()); if (thieu.length) return den(thieu[0], 'Ghi chú cho thiết bị Hỏng / Không thấy: ' + thieu.map(t => t.ten).join(', '));
+      if (!p.tb.length && !$('kk-ngoai').value.trim()) return ($('err').textContent = 'Ghi thiết bị đang có ở phòng (nếu có).');
+      if (!confirm('Gửi kết quả kiểm kê phòng ' + p.ma + ' cho PTN?')) return;
+      e.target.disabled = true;
+      try { const x = await api('ck_kk_gui', { khoa: may().khoa, phong: p.ma, dong: p.tb.map(t => ({ tb: t.id, kq: kq[t.id], ghi_chu: gc[t.id] || '' })), ngoai_ds: $('kk-ngoai').value.trim() });
+        try { localStorage.removeItem(K); } catch (er) { /* trình duyệt chặn lưu trữ */ }
+        toast('Đã gửi phiếu kiểm kê ' + x.id + ' – PTN sẽ xem và phản hồi'); location.hash = '#/don-cua-toi';
+      } catch (er) { $('err').textContent = er.message; e.target.disabled = false; }
+    };
   }
   // thẻ biên bản bàn giao thiết bị (Đơn của tôi của giảng viên nhận) – chỉ biên bản PTN đã nhận bản ký, để xem / tải, không cần xác nhận
   const theBG = (b) => '<div class="card"><div class="dong-don"><span><span class="q">BG</span> <b>' + esc(b.id) + '</b></span><span class="tag ' + (/thay thế|Đã trả/.test(b.trang_thai) ? 't-gray' : 't-info') + '">' + esc(b.trang_thai) + '</span></div>' +
@@ -770,7 +823,11 @@
       '<div style="text-align:right;margin-top:4px"><button type="button" class="nho" data-bg-gui="' + esc(b.id) + '">Gửi PTN</button></div></div>' : '') + '</div>';
   // thiết bị hiện có trong phòng GV quản lý
   const thePhongTB = (p) => '<div class="card"><div class="dong-don"><span><span class="q">🏷</span> <b>Thiết bị phòng ' + esc(p.ma) + '</b></span><span class="tag t-info">' + p.tb.length + ' thiết bị</span></div>' +
-    '<div class="note">' + esc(p.ten || '') + ' – phòng Thầy/Cô quản lý</div><div style="margin:6px 0">' + (p.tb.length ? p.tb.map((t, i) => '<div class="note">' + (i + 1) + '. <b>' + esc(t.ten) + '</b>' + (t.model ? ' – ' + esc(t.model) : '') +
+    '<div class="note">' + esc(p.ten || '') + ' – phòng Thầy/Cô quản lý</div>' +
+    (p.dot ? '<div class="note" style="font-weight:600;color:' + (p.dot.da_nop ? '#1B7A3D' : '#B42318') + '">📋 Đợt kiểm kê "' + esc(p.dot.ten) + '"' + (p.dot.han ? ' – hạn ' + ngayVN(p.dot.han) : '') + (p.dot.da_nop ? ' – đã nộp' : ' – chưa nộp') + '</div>' : '') +
+    (p.kk ? '<div class="note">Kiểm kê gần nhất: ' + ngayVN(p.kk.tg) + ' (phiếu ' + esc(p.kk.id) + ') – ' + esc(p.kk.trang_thai) + (p.kk.so_hong || p.kk.so_khong ? ' · ' + p.kk.so_hong + ' hỏng, ' + p.kk.so_khong + ' không thấy' : '') + (p.kk.ghi_chu_xl ? ' · PTN: ' + esc(p.kk.ghi_chu_xl) : '') + '</div>' : '') +
+    '<div class="dong-don"><span class="note">Kiểm kê thiết bị phòng</span><span><button type="button" class="nho o" data-kk-in="' + esc(p.ma) + '">🖨 In / Excel phiếu</button><button type="button" class="nho" data-kk-dt="' + esc(p.ma) + '">✅ Kiểm kê trên điện thoại</button></span></div>' +
+    '<div style="margin:6px 0">' + (p.tb.length ? p.tb.map((t, i) => '<div class="note">' + (i + 1) + '. <b>' + esc(t.ten) + '</b>' + (t.model ? ' – ' + esc(t.model) : '') +
       (t.ma_ts ? ' · ' + esc(t.ma_ts) : '') + ' · ' + esc(t.tinh_trang) + (t.bgtb ? ' · biên bản ' + esc(t.bgtb) : ' · <i>chưa có biên bản</i>') + '</div>').join('') : '<div class="note">Chưa có thiết bị.</div>') + '</div></div>';
   async function inBG(b, nut) {
     if (!b) return;
@@ -845,6 +902,7 @@
     const daDong = r.ho_so.filter(x => x.trang_thai === 'Đã đóng' && ((x.xu_ly || []).filter(y => y.hd === 'Đóng hồ sơ').pop() || {}).tg >= ngayTruoc(30)); if (daDong.length) viec.push('✅ Hồ sơ ' + daDong.map(x => esc(x.id)).join(', ') + ' đã đóng: in <b>Giấy xác nhận hoàn thành</b> (tab QR7) → GV quản lý phòng ký → nộp kèm báo cáo');
     const moiBG = dsBG.filter(b => b.trang_thai === 'Đã nhận bản ký' && ((b.xu_ly || []).filter(y => y.hd === 'Đã nhận bản ký').pop() || {}).tg >= ngayTruoc(30)); if (moiBG.length) viec.push('📦 Biên bản bàn giao thiết bị ' + moiBG.map(b => esc(b.id)).join(', ') + ' đã hoàn tất – PTN đã nhận bản ký; xem biên bản và bản scan ở tab Bàn giao TB');
     const bgMoi = dsBG.filter(b => b.trang_thai === 'Đã bàn giao' && String(b.tao || b.cap_nhat || '') >= ngayTruoc(30)); if (bgMoi.length) viec.push('📦 PTN đã lập biên bản bàn giao thiết bị ' + bgMoi.map(b => esc(b.id) + ' (phòng ' + esc(b.phong) + ')').join(', ') + ' – xem danh mục ở mục <b>Bàn giao TB</b>; sai / thiếu thì bấm <b>Báo sai / thiếu</b>');
+    (r.tb_phong || []).filter(p => p.dot && !p.dot.da_nop).forEach(p => viec.push('📋 Đợt kiểm kê "' + esc(p.dot.ten) + '"' + (p.dot.han ? ' (hạn ' + ngayVN(p.dot.han) + ')' : '') + ' – phòng ' + esc(p.ma) + ' chưa nộp: mục <b>Bàn giao TB</b> → <b>Kiểm kê trên điện thoại</b>'));
     const choNop = r.ho_so.filter(x => x.trang_thai === 'Chờ nộp bản ký'); if (choNop.length) viec.push('📄 Hồ sơ ' + choNop.map(x => esc(x.id)).join(', ') + ' chưa nộp bản ký: in đơn → GVHD ký → nộp PTN');
     const choDuyet = r.don.filter(d => d.trang_thai === 'Chờ duyệt').length; if (choDuyet) viec.push('⏳ ' + choDuyet + ' đơn đang chờ PTN duyệt');
     h += (viec.length ? '<div class="pre" style="background:#FFF8E1;border-color:#F2D58A">' + viec.map(v => '<div>' + v + '</div>').join('') + '</div>' : '') +
@@ -866,6 +924,8 @@
       } catch (e) { toast(e.message, true); }
       b.disabled = false;
     }; });
+    document.querySelectorAll('[data-kk-in]').forEach(b => { b.onclick = () => inPhieuKK((r.tb_phong || []).find(x => x.ma === b.dataset.kkIn), b); });
+    document.querySelectorAll('[data-kk-dt]').forEach(b => { b.onclick = () => { location.hash = '#/kiem-ke/' + encodeURIComponent(b.dataset.kkDt); }; });
     document.querySelectorAll('[data-bg-bao]').forEach(b => { b.onclick = () => { const f = document.querySelector('[data-bg-form="' + b.dataset.bgBao + '"]'); f.hidden = !f.hidden; if (!f.hidden) f.querySelector('textarea').focus(); }; });
     document.querySelectorAll('[data-bg-gui]').forEach(b => { b.onclick = async () => { const t = document.querySelector('[data-bg-form="' + b.dataset.bgGui + '"] textarea');
       if (t.value.trim().length < 5) return toast('Ghi rõ thiết bị sai / thiếu', true);
@@ -986,6 +1046,7 @@
       if (p[0] === 'DT') return await trangDTM(p[1]);
       if (p[0] === 'ho-so') return trangHoSo(false);
       if (p[0] === 'don-cua-toi') return await trangDonCuaToi();
+      if (p[0] === 'kiem-ke') return await trangKiemKe(decodeURIComponent(p[1] || '').toUpperCase());
       if (p[0] === 'bieu-mau') return trangBieuMau();
       if (p[0] === 'thong-bao') return trangThongBao();
       return await trangChu();

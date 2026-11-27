@@ -298,5 +298,35 @@
       anh: qr ? [{ dataUrl: qr.dataUrl || qr, cot: 7 + (pxCot(cot[7]) - q - 6) / pxCot(cot[7]), hang: (caoKhung - q) / 2 / 24, rong: q, cao: q, vi_tri: 'top:' + (caoKhung - q) / 2 * 0.75 + 'pt;right:6px' }] : [] };
   }
   function bienBan(r, qr, hs) { return { ten: 'BBBG ' + (r.bb.loai === 'DC' ? 'dung cu ' : 'hoa chat ') + r.bb.id, trang: [r.bb.loai === 'DC' ? bienBanDC(r, qr, hs) : bienBanHC(r, qr)] }; }
-  window.PTN_MAU = { duTru, duTruThang, duTruMon, duTruMonNhieu, nhomDuTru, NHOM_DT, THU_VE_MA, bienBan, bienBanHC, bienBanDC, giayXacNhan };
+  // ---------------- Phiếu kiểm kê thiết bị phòng (GV quản lý phòng, PTN) ----------------
+  // p = {ma, ten, phu_trach, tb: [{id, ma_ts, ten, hang, model, serial, tinh_trang, bgtb}]}; kq (tùy chọn) = phiếu GV đã gửi {dong: [{tb, kq, ghi_chu}], ngoai_ds, ho_ten, tg} → in kết quả
+  // trống: cột CÓ MẶT ☐, TÌNH TRẠNG THỰC TẾ, GHI CHÚ để GV ghi tay; 3 dòng kẻ ghi thiết bị có ở phòng ngoài danh sách
+  function phieuKiemKePhong(p, kq) {
+    const n = 8, cot = [5, 11, 34, 13, 9, 7, 14, 14], ds = p.tb || [], theo = {}; ((kq && kq.dong) || []).forEach(x => { theo[x.tb] = x; });
+    const KQ = { co: ['✓', 'Tốt'], hong: ['✓', 'Hỏng'], khong: ['✗', 'Không thấy'] }, dem = (k) => ((kq && kq.dong) || []).filter(x => x.kq === k).length;
+    const gv = String(p.phu_trach || '').replace(/ \/ /g, ', '), ngayKK = kq ? String(kq.tg || '').slice(0, 10) : '';
+    const o = (v, x) => Object.assign({ v, vien: 1, co: 11 }, x || {}), c = (v, x) => o(v, Object.assign({ can: 'c' }, x || {}));
+    const hang = [{ cao: 16, o: [{ v: 'ĐẠI HỌC CÔNG NGHIỆP TP. HỒ CHÍ MINH', cs: n, co: 11 }] }, { cao: 16, o: [{ v: 'KHOA KHOA HỌC SỨC KHỎE', cs: n, b: 1, co: 11 }] }, rong(n),
+      { cao: 24, o: [{ v: 'PHIẾU KIỂM KÊ THIẾT BỊ PHÒNG ' + p.ma, cs: n, can: 'c', b: 1, co: 15 }] },
+      { cao: 18, o: [{ v: p.ten || '', cs: n, can: 'c', i: 1, co: 12 }] }, rong(n),
+      { cao: 18, o: [{ v: 'GV quản lý phòng: ' + ((kq && kq.ho_ten) || gv || '……………………………………'), cs: 5, co: 12 }, { v: 'Ngày kiểm kê: ' + (ngayKK ? tg(ngayKK) : '……/……/20……'), cs: 3, co: 12 }] },
+      { cao: 18, o: [{ v: 'Số thiết bị trên hệ thống: ' + ds.length + (kq ? '   ·   Hỏng: ' + dem('hong') + '   ·   Không thấy: ' + dem('khong') + '   ·   Phiếu ' + (kq.id || '') : ''), cs: n, co: 12 }] },
+      { cao: 34, o: ['STT', 'MÃ TÀI SẢN', 'TÊN THIẾT BỊ\n(hãng – model – serial)', 'TÌNH TRẠNG\nTRÊN HỆ THỐNG', 'BIÊN BẢN', 'CÓ MẶT', 'TÌNH TRẠNG\nTHỰC TẾ', 'GHI CHÚ'].map(v => c(v, { b: 1, co: 10, nen: '#D9E2F3' })) }];
+    const dau = hang.length;
+    ds.forEach((t, i) => { const phu = [t.hang, t.model, t.serial ? 'SN ' + t.serial : ''].filter(Boolean).join(' – '), ten = t.ten + (phu ? '\n' + phu : ''), x = theo[t.id], k = x && KQ[x.kq];
+      hang.push({ cao: Math.max(22, caoChu(ten, 34, 11, 22) + (phu ? 14 : 0), x ? caoChu(x.ghi_chu, 14, 10, 22) : 0),
+        o: [c(i + 1), c(t.ma_ts || '', { co: 10 }), o(ten), c(t.tinh_trang || '', { co: 10 }), c(t.bgtb || '', { co: 10 }), c(k ? k[0] : '☐', { co: 13 }), c(k ? k[1] : '', { co: 10 }), o(x ? x.ghi_chu : '', { co: 10 })] }); });
+    if (!ds.length) hang.push({ cao: 20, o: [o('Phòng chưa có thiết bị trên hệ thống.', { cs: n, i: 1 })] });
+    const ng = kq ? kq.ngoai_ds || '' : '';
+    hang.push(rong(n), { cao: 18, o: [{ v: 'Thiết bị có ở phòng nhưng chưa có trong danh sách (tên, số lượng, tình trạng):', cs: n, b: 1, co: 12 }] });
+    if (ng) hang.push({ cao: caoChu(ng, 107, 12, 18), o: [{ v: ng, cs: n, co: 12 }] });
+    else for (let i = 0; i < 3; i++) hang.push({ cao: 22, o: [{ v: '', cs: n, vien: 'b' }] });
+    hang.push(rong(n), { cao: 18, o: [{ v: '', cs: 4 }, { v: 'TP. Hồ Chí Minh, ' + ngayChu(ngayKK), cs: 4, can: 'c', i: 1, co: 12 }] },
+      { cao: 18, o: [{ v: 'GV QUẢN LÝ PHÒNG', cs: 4, can: 'c', b: 1 }, { v: 'CÁN BỘ PHÒNG THÍ NGHIỆM', cs: 4, can: 'c', b: 1 }] },
+      { cao: 16, o: [{ v: '(Ký, ghi rõ họ tên)', cs: 4, can: 'c', i: 1, co: 10 }, { v: '(Ký, ghi rõ họ tên)', cs: 4, can: 'c', i: 1, co: 10 }] });
+    for (let i = 0; i < 4; i++) hang.push({ cao: 15, o: [{ v: '', cs: n }] });
+    hang.push({ cao: 16, o: [{ v: (kq && kq.ho_ten) || gv.split(', ')[0] || '', cs: 4, can: 'c', b: 1 }, { v: '', cs: 4 }] });
+    return { ten: ('Kiem ke ' + p.ma).slice(0, 31), huong: 'doc', cot, hang, lapLai: [dau, dau], le: [0.5, 0.4, 0.5, LE_TRAI] };
+  }
+  window.PTN_MAU = { duTru, duTruThang, duTruMon, duTruMonNhieu, nhomDuTru, NHOM_DT, THU_VE_MA, bienBan, bienBanHC, bienBanDC, giayXacNhan, phieuKiemKePhong };
 })();
