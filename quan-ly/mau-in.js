@@ -298,6 +298,23 @@
       anh: qr ? [{ dataUrl: qr.dataUrl || qr, cot: 7 + (pxCot(cot[7]) - q - 6) / pxCot(cot[7]), hang: (caoKhung - q) / 2 / 24, rong: q, cao: q, vi_tri: 'top:' + (caoKhung - q) / 2 * 0.75 + 'pt;right:6px' }] : [] };
   }
   function bienBan(r, qr, hs) { return { ten: 'BBBG ' + (r.bb.loai === 'DC' ? 'dung cu ' : 'hoa chat ') + r.bb.id, trang: [r.bb.loai === 'DC' ? bienBanDC(r, qr, hs) : bienBanHC(r, qr)] }; }
+  // ---------------- Danh sách thiết bị phòng (GV quản lý phòng – trang dùng chung "Thiết bị phòng tôi quản lý") ----------------
+  // p = {ma, ten, phu_trach, tb: [{ma_ts, ten, hang, model, serial, tinh_trang, bgtb}]}; tính đến ngày in
+  function danhSachTBPhong(p) {
+    const n = 8, cot = [5, 11, 30, 18, 13, 13, 9, 9], ds = p.tb || [], hn = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+    const o = (v, x) => Object.assign({ v, vien: 1, co: 11 }, x || {}), c = (v, x) => o(v, Object.assign({ can: 'c' }, x || {}));
+    const hang = [{ cao: 16, o: [{ v: 'ĐẠI HỌC CÔNG NGHIỆP TP. HỒ CHÍ MINH', cs: n, co: 11 }] }, { cao: 16, o: [{ v: 'KHOA KHOA HỌC SỨC KHỎE', cs: n, b: 1, co: 11 }] }, rong(n),
+      { cao: 24, o: [{ v: 'DANH SÁCH THIẾT BỊ PHÒNG ' + p.ma, cs: n, can: 'c', b: 1, co: 15 }] },
+      { cao: 18, o: [{ v: p.ten || '', cs: n, can: 'c', i: 1, co: 12 }] }, rong(n),
+      { cao: 18, o: [{ v: 'GV quản lý phòng: ' + (String(p.phu_trach || '').replace(/ \/ /g, ', ') || '…'), cs: 5, co: 12 }, { v: 'Tính đến ngày: ' + tg(hn), cs: 3, co: 12 }] },
+      { cao: 18, o: [{ v: 'Tổng số: ' + ds.length + ' thiết bị', cs: n, co: 12 }] },
+      { cao: 30, o: ['STT', 'MÃ TÀI SẢN', 'TÊN THIẾT BỊ', 'HÃNG – MODEL', 'SERIAL', 'TÌNH TRẠNG', 'BIÊN BẢN', 'GHI CHÚ'].map(v => c(v, { b: 1, co: 10, nen: '#D9E2F3' })) }];
+    const dau = hang.length;
+    ds.forEach((t, i) => { const hm = [t.hang, t.model].filter(Boolean).join(' – ');
+      hang.push({ cao: Math.max(20, caoChu(t.ten, 30, 11, 20), caoChu(hm, 18, 10, 20)), o: [c(i + 1), c(t.ma_ts || '', { co: 10 }), o(t.ten), o(hm, { co: 10 }), c(t.serial || '', { co: 10 }), c(t.tinh_trang || '', { co: 10 }), c(t.bgtb || '', { co: 10 }), o('')] }); });
+    if (!ds.length) hang.push({ cao: 20, o: [o('Phòng chưa có thiết bị trên hệ thống.', { cs: n, i: 1 })] });
+    return { ten: ('Thiet bi ' + p.ma).slice(0, 31), huong: 'doc', cot, hang, lapLai: [dau, dau], le: [0.5, 0.4, 0.5, LE_TRAI] };
+  }
   // ---------------- Phiếu kiểm kê thiết bị phòng (GV quản lý phòng, PTN) ----------------
   // p = {ma, ten, phu_trach, tb: [{id, ma_ts, ten, hang, model, serial, tinh_trang, bgtb}]}; kq (tùy chọn) = phiếu GV đã gửi {dong: [{tb, kq, ghi_chu}], ngoai_ds, ho_ten, tg} → in kết quả
   // trống: cột CÓ MẶT ☐, TÌNH TRẠNG THỰC TẾ, GHI CHÚ để GV ghi tay; 3 dòng kẻ ghi thiết bị có ở phòng ngoài danh sách
@@ -328,5 +345,5 @@
     hang.push({ cao: 16, o: [{ v: (kq && kq.ho_ten) || gv.split(', ')[0] || '', cs: 4, can: 'c', b: 1 }, { v: '', cs: 4 }] });
     return { ten: ('Kiem ke ' + p.ma).slice(0, 31), huong: 'doc', cot, hang, lapLai: [dau, dau], le: [0.5, 0.4, 0.5, LE_TRAI] };
   }
-  window.PTN_MAU = { duTru, duTruThang, duTruMon, duTruMonNhieu, nhomDuTru, NHOM_DT, THU_VE_MA, bienBan, bienBanHC, bienBanDC, giayXacNhan, phieuKiemKePhong };
+  window.PTN_MAU = { duTru, duTruThang, duTruMon, duTruMonNhieu, nhomDuTru, NHOM_DT, THU_VE_MA, bienBan, bienBanHC, bienBanDC, giayXacNhan, phieuKiemKePhong, danhSachTBPhong };
 })();
