@@ -293,8 +293,9 @@
     return d;
   }
   // Đơn Phụ lục của hồ sơ đề tài (QR7)
-  const tlPhuLuc = (dsMa, hs, qr) => { dsMa = [].concat(dsMa); return { ten: (dsMa.length === 1 ? (dsMa[0] === 'HD' ? 'Hướng dẫn thực hiện' : 'Phụ lục ' + dsMa[0]) : dsMa.length + ' đơn') + ' · ' + hs.id,
-    tep: (dsMa.length === 1 ? (dsMa[0] === 'HD' ? 'Huong dan thuc hien' : 'PL' + dsMa[0]) : 'Don PL ' + dsMa.join('-')) + '_' + hs.id, trang: dsMa.map(ma => khoi(ma, hs)), qr }; };
+  const tlPhuLuc = (dsMa, hs, qr) => { dsMa = [].concat(dsMa); const bo = dsMa.length > 1 && dsMa.indexOf('HD') >= 0; // bộ hồ sơ in: hướng dẫn + các đơn
+    return { ten: (dsMa.length === 1 ? (dsMa[0] === 'HD' ? 'Hướng dẫn thực hiện' : 'Phụ lục ' + dsMa[0]) : bo ? 'Bộ hồ sơ in (hướng dẫn + ' + (dsMa.length - 1) + ' đơn)' : dsMa.length + ' đơn') + ' · ' + hs.id,
+    tep: (dsMa.length === 1 ? (dsMa[0] === 'HD' ? 'Huong dan thuc hien' : 'PL' + dsMa[0]) : bo ? 'Bo ho so in' : 'Don PL ' + dsMa.join('-')) + '_' + hs.id, trang: dsMa.map(ma => khoi(ma, hs)), qr }; };
   const html = (dsMa, hs, qr) => htmlTL(tlPhuLuc(dsMa, hs, qr)), docx = (dsMa, hs, qr) => docxTL(tlPhuLuc(dsMa, hs, qr));
   const taiWord = (dsMa, hs, qr) => taiWordTL(tlPhuLuc(dsMa, hs, qr)), xemTruoc = (dsMa, hs, qr) => xemTruocTL(tlPhuLuc(dsMa, hs, qr));
   window.PTN_PHU_LUC = { danhSach, khoi, html, docx, taiWord, xemTruoc };

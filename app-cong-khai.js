@@ -722,7 +722,9 @@
     ganKhoiDon(hs);
   }
   // nút tải các đơn Phụ lục của một hồ sơ
-  const khoiDon = (hs) => '<div class="card"><b>Đơn cần in</b>' + window.PTN_PHU_LUC.danhSach(hs).map(d => '<div class="dong-don"><span>📄 ' + esc(d.ten) + '</span><span><button type="button" class="nho" data-in="' + d.ma + '" data-hs="' + esc(hs.id) + '">Xem – in</button><button type="button" class="nho o" data-word="' + d.ma + '" data-hs="' + esc(hs.id) + '">Word</button></span></div>').join('') + '</div>';
+  // "*" = bộ hồ sơ in: một file gồm hướng dẫn + mọi đơn của hồ sơ (mỗi phần một trang)
+  const khoiDon = (hs) => '<div class="card"><b>Đơn cần in</b>' + (window.PTN_PHU_LUC.danhSach(hs).length > 1 ? '<div class="dong-don" style="background:#F3F7FF;border-radius:8px;padding:6px 8px"><span>📦 <b>Bộ hồ sơ in: hướng dẫn + ' + (window.PTN_PHU_LUC.danhSach(hs).length - 1) + ' đơn</b> (một file)</span><span><button type="button" class="nho" data-in="*" data-hs="' + esc(hs.id) + '">Xem – in</button><button type="button" class="nho o" data-word="*" data-hs="' + esc(hs.id) + '">Word</button></span></div>' : '') +
+    window.PTN_PHU_LUC.danhSach(hs).map(d => '<div class="dong-don"><span>📄 ' + esc(d.ten) + '</span><span><button type="button" class="nho" data-in="' + d.ma + '" data-hs="' + esc(hs.id) + '">Xem – in</button><button type="button" class="nho o" data-word="' + d.ma + '" data-hs="' + esc(hs.id) + '">Word</button></span></div>').join('') + '</div>';
   async function anhQRHoSo(hs) {
     try { await napQR(); const q = window.qrcode(0, 'M'); q.addData(new URL('quan-ly/#/de-tai/' + hs.id, location.href.split('#')[0]).href); q.make(); return q.createDataURL(4, 1); } catch (e) { return ''; } // in không có mã QR
   }
@@ -781,8 +783,9 @@
       b.onclick = async () => {
         const qr = await anhQRHoSo(hs);
         if (!window.PTN_KY) { try { await danhMuc(true); } catch (e) { /* in không có tên người ký */ } }
-        if (b.dataset.word) { try { await window.PTN_PHU_LUC.taiWord([b.dataset.word], hs, qr); } catch (e) { toast(e.message, true); } return; }
-        window.PTN_PHU_LUC.xemTruoc([b.dataset.in], hs, qr);
+        const ds = (m) => m === '*' ? window.PTN_PHU_LUC.danhSach(hs).map(d => d.ma) : [m];
+        if (b.dataset.word) { try { await window.PTN_PHU_LUC.taiWord(ds(b.dataset.word), hs, qr); } catch (e) { toast(e.message, true); } return; }
+        window.PTN_PHU_LUC.xemTruoc(ds(b.dataset.in), hs, qr);
       };
     });
   }
