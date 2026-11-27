@@ -308,10 +308,10 @@
       { cao: 18, o: [{ v: p.ten || '', cs: n, can: 'c', i: 1, co: 12 }] }, rong(n),
       { cao: 18, o: [{ v: 'GV quản lý phòng: ' + (String(p.phu_trach || '').replace(/ \/ /g, ', ') || '…'), cs: 5, co: 12 }, { v: 'Tính đến ngày: ' + tg(hn), cs: 3, co: 12 }] },
       { cao: 18, o: [{ v: 'Tổng số: ' + ds.length + ' thiết bị', cs: n, co: 12 }] },
-      { cao: 30, o: ['STT', 'MÃ TÀI SẢN', 'TÊN THIẾT BỊ', 'HÃNG – MODEL', 'SERIAL', 'TÌNH TRẠNG', 'BIÊN BẢN', 'GHI CHÚ'].map(v => c(v, { b: 1, co: 10, nen: '#D9E2F3' })) }];
+      { cao: 30, o: ['STT', 'MÃ TÀI SẢN\n/ MÃ KT', 'TÊN THIẾT BỊ', 'HÃNG – MODEL', 'SERIAL', 'TÌNH TRẠNG', 'BIÊN BẢN', 'GHI CHÚ'].map(v => c(v, { b: 1, co: 10, nen: '#D9E2F3' })) }];
     const dau = hang.length;
     ds.forEach((t, i) => { const hm = [t.hang, t.model].filter(Boolean).join(' – ');
-      hang.push({ cao: Math.max(20, caoChu(t.ten, 30, 11, 20), caoChu(hm, 18, 10, 20)), o: [c(i + 1), c(t.ma_ts || '', { co: 10 }), o(t.ten), o(hm, { co: 10 }), c(t.serial || '', { co: 10 }), c(t.tinh_trang || '', { co: 10 }), c(t.bgtb || '', { co: 10 }), o('')] }); });
+      hang.push({ cao: Math.max(20, caoChu(t.ten, 30, 11, 20), caoChu(hm, 18, 10, 20)), o: [c(i + 1), c([t.ma_ts, t.ma_kt && 'KT ' + t.ma_kt].filter(Boolean).join('\n'), { co: 10 }), o(t.ten), o(hm, { co: 10 }), c(t.serial || '', { co: 10 }), c(t.tinh_trang || '', { co: 10 }), c(t.bgtb || '', { co: 10 }), o('')] }); });
     if (!ds.length) hang.push({ cao: 20, o: [o('Phòng chưa có thiết bị trên hệ thống.', { cs: n, i: 1 })] });
     return { ten: ('Thiet bi ' + p.ma).slice(0, 31), huong: 'doc', cot, hang, lapLai: [dau, dau], le: [0.5, 0.4, 0.5, LE_TRAI] };
   }
@@ -330,11 +330,11 @@
       { cao: 18, o: [{ v: p.ten || '', cs: n, can: 'c', i: 1, co: 12 }] }, rong(n),
       { cao: 18, o: [{ v: 'GV quản lý phòng: ' + ((kq && kq.ho_ten) || gv || '……………………………………'), cs: 5, co: 12 }, { v: 'Ngày kiểm kê: ' + (ngayKK ? tg(ngayKK) : '……/……/20……'), cs: 3, co: 12 }] },
       { cao: 18, o: [{ v: 'Số thiết bị trên hệ thống: ' + ds.length + (kq ? '   ·   Hỏng: ' + dem('hong') + '   ·   Không thấy: ' + dem('khong') + '   ·   Phiếu ' + (kq.id || '') : ''), cs: n, co: 12 }] },
-      { cao: 34, o: ['STT', 'MÃ TÀI SẢN', 'TÊN THIẾT BỊ\n(hãng – model – serial)', 'TÌNH TRẠNG\nTRÊN HỆ THỐNG', 'BIÊN BẢN', 'CÓ MẶT', 'TÌNH TRẠNG\nTHỰC TẾ', 'GHI CHÚ'].map(v => c(v, { b: 1, co: 10, nen: '#D9E2F3' })) }];
+      { cao: 34, o: ['STT', 'MÃ TÀI SẢN\n/ MÃ KT', 'TÊN THIẾT BỊ\n(hãng – model – serial)', 'TÌNH TRẠNG\nTRÊN HỆ THỐNG', 'BIÊN BẢN', 'CÓ MẶT', 'TÌNH TRẠNG\nTHỰC TẾ', 'GHI CHÚ'].map(v => c(v, { b: 1, co: 10, nen: '#D9E2F3' })) }];
     const dau = hang.length;
     ds.forEach((t, i) => { const phu = [t.hang, t.model, t.serial ? 'SN ' + t.serial : ''].filter(Boolean).join(' – '), ten = t.ten + (phu ? '\n' + phu : ''), x = theo[t.id], k = x && KQ[x.kq];
       hang.push({ cao: Math.max(22, caoChu(ten, 34, 11, 22) + (phu ? 14 : 0), x ? caoChu(x.ghi_chu, 14, 10, 22) : 0),
-        o: [c(i + 1), c(t.ma_ts || '', { co: 10 }), o(ten), c(t.tinh_trang || '', { co: 10 }), c(t.bgtb || '', { co: 10 }), c(k ? k[0] : '☐', { co: 13 }), c(k ? k[1] : '', { co: 10 }), o(x ? x.ghi_chu : '', { co: 10 })] }); });
+        o: [c(i + 1), c([t.ma_ts, t.ma_kt && 'KT ' + t.ma_kt].filter(Boolean).join('\n'), { co: 10 }), o(ten), c(t.tinh_trang || '', { co: 10 }), c(t.bgtb || '', { co: 10 }), c(k ? k[0] : '☐', { co: 13 }), c(k ? k[1] : '', { co: 10 }), o(x ? x.ghi_chu : '', { co: 10 })] }); });
     if (!ds.length) hang.push({ cao: 20, o: [o('Phòng chưa có thiết bị trên hệ thống.', { cs: n, i: 1 })] });
     const ng = kq ? kq.ngoai_ds || '' : '';
     hang.push(rong(n), { cao: 18, o: [{ v: 'Thiết bị có ở phòng nhưng chưa có trong danh sách (tên, số lượng, tình trạng):', cs: n, b: 1, co: 12 }] });

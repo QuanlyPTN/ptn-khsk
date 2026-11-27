@@ -1175,7 +1175,7 @@
     const sua = coQuyen('tai-san', 'xu_ly');
     return (sua ? '<div class="tools" style="margin-bottom:6px"><label class="check" style="margin:0"><input type="checkbox" data-tb-het> Chọn tất cả</label><span class="note"><b data-tb-dem>0</b> thiết bị đã chọn → </span><select data-tb-muc>' + MUC_TB.map(m => '<option value="' + m[0] + '">' + m[1] + '</option>').join('') + '</select><button type="button" class="btn o sm" data-tb-dat disabled>Đặt mức</button>' + (laAdmin() ? '<button type="button" class="btn o sm" data-tb-chuyen disabled>⇄ Điều chuyển</button>' : '') + '</div>' : '') +
       '<div class="tbl-wrap"><table><thead><tr>' + (sua ? '<th style="width:28px"></th>' : '') + '<th>Mã tài sản</th><th>Tên thiết bị</th>' + (gon ? '' : '<th>Phòng</th>') + '<th>Tình trạng</th><th>Cho mượn</th><th>Kiểm định kế tiếp</th><th>Bảo dưỡng kế tiếp</th></tr></thead><tbody>' +
-      ds.map(x => '<tr class="click" data-id="' + esc(x.id) + '">' + (sua ? '<td><input type="checkbox" data-tb-chon="' + esc(x.id) + '"></td>' : '') + '<td class="mono">' + (x.ma_ts ? esc(x.ma_ts) : '<span class="tag t-warn">chưa có</span>') + '</td><td><b>' + esc(x.ten) + '</b>' +
+      ds.map(x => '<tr class="click" data-id="' + esc(x.id) + '">' + (sua ? '<td><input type="checkbox" data-tb-chon="' + esc(x.id) + '"></td>' : '') + '<td class="mono">' + (x.ma_ts ? esc(x.ma_ts) : '<span class="tag t-warn">chưa có</span>') + (x.ma_kt ? '<div class="note" title="Mã KT">KT ' + esc(x.ma_kt) + '</div>' : '') + '</td><td><b>' + esc(x.ten) + '</b>' +
         (x.hang || x.model ? '<div class="note">' + esc([x.hang, x.model].filter(Boolean).join(' · ')) + '</div>' : '') + (x.nguoi_muon ? '<div class="note">Đang mượn: ' + esc(x.nguoi_muon) + '</div>' : '') + '</td>' +
         (gon ? '' : '<td>' + esc(x.phong || '—') + '</td>') + '<td>' + tag(x.tinh_trang) + '</td><td>' + (sua ? '<select data-tb-mot="' + esc(x.id) + '">' + MUC_TB.map(m => '<option value="' + m[0] + '"' + (m[0] === mucTB(x) ? ' selected' : '') + '>' + m[1] + '</option>').join('') + '</select>' : esc((MUC_TB.find(m => m[0] === mucTB(x)) || [])[1])) + '</td><td>' + hanTag(x.kd_ke) + '</td><td>' + hanTag(x.bd_ke) + '</td></tr>').join('') + '</tbody></table></div>';
   }
@@ -1233,7 +1233,7 @@
     if (ttMacDinh === 'hong') $('f-tt').value = 'hong';
     const loc = () => {
       const tu = boDau($('q').value), ph = $('f-phong').value, tt = $('f-tt').value, thieu = $('f-thieu').checked, mu = $('f-muon').value;
-      const l = ds.filter(x => (!tu || boDau([x.ten, x.ma_ts, x.hang, x.model, x.serial, x.id, x.loai].join(' ')).indexOf(tu) >= 0) &&
+      const l = ds.filter(x => (!tu || boDau([x.ten, x.ma_ts, x.ma_kt, x.hang, x.model, x.serial, x.id, x.loai].join(' ')).indexOf(tu) >= 0) &&
         (!ph || (ph === '-' ? !x.phong : x.phong === ph)) &&
         (tt === '*' || (tt === 'hong' ? (x.tinh_trang === 'Hỏng – chờ sửa' || x.tinh_trang === 'Đang sửa') : tt ? x.tinh_trang === tt : x.tinh_trang !== 'Đã thanh lý')) &&
         (!thieu || !x.ma_ts) && (!mu || mucTB(x) === mu));
@@ -1249,7 +1249,7 @@
   }
 
   const TRUONG_TB = [
-    ['ma_ts', 'Mã tài sản', { ph: 'Theo nhãn dán trên máy' }], ['ten', 'Tên thiết bị', { req: 1 }], ['loai', 'Loại thiết bị'], ['hang', 'Hãng sản xuất'],
+    ['ma_ts', 'Mã tài sản', { ph: 'Theo nhãn dán trên máy' }], ['ma_kt', 'Mã KT (mã kế toán)', { ph: 'VD 10-0699/00' }], ['ten', 'Tên thiết bị', { req: 1 }], ['loai', 'Loại thiết bị'], ['hang', 'Hãng sản xuất'],
     ['model', 'Model'], ['serial', 'Số serial'], ['xuat_xu', 'Xuất xứ'], ['nguon_von', 'Nguồn vốn'], ['nam_sx', 'Năm sản xuất'],
     ['ngay_nhan', 'Ngày nhận / đưa vào sử dụng', { type: 'date' }], ['nguyen_gia', 'Nguyên giá (VNĐ)', { ph: 'Chỉ nhập số' }],
     ['kd_gan', 'Kiểm định gần nhất', { type: 'date' }], ['kd_chu_ky', 'Chu kỳ kiểm định (tháng)', { type: 'number' }], ['kd_ke', 'Kiểm định kế tiếp', { type: 'date', help: 'Để trống: tự tính từ ngày gần nhất + chu kỳ' }],
@@ -1287,7 +1287,7 @@
       '<button class="btn o sm" id="b-sua">Sửa thông tin</button><button class="btn o sm" id="b-tep">Đính kèm tệp</button><a class="btn o sm" href="#/bao-cao/tb/' + esc(x.id) + '">Dashboard sử dụng</a>' +
       '<button class="btn o sm" id="b-tem">In tem</button><button class="btn o sm" onclick="window.print()">In hồ sơ</button>' +
       (laAdmin() ? '<button class="btn red sm" id="b-xoa">Xóa (nhập nhầm)</button>' : '') + '</div>';
-    const ttin = [['ID', x.id], ['Mã tài sản', x.ma_ts || '— chưa có —'], ['Phòng', x.phong ? x.phong + ' – ' + phongTen(x.phong) : '— chưa xếp phòng —'], ['Loại', x.loai],
+    const ttin = [['ID', x.id], ['Mã tài sản', x.ma_ts || '— chưa có —'], ['Mã KT', x.ma_kt || '— chưa có —'], ['Phòng', x.phong ? x.phong + ' – ' + phongTen(x.phong) : '— chưa xếp phòng —'], ['Loại', x.loai],
       ['Hãng / model', [x.hang, x.model].filter(Boolean).join(' · ')], ['Số serial', x.serial], ['Xuất xứ', x.xuat_xu], ['Nguồn vốn', x.nguon_von], ['Năm SX', x.nam_sx],
       ['Ngày nhận', ngayVN(x.ngay_nhan)], ['Nguyên giá', tien(x.nguyen_gia)], ['Người đang mượn', x.nguoi_muon ? x.nguoi_muon + (x.han_tra ? ' – hạn ' + ngayVN(x.han_tra) : '') : ''],
       ['Mượn theo khung giờ', +x.khung_gio > 0 ? x.khung_gio + ' phút / khung' : x.khung_gio === 'khong' ? '⛔ Không giải quyết cho mượn (ẩn khỏi trang dùng chung)' : ''], ['Đối tượng được mượn', x.khung_gio !== 'khong' && x.muon === 'gv' ? 'Chỉ giảng viên' : ''], ['Thông số', x.thong_so], ['Ghi chú', x.ghi_chu], ['Cập nhật', x.cap_nhat ? ngayVN(x.cap_nhat) + ' – ' + x.nguoi_cap_nhat : '']].filter(k => k[1]);
@@ -1386,7 +1386,7 @@
   }
   // Ghép tiêu đề cột trong file với trường dữ liệu (theo từ khóa, không dấu)
   const GHEP_COT = [
-    ['ma_ts', ['ma tai san', 'ma ts', 'ma thiet bi']], ['ten', ['ten thiet bi', 'ten may', 'ten tai san', 'ten']], ['phong', ['ma phong', 'phong', 'vi tri dat', 'vi tri']],
+    ['ma_ts', ['ma tai san', 'ma ts', 'ma thiet bi']], ['ma_kt', ['ma kt', 'ma ke toan']], ['ten', ['ten thiet bi', 'ten may', 'ten tai san', 'ten']], ['phong', ['ma phong', 'phong', 'vi tri dat', 'vi tri']],
     ['loai', ['loai']], ['hang', ['hang']], ['model', ['model', 'ky hieu']], ['serial', ['serial', 'so may']], ['xuat_xu', ['xuat xu', 'quoc gia']],
     ['nguon_von', ['nguon von']], ['nam_sx', ['nam san xuat', 'nam sx']], ['ngay_nhan', ['ngay dua vao su dung', 'ngay nhan', 'ngay mua']],
     ['nguyen_gia', ['nguyen gia']], ['kd_gan', ['kiem dinh gan nhat']], ['kd_ke', ['kiem dinh ke tiep']], ['kd_chu_ky', ['chu ky kiem dinh', 'chu ky kd']],
@@ -1574,7 +1574,7 @@
   }
   function veBuocGhep(X, wb, tenSheet) {
     const rows = X.utils.sheet_to_json(wb.Sheets[tenSheet], { header: 1, raw: true, defval: '' });
-    let hd = rows.findIndex(r => r.some(c => /t[eê]n/i.test(String(c)) && /(thi[eế]t b[iị]|t[aà]i s[aả]n|m[aá]y)/i.test(String(c))));
+    let hd = rows.findIndex(r => r.some(c => /t[eê]n/i.test(String(c)) && /(thi[eế]t b[iị]|t[aà]i s[aả]n|m[aá]y|tsc[đd])/i.test(String(c))));
     if (hd < 0) hd = rows.findIndex(r => r.filter(c => c !== '').length >= 2);
     if (hd < 0) { $('x-kq').innerHTML = '<p class="err">Không tìm thấy dòng tiêu đề.</p>'; return; }
     const tieuDe = rows[hd].map(c => String(c).replace(/\s+/g, ' ').trim());
@@ -1597,7 +1597,7 @@
         return o2;
       }).filter(x => x.ten);
       const r = await chay(e.target, () => api('tb_nhap', { ds }));
-      $('x-kq').innerHTML = '<div class="card"><b>Đã thêm ' + r.them + ' thiết bị.</b>' + (r.bo_qua.length ? '<p>Bỏ qua ' + r.bo_qua.length + ' dòng:</p><ul>' + r.bo_qua.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>' : '') + '</div><div class="modal-foot"><button class="btn" data-dong>Đóng</button></div>';
+      $('x-kq').innerHTML = '<div class="card"><b>Đã thêm ' + r.them + ' thiết bị.</b>' + (r.bo_sung_kt ? '<p>Bổ sung Mã KT cho <b>' + r.bo_sung_kt + '</b> thiết bị đã có (trùng mã tài sản, chưa có Mã KT).</p>' : '') + (r.da_co ? '<p class="note">' + r.da_co + ' dòng là thiết bị đã có – giữ nguyên.</p>' : '') + (r.bo_qua.length ? '<p>Bỏ qua ' + r.bo_qua.length + ' dòng:</p><ul>' + r.bo_qua.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>' : '') + '</div><div class="modal-foot"><button class="btn" data-dong>Đóng</button></div>';
       if (location.hash.indexOf('#/tai-san') === 0) setTimeout(dieuHuong, 300);
     };
   }
@@ -1606,10 +1606,10 @@
     const ten = (ma) => (S.dm.phong.find(p => p.ma === ma) || {}).ma || ma || '';
     window.PTN_IN.xemTruoc({ ten: 'Danh muc thiet bi KHSK ' + homNay(), trang: [window.PTN_IN.bang({ ten: 'Danh muc thiet bi', huong: 'ngang', tieuDe: 'DANH MỤC THIẾT BỊ PHÒNG THÍ NGHIỆM',
       phuDe: 'Khoa Khoa học Sức khỏe – cập nhật ngày ' + ngayVN(homNay()), ngay: 'TP. HCM, ngày ' + homNay().slice(8) + ' tháng ' + homNay().slice(5, 7) + ' năm ' + homNay().slice(0, 4),
-      cot: [{ ten: 'STT', rong: 5, can: 'c' }, { ten: 'MÃ TÀI SẢN', rong: 13 }, { ten: 'TÊN THIẾT BỊ', rong: 34 }, { ten: 'PHÒNG', rong: 9, can: 'c' }, { ten: 'HÃNG – MODEL', rong: 20 }, { ten: 'SỐ SERIAL', rong: 13 },
+      cot: [{ ten: 'STT', rong: 5, can: 'c' }, { ten: 'MÃ TÀI SẢN', rong: 13 }, { ten: 'MÃ KT', rong: 11 }, { ten: 'TÊN THIẾT BỊ', rong: 30 }, { ten: 'PHÒNG', rong: 9, can: 'c' }, { ten: 'HÃNG – MODEL', rong: 20 }, { ten: 'SỐ SERIAL', rong: 13 },
         { ten: 'NĂM SD', rong: 8, can: 'c' }, { ten: 'NGUYÊN GIÁ (đ)', rong: 14, dd: '0' }, { ten: 'TÌNH TRẠNG', rong: 14 }, { ten: 'KĐ KẾ TIẾP', rong: 11, can: 'c' }, { ten: 'GHI CHÚ', rong: 22 }],
-      dong: ds.map((x, i) => [i + 1, x.ma_ts, x.ten, ten(x.phong), [x.hang, x.model].filter(Boolean).join(' – '), x.serial, (x.ngay_nhan || '').slice(0, 4), +x.nguyen_gia || '', x.tinh_trang, ngayVN(x.kd_ke), x.ghi_chu]),
-      tong: ['', '', 'Tổng: ' + ds.length + ' thiết bị', '', '', '', '', ds.reduce((a, x) => a + (+x.nguyen_gia || 0), 0) || '', '', '', ''],
+      dong: ds.map((x, i) => [i + 1, x.ma_ts, x.ma_kt || '', x.ten, ten(x.phong), [x.hang, x.model].filter(Boolean).join(' – '), x.serial, (x.ngay_nhan || '').slice(0, 4), +x.nguyen_gia || '', x.tinh_trang, ngayVN(x.kd_ke), x.ghi_chu]),
+      tong: ['', '', '', 'Tổng: ' + ds.length + ' thiết bị', '', '', '', '', ds.reduce((a, x) => a + (+x.nguyen_gia || 0), 0) || '', '', '', ''],
       ky: [['NGƯỜI LẬP', '(Ký, ghi rõ họ tên)'], ['TRƯỞNG KHOA', '(Ký, ghi rõ họ tên)']] })] }); // họ tên người ký tự điền (PTN_KY)
   }
 

@@ -796,7 +796,7 @@
         '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"><button type="button" class="nho" data-ds-in="' + esc(p.ma) + '">📄 Danh sách thiết bị (in / Excel)</button><button type="button" class="nho o" data-kk-in="' + esc(p.ma) + '">🖨 Phiếu kiểm kê</button>' +
         '<button type="button" class="nho o" data-kk-dt="' + esc(p.ma) + '">✅ Kiểm kê trên điện thoại</button></div>' +
         (p.tb.length ? p.tb.map((t, i) => '<div class="dong-don" data-tim="' + esc([t.ten, t.ma_ts, t.hang, t.model, t.serial].join(' ').toLowerCase()) + '" style="align-items:flex-start"><span><b>' + (i + 1) + '. ' + esc(t.ten) + '</b>' +
-          '<div class="note">' + esc([t.ma_ts, [t.hang, t.model].filter(Boolean).join(' – '), t.serial ? 'SN ' + t.serial : ''].filter(Boolean).join(' · ') || 'Chưa có mã tài sản') + (t.bgtb ? ' · biên bản ' + esc(t.bgtb) : '') + '</div></span>' +
+          '<div class="note">' + esc([t.ma_ts, t.ma_kt && 'KT ' + t.ma_kt, [t.hang, t.model].filter(Boolean).join(' – '), t.serial ? 'SN ' + t.serial : ''].filter(Boolean).join(' · ') || 'Chưa có mã tài sản') + (t.bgtb ? ' · biên bản ' + esc(t.bgtb) : '') + '</div></span>' +
           '<span class="note" style="white-space:nowrap;font-weight:600;color:' + mau(t.tinh_trang) + '">' + esc(t.tinh_trang) + '</span></div>').join('') : '<div class="note">Phòng chưa có thiết bị trên hệ thống.</div>') +
         // phiếu kiểm kê đã gửi: xem lại từng máy, phản hồi PTN, in / Excel phiếu kết quả
         ((p.kk_ds || []).length ? '<div style="margin-top:12px;font-weight:700">Phiếu kiểm kê đã gửi (' + p.kk_ds.length + ')</div>' + p.kk_ds.map(k => '<details style="border-top:1px solid #E3E7EF;padding:6px 0"><summary style="cursor:pointer"><b>' + esc(k.id) + '</b> · ' + ngayVN(k.tg) +
